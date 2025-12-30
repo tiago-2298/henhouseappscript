@@ -31,22 +31,22 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState('');
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null); // Contient les Prix, Produits, Véhicules, etc.
+  const [data, setData] = useState(null); 
   const [activeTab, setActiveTab] = useState('facture');
-  const [status, setStatus] = useState(null); // Pour afficher les messages de succès/erreur
-  const [formData, setFormData] = useState({}); // Stocke les données des formulaires
+  const [status, setStatus] = useState(null); 
+  const [formData, setFormData] = useState({});
 
-  // --- 1. CHARGEMENT INITIAL (Récupère la liste et les configs depuis route.js) ---
+  // --- 1. CHARGEMENT INITIAL ---
   useEffect(() => {
     fetch('/api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getMeta' }) // On demande toutes les infos
+      body: JSON.stringify({ action: 'getMeta' })
     })
     .then(res => res.json())
     .then(res => {
       setEmployees(res.employees || []);
-      setData(res); // On stocke la config (produits, prix...)
+      setData(res); 
       setLoading(false);
     })
     .catch(err => {
@@ -60,7 +60,7 @@ export default function Home() {
   const handleLogin = () => {
     if (currentUser) {
       setView('dashboard');
-      setFormData({}); // Reset du formulaire à la connexion
+      setFormData({}); 
     }
   };
 
@@ -77,8 +77,7 @@ export default function Home() {
       
       if (json.success) {
         setStatus({ type: 'success', msg: 'Envoyé avec succès ! ✅' });
-        setFormData({}); // On vide le formulaire après succès
-        // On remet un item vide par défaut si besoin
+        setFormData({}); 
         if (['facture', 'stock', 'entreprise'].includes(activeTab)) {
            setFormData({ items: [{ desc: (data?.products?.[0] || ''), qty: 1 }] });
         }
@@ -214,7 +213,6 @@ export default function Home() {
     return null;
   };
 
-  // --- RENDU PRINCIPAL DU SITE ---
   return (
     <div style={styles.container}>
       {loading ? (
