@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server';
 // ================= 1. DONNÉES HEN HOUSE =================
 const APP_VERSION = '2025.11.13';
 const CURRENCY = { symbol: '$', code: 'USD' };
-const ENTERPRISES = { 'Hen House': { discount: 0 } };
 
 const PRODUCTS = {
   plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
@@ -52,7 +51,7 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-// ✅ FONCTION MODIFIÉE : Lecture Colonne B uniquement
+// Fonction Google Sheets
 async function getEmployeesFromGoogle() {
   try {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
@@ -68,7 +67,7 @@ async function getEmployeesFromGoogle() {
 
     const sheets = google.sheets({ version: 'v4', auth });
     
-    // CHANGEMENT ICI : On lit 'B2:B' (Toute la colonne B à partir de la ligne 2)
+    // Lecture colonne B
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'B2:B', 
@@ -77,12 +76,11 @@ async function getEmployeesFromGoogle() {
     const rows = response.data.values;
     if (!rows) return [];
 
-    // On mappe uniquement la première colonne trouvée (qui est B)
     return rows.map((row) => ({
-      nom: row[0] || '',     // La colonne B
-      prenom: '',            // Pas de prénom séparé
+      nom: row[0] || '',     
+      prenom: '',            
     }))
-    .filter(emp => emp.nom.trim() !== '') // On retire les lignes vides
+    .filter(emp => emp.nom.trim() !== '')
     .sort((a, b) => a.nom.localeCompare(b.nom));
 
   } catch (error) {
@@ -199,6 +197,82 @@ export async function POST(request) {
     // --- 5. GARAGE ---
     if (action === 'sendGarage') {
       const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
+      // CORRECTION DE L'ERREUR ICI :
       const embed = {
         title: `🚗 Garage - ${data.action}`,
-        description: `Véhicule
+        description: `Véhicule traité par ${data.employee}`,
+        color: colors[data.action] || 0x8e44ad,
+        fields: [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true },
+          { name: '⚙️ Action', value: data.action, inline: true },
+          { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
+        ],
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(process.env.WEBHOOK_GARAGE, { username: 'Hen House - Garage', embeds: [embed] });
+      return NextResponse.json({ success: true });
+    }
+
+    // --- 6. FRAIS ---
+    if (action === 'sendExpense') {
+      const embed = {
+        title: `💳 Note de frais — ${data.kind}`,
+        color: data.kind === 'Essence' ? 0x10b981 : 0x3b82f6,
+        fields: [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true },
+          { name: '💵 Montant', value: formatAmount(data.amount), inline: true }
+        ],
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(process.env.WEBHOOK_EXPENSES, { username: 'Hen House - Dépenses', embeds: [embed] });
+      return NextResponse.json({ success: true });
+    }
+
+    // --- 7. PARTENAIRES ---
+    if (action === 'sendPartnerOrder') {
+        const items = data.items || [];
+        let total = 0;
+        const fields = items.map(i => {
+            total += i.qty;
+            return { name: i.menu, value: `x${i.qty}`, inline: true };
+        });
+
+        const embed = {
+            title: `🤝 Partenaires - ${data.company}`,
+            description: `Bénéficiaire: **${data.beneficiary}**`,
+            color: 0x10b981,
+            fields: [
+                { name: '👤 Employé', value: data.employee, inline: true },
+                { name: '📦 Menus', value: String(total), inline: true },
+                ...fields
+            ],
+            timestamp: new Date().toISOString()
+        };
+        const partnerWebhook = process.env.WEBHOOK_FACTURES; 
+        await sendWebhook(partnerWebhook, { username: 'Hen House - Partenaires', embeds: [embed] });
+        return NextResponse.json({ success: true });
+    }
+
+    // --- 8. SUPPORT ---
+    if (action === 'sendSupport') {
+        const embed = {
+            title: `🆘 Support — ${data.subject}`,
+            color: 0xef4444,
+            fields: [
+                { name: '👤 Employé', value: data.employee, inline: true },
+                { name: '📝 Message', value: data.message, inline: false }
+            ],
+            timestamp: new Date().toISOString()
+        };
+        await sendWebhook(process.env.WEBHOOK_SUPPORT, { username: 'Hen House - Support', embeds: [embed] });
+        return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ success: false, message: 'Action inconnue' });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
