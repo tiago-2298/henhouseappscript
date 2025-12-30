@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= DONNÉES HEN HOUSE =================
-const APP_VERSION = '2025.12.30';
+const APP_VERSION = '2025.11.14';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const WEBHOOKS = {
@@ -14,6 +14,7 @@ const WEBHOOKS = {
   support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
 };
 
+// --- LIVRE DE RECETTES ---
 const RECIPES = {
     "Boeuf bourguignon": "🥩 Boeuf, 🍷 Vin Rouge, 🥕 Carottes, 🧅 Oignons",
     "Saumon Grillé": "🐟 Saumon, 🍋 Citron, 🌿 Aneth",
@@ -21,12 +22,10 @@ const RECIPES = {
     "Filet Mignon": "🥩 Filet, 🍄 Champignons, 🥛 Crème Fraîche",
     "Poulet Rôti": "🍗 Poulet entier, 🥔 Pommes de terre, 🌿 Herbes",
     "Paella Méditerranéenne": "🍚 Riz, 🦐 Fruits de mer, 🍗 Poulet, 🌶️ Safran",
-    "Ribbs": "🍖 Travers de porc, Miel, Sauce fumée",
-    "Steak 'Potatoes": "🥩 Steak, 🍟 Grosses frites, 🧂 Poivre",
-    "Rougail Saucisse": "🌭 Saucisses, 🍅 Tomates, 🍚 Riz, 🌶️ Piment",
+    "Ribbs": "🍖 Travers de porc, 🍯 Miel, 🌭 Sauce fumée",
     "Tiramisu Fraise": "🍓 Fraises, 🧀 Mascarpone, 🍪 Biscuits",
-    "Los Churros Caramel": "🍩 Pâte frite, 🍬 Caramel",
-    "Tourte Myrtille": "🥧 Myrtilles, Pâte brisée"
+    "Los Churros Caramel": "🍩 Pâte frite, 🍬 Sauce Caramel",
+    "Tourte Myrtille": "🫐 Myrtilles, 🥧 Pâte brisée, 🥚 Oeuf"
 };
 
 const PRODUCTS = {
@@ -34,7 +33,9 @@ const PRODUCTS = {
   desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
   boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
   menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
-  alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
+  menus_groupe: ['Menu Le Nid Végé 5+1','Menu Grillé du Nord 5+1','Menu Fraîcheur Méditerranéenne 5+1',"Menu Flamme d OR 5+1",'Menu Voyage Sucré-Salé 5+1','Menu Happy Hen House 5+1'],
+  alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax'],
+  services: ['Livraison NORD','Livraison SUD']
 };
 
 const PRICE_LIST = {
@@ -42,7 +43,9 @@ const PRICE_LIST = {
   'Brochettes de fruits frais':25,'Mousse au café':25,'Tiramisu Fraise':30,'Los Churros Caramel':35,'Tourte Myrtille':35,
   'Café':15,'Jus de raisin rouge':30,'Cidre Pression':10,'Berry Fizz':30,"Jus d'orange":35,'Jus de raisin blanc':30,'Agua Fresca Pasteque':30,"Vin rouge chaud":25,'Lait de poule':30,'Cappuccino':15,'Bière':20, 'Lutinade':20,
   'Menu Le Nid Végé':70,'Menu Grillé du Nord':80,'Menu Fraîcheur Méditerranéenne':95,'Menu Voyage Sucré-Salé':100,'Menu Flamme d OR':110,'Menu Happy Hen House':110,
-  'Cocktail Citron-Myrtille':40,'Verre de Bellini':25,'Verre de Vodka':45,'Verre de Rhum':45,'Verre de Cognac':45,'Verre de Brandy':50,'Verre de Whisky':40,'Verre de Gin':60,'Tequila Citron':50,'Verre Vin Blanc':35,'Verre Vin Rouge':35,'Shot de Tequila':40,'Verre de Champagne':15,'Bouteille de Champagne':100,'Bouteille de Cidre':40,'Gin Fizz Citron':80,'Verre de rosé':25,'Verre de Champomax':30
+  'Menu Le Nid Végé 5+1':350,'Menu Grillé du Nord 5+1':400,'Menu Fraîcheur Méditerranéenne 5+1':475,'Menu Voyage Sucré-Salé 5+1':500,'Menu Flamme d OR 5+1':550,'Menu Happy Hen House 5+1':550,
+  'Cocktail Citron-Myrtille':40,'Verre de Bellini':25,'Verre de Vodka':45,'Verre de Rhum':45,'Verre de Cognac':45,'Verre de Brandy':50,'Verre de Whisky':40,'Verre de Gin':60,'Tequila Citron':50,'Verre Vin Blanc':35,'Verre Vin Rouge':35,'Shot de Tequila':40,'Verre de Champagne':15,'Bouteille de Champagne':100,'Bouteille de Cidre':40,'Gin Fizz Citron':80,'Verre de rosé':25,'Verre de Champomax':30,
+  'Livraison NORD':100,'Livraison SUD':150
 };
 
 const VEHICLES = ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'];
@@ -86,13 +89,22 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
         const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'B2:B100' });
         const rows = listRes.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
+
         if (rowIndex === -1) return;
         const realRow = rowIndex + 2; 
         const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-        const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
+
+        const cellRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' 
+        });
+        
         let currentValue = Number(cellRes.data.values?.[0]?.[0] || 0);
         const newValue = currentValue + Number(amountToAdd);
-        await sheets.spreadsheets.values.update({ spreadsheetId: sheetId, range: targetCell, valueInputOption: 'RAW', requestBody: { values: [[newValue]] } });
+
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId, range: targetCell, valueInputOption: 'RAW',
+            requestBody: { values: [[newValue]] }
+        });
     } catch (e) { console.error("Erreur update Sheet:", e); }
 }
 
@@ -104,46 +116,49 @@ export async function POST(request) {
 
     if (!action || action === 'getMeta') {
        const sheets = await getAuthSheets();
-       const res = await sheets.spreadsheets.values.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'A2:H100', valueRenderOption: 'UNFORMATTED_VALUE' });
-       const employees = (res.data.values || []).map(r => ({ nom: r[1], poste: r[2], tel: r[3], ca: Number(r[6]) || 0 })).filter(e => e.nom);
-       return NextResponse.json({ success: true, employees, products: Object.values(PRODUCTS).flat(), productsByCategory: PRODUCTS, recipes: RECIPES, prices: PRICE_LIST, vehicles: VEHICLES, partners: PARTNERS });
+       const res = await sheets.spreadsheets.values.get({
+          spreadsheetId: process.env.GOOGLE_SHEET_ID,
+          range: 'A2:H100',
+          valueRenderOption: 'UNFORMATTED_VALUE'
+       });
+       
+       // Lecture complète : ID (A), NOM (B), POSTE (C), TEL (D), CA (G)
+       const employees = (res.data.values || []).map(r => ({
+           nom: r[1],
+           poste: r[2] || 'Employé',
+           tel: r[3] || 'Non renseigné',
+           ca: Number(r[6]) || 0
+       })).filter(e => e.nom);
+
+       return NextResponse.json({
+        success: true,
+        employees,
+        products: Object.values(PRODUCTS).flat(),
+        productsByCategory: PRODUCTS,
+        recipes: RECIPES,
+        prices: PRICE_LIST,
+        vehicles: VEHICLES,
+        partners: PARTNERS
+      });
     }
 
     if (action === 'sendFactures') {
       const items = data.items || [];
       const grandTotal = items.reduce((s, i) => s + (Math.floor(Number(i.qty)) * Number(PRICE_LIST[i.desc] || 0)), 0);
-      const fields = items.map(i => ({ name: `${i.desc} ×${i.qty}`, value: `${formatAmount(PRICE_LIST[i.desc])} → **${formatAmount(i.qty * PRICE_LIST[i.desc])}**` }));
-      const embed = { title: `🍽️ Facture N°${data.invoiceNumber}`, description: `Déclaration de ${data.employee}`, color: 0xd35400, fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true }, ...fields], timestamp: new Date().toISOString() };
-      await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
+      await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [{ title: `🍽️ Facture N°${data.invoiceNumber}`, color: 0xd35400, fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true }] }] });
       await updateEmployeeStats(data.employee, grandTotal, 'CA');
       return NextResponse.json({ success: true });
     }
 
     if (action === 'sendProduction') {
       const totalQty = data.items.reduce((s, i) => s + Number(i.qty), 0);
-      const fields = data.items.map(i => ({ name: `📦 ${i.product}`, value: `**${i.qty}** unités`, inline: true }));
-      const embed = { title: '📦 Déclaration de Stock', description: `Production par ${data.employee}`, color: 0xe67e22, fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '📊 Total', value: `**${totalQty}**`, inline: true }, ...fields], timestamp: new Date().toISOString() };
-      await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
+      await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [{ title: '📦 Déclaration de Stock', color: 0xe67e22, fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '📊 Total', value: `**${totalQty}**`, inline: true }] }] });
       await updateEmployeeStats(data.employee, totalQty, 'STOCK');
       return NextResponse.json({ success: true });
     }
 
     if (action === 'sendEntreprise') {
-        const totalQty = data.items.reduce((s, i) => s + Number(i.qty), 0);
-        const embed = { title: '🏭 Déclaration Entreprise', description: `Commande ${data.company} par ${data.employee}`, color: 0xf39c12, fields: [{ name: '📊 Total', value: `${totalQty} unités` }], timestamp: new Date().toISOString() };
-        await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
-        return NextResponse.json({ success: true });
-    }
-
-    if (action === 'sendGarage') {
-        const embed = { title: `🚗 Garage - ${data.action}`, color: 0x8e44ad, fields: [{ name: '🚗 Véhicule', value: data.vehicle }, { name: '⛽ Essence', value: `${data.fuel}%` }], timestamp: new Date().toISOString() };
-        await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
-        return NextResponse.json({ success: true });
-    }
-
-    if (action === 'sendExpense') {
-        const embed = { title: `💳 Note de frais — ${data.kind}`, color: 0x10b981, fields: [{ name: '💵 Montant', value: formatAmount(data.amount) }], timestamp: new Date().toISOString() };
-        await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
+        await sendWebhook(WEBHOOKS.entreprise, { username: 'Hen House - Entreprise', embeds: [{ title: '🏭 Commande Entreprise', description: `Commande ${data.company} par ${data.employee}`, color: 0xf39c12 }] });
         return NextResponse.json({ success: true });
     }
 
