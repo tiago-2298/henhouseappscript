@@ -5,14 +5,12 @@ import { useState, useEffect } from 'react';
 const Icon = ({ name, size = 20, className = "" }) => {
   const icons = {
     dashboard: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
-    receipt: <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />,
+    receipt: <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z" />,
     package: <path d="M16.5 9.4 7.5 4.21M21 16v-6a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 10v6a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.3 7l8.7 5 8.7-5M12 22v-9" />,
     building: <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2 M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2 M10 6h4 M10 10h4 M10 14h4 M10 18h4" />,
     handshake: <path d="m11 17 2 2a1 1 0 1 0 3-3M11 14l-3-3m8-2-9 9a2 2 0 0 0 0 2.83 2 2 0 0 0 2.83 0l9-9a2 2 0 0 0 0-2.83 2 2 0 0 0-2.83 0" />,
     creditCard: <path d="M2 10h20M2 6h20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z" />,
     car: <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2 M5 17h2v-6H5v6ZM15 17h2v-6h-2v6Z" />,
-    
-    // CORRECTION ICI : On utilise un fragment <>...</> pour grouper les éléments SVG
     lifeBuoy: (
       <>
         <circle cx="12" cy="12" r="10" />
@@ -81,7 +79,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('Tous');
   const [toast, setToast] = useState(null);
-  const [darkMode, setDarkMode] = useState(true); // Par défaut en Dark Mode
+  const [darkMode, setDarkMode] = useState(true);
   
   // États formulaires
   const [invNum, setInvNum] = useState('');
@@ -170,10 +168,12 @@ export default function Home() {
         if(json.success) {
             notify("Succès", "Action validée !", "success");
             if(['sendFactures'].includes(action)) setCurrentTab('home');
-            // Reset forms
+            
+            // Reset forms after success
             setCart([]); setInvNum('');
             setStockItems([{product:(data.products[0]), qty:1}]);
             setEntItems([{product:(data.products[0]), qty:1}]); setEntName('');
+            setParItems([{menu:(data.partners.companies[parCompany]?.menus[0].name), qty:1}]); setParNum('');
             setSupData({sub:'Autre', msg:''});
             setExpData({...expData, amt:''});
         } else {
@@ -181,6 +181,30 @@ export default function Home() {
         }
     } catch(e) { notify("Erreur", e.message, "error"); }
   };
+
+  // --- VALIDATION HANDLERS ---
+
+  const handleSendInvoice = () => {
+      if(!invNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
+      if(cart.length === 0) return notify("Erreur", "Le panier est vide", "error");
+      sendForm('sendFactures', {invoiceNumber:invNum, items:cart.map(x=>({desc:x.name, qty:x.qty}))});
+  };
+
+  const handleSendEnterprise = () => {
+      if(!entName.trim()) return notify("Erreur", "Le nom de l'entreprise est OBLIGATOIRE", "error");
+      sendForm('sendEntreprise', {company:entName, items:entItems});
+  };
+
+  const handleSendPartner = () => {
+      if(!parNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
+      sendForm('sendPartnerOrder', {company:parCompany, beneficiary:parBenef, invoiceNumber:parNum, items:parItems});
+  };
+
+  const handleSendExpense = () => {
+      if(!expData.amt || expData.amt <= 0) return notify("Erreur", "Le montant est OBLIGATOIRE", "error");
+      sendForm('sendExpense', {vehicle:expData.veh, kind:expData.kind, amount:expData.amt});
+  };
+
 
   if(loading) return (
       <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1115', color:'white'}}>
@@ -458,7 +482,7 @@ export default function Home() {
                             </div>
                         ))}
                         <button className="btn btn-text" onClick={()=>setEntItems([...entItems, {product:data.products[0], qty:1}])}>+ Ajouter ligne</button>
-                        <button className="btn btn-primary" style={{marginTop:20}} onClick={()=>sendForm('sendEntreprise', {company:entName, items:entItems})}>Valider</button>
+                        <button className="btn btn-primary" style={{marginTop:20}} onClick={handleSendEnterprise}>Valider</button>
                     </div>
                 )}
 
@@ -488,7 +512,7 @@ export default function Home() {
                             </div>
                         ))}
                          <button className="btn btn-text" onClick={()=>setParItems([...parItems, {menu:data.partners.companies[parCompany].menus[0].name, qty:1}])}>+ Menu</button>
-                         <button className="btn btn-primary" style={{marginTop:20}} onClick={()=>sendForm('sendPartnerOrder', {company:parCompany, beneficiary:parBenef, invoiceNumber:parNum, items:parItems})}>Confirmer</button>
+                         <button className="btn btn-primary" style={{marginTop:20}} onClick={handleSendPartner}>Confirmer</button>
                     </div>
                 )}
 
@@ -498,7 +522,7 @@ export default function Home() {
                         <div className="inp-group"><label className="inp-label">Véhicule</label><select className="inp-field" value={expData.veh} onChange={e=>setExpData({...expData, veh:e.target.value})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select></div>
                         <div className="inp-group"><label className="inp-label">Type</label><select className="inp-field" value={expData.kind} onChange={e=>setExpData({...expData, kind:e.target.value})}><option>Essence</option><option>Réparation</option></select></div>
                         <div className="inp-group"><label className="inp-label">Montant ($)</label><input type="number" className="inp-field" value={expData.amt} onChange={e=>setExpData({...expData, amt:e.target.value})} /></div>
-                        <button className="btn btn-primary" onClick={()=>sendForm('sendExpense', {vehicle:expData.veh, kind:expData.kind, amount:expData.amt})}>Déclarer</button>
+                        <button className="btn btn-primary" onClick={handleSendExpense}>Déclarer</button>
                     </div>
                 )}
                 
@@ -555,7 +579,7 @@ export default function Home() {
                         <div style={{display:'flex', justifyContent:'space-between', fontSize:'1.4rem', fontWeight:800, marginBottom:15}}>
                             <span>Total</span><span style={{color:'var(--primary)'}}>${(cart.reduce((a,b)=>a+b.qty*b.pu, 0)).toFixed(2)}</span>
                         </div>
-                        <button className="btn btn-primary" onClick={()=>sendForm('sendFactures', {invoiceNumber:invNum, items:cart.map(x=>({desc:x.name, qty:x.qty}))})}>
+                        <button className="btn btn-primary" onClick={handleSendInvoice}>
                             Valider la vente
                         </button>
                     </div>
