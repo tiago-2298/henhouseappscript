@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-// --- BIBLIOTHÈQUE D'ICÔNES (SVG intégrés pour éviter les installations npm) ---
+// --- BIBLIOTHÈQUE D'ICÔNES (SVG intégrés) ---
 const Icon = ({ name, size = 20, className = "" }) => {
   const icons = {
     dashboard: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
@@ -75,7 +75,6 @@ export default function Home() {
 
   // INITIALISATION
   useEffect(() => {
-    // Application du thème au démarrage
     document.documentElement.setAttribute('data-theme', 'dark');
 
     fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) })
