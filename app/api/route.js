@@ -26,7 +26,7 @@ export async function POST(request) {
     // On lit les colonnes A et B de la ligne 2 à 100
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'A2:B100', 
+      range: 'B1:B', 
     });
 
     const rows = response.data.values;
@@ -53,3 +53,4 @@ export async function POST(request) {
     );
   }
 }
+
