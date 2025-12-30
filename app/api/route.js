@@ -1,11 +1,11 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= DONNÉES HEN HOUSE (Copie conforme de ton script) =================
+// ================= DONNÉES HEN HOUSE =================
 const APP_VERSION = '2025.11.13';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
-// TES WEBHOOKS (Hardcodés pour que ça marche direct sans réglage .env compliqué pour l'instant)
+// TES WEBHOOKS DISCORD
 const WEBHOOKS = {
   factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
   stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
@@ -65,7 +65,6 @@ async function sendWebhook(url, payload) {
 
 async function getEmployeesFromGoogle() {
   try {
-    // Nettoyage de la clé pour Vercel
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
       ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
       : undefined;
@@ -79,7 +78,7 @@ async function getEmployeesFromGoogle() {
 
     const sheets = google.sheets({ version: 'v4', auth });
     
-    // Lecture colonne B (Noms) à partir de la ligne 2
+    // Lecture colonne B
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'B2:B', 
@@ -88,7 +87,6 @@ async function getEmployeesFromGoogle() {
     const rows = response.data.values;
     if (!rows) return [];
 
-    // On ne garde que les noms non vides
     return rows.map(r => r[0]).filter(n => n && n.trim() !== '').sort((a,b)=>a.localeCompare(b,'fr'));
 
   } catch (error) {
@@ -197,7 +195,7 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- 5. GARAGE ---
+    // --- 5. GARAGE (CORRIGÉ ICI) ---
     if (action === 'sendGarage') {
       const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
       const embed = {
@@ -253,7 +251,6 @@ export async function POST(request) {
             timestamp: new Date().toISOString()
         };
         
-        // On récupère le webhook spécifique du partenaire
         const companyData = PARTNERS.companies[data.company];
         const targetWebhook = companyData ? companyData.webhook : WEBHOOKS.factures;
         
