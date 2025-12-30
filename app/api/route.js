@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= 1. DONNÉES HEN HOUSE =================
+// ================= DONNÉES HEN HOUSE =================
 const APP_VERSION = '2025.11.13';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
@@ -40,7 +40,7 @@ const PARTNERS = {
   },
 };
 
-// ================= 2. FONCTIONS UTILES =================
+// ================= FONCTIONS UTILES =================
 
 function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
 
@@ -51,7 +51,6 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-// Fonction Google Sheets
 async function getEmployeesFromGoogle() {
   try {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
@@ -67,7 +66,7 @@ async function getEmployeesFromGoogle() {
 
     const sheets = google.sheets({ version: 'v4', auth });
     
-    // Lecture colonne B
+    // On lit la colonne B (Prénoms/Noms) à partir de la ligne 2
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'B2:B', 
@@ -89,7 +88,7 @@ async function getEmployeesFromGoogle() {
   }
 }
 
-// ================= 3. ROUTEUR API PRINCIPAL =================
+// ================= ROUTEUR API PRINCIPAL =================
 export async function POST(request) {
   try {
     let body = {};
@@ -97,7 +96,7 @@ export async function POST(request) {
 
     const { action, data } = body;
 
-    // --- INITIALISATION (Liste des employés) ---
+    // --- INITIALISATION ---
     if (!action) {
        const employees = await getEmployeesFromGoogle();
        return NextResponse.json(employees);
@@ -194,10 +193,10 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- 5. GARAGE ---
+    // --- 5. GARAGE (ERREUR CORRIGÉE ICI) ---
     if (action === 'sendGarage') {
       const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
-      // CORRECTION DE L'ERREUR ICI :
+      
       const embed = {
         title: `🚗 Garage - ${data.action}`,
         description: `Véhicule traité par ${data.employee}`,
