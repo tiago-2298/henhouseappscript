@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= DONNÉES HEN HOUSE =================
-const APP_VERSION = '2025.11.14'; 
+const APP_VERSION = '2025.11.16'; 
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const WEBHOOKS = {
@@ -12,16 +12,6 @@ const WEBHOOKS = {
   garage:     'https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9',
   expenses:   'https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R',
   support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
-};
-
-// --- LIVRE DE RECETTES ---
-const RECIPES = {
-    "Boeuf bourguignon": "🥩 Boeuf, 🍷 Vin Rouge, 🥕 Carottes, 🧅 Oignons",
-    "Saumon Grillé": "🐟 Saumon, 🍋 Citron, 🌿 Aneth",
-    "Wings épicé": "🍗 Ailes de poulet, 🌶️ Épices, 🍯 Sauce BBQ",
-    "Filet Mignon": "🥩 Filet, 🍄 Champignons, 🥛 Crème Fraîche",
-    "Tiramisu Fraise": "🍓 Fraises, 🧀 Mascarpone, 🍪 Biscuits",
-    "Los Churros Caramel": "🍩 Pâte frite, 🍬 Caramel"
 };
 
 const PRODUCTS = {
@@ -66,7 +56,7 @@ const PARTNERS = {
 function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
 
 async function sendWebhook(url, payload) {
-  if (!url) { console.error("Webhook manquant !"); return; }
+  if (!url) return;
   try {
     await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   } catch (e) { console.error("Erreur Webhook:", e); }
@@ -83,7 +73,6 @@ async function getAuthSheets() {
     return google.sheets({ version: 'v4', auth });
 }
 
-// Mise à jour CA (Col G) ou Stock (Col H)
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
     try {
         const sheets = await getAuthSheets();
@@ -91,7 +80,6 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
         const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'B2:B100' });
         const rows = listRes.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
-
         if (rowIndex === -1) return; 
 
         const realRow = rowIndex + 2; 
@@ -109,10 +97,10 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     } catch (e) { console.error("Erreur update Sheet:", e); }
 }
 
+// ✅ MODIFICATION ICI : On récupère Nom (B), Poste (C), Tel (D), CA (G)
 async function getEmployeesFromGoogle() {
   try {
     const sheets = await getAuthSheets();
-    // Lecture de B (Nom), C (Poste), D (Tel) et G (CA)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'A2:H100', 
@@ -147,7 +135,6 @@ export async function POST(request) {
         employees,
         products: Object.values(PRODUCTS).flat(),
         productsByCategory: PRODUCTS,
-        recipes: RECIPES,
         prices: PRICE_LIST,
         vehicles: VEHICLES,
         partners: PARTNERS,
@@ -215,7 +202,7 @@ export async function POST(request) {
         fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }],
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
+      await sendWebhook(WEBHOOKS.garage, { username: 'Hen House - Garage', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
@@ -223,10 +210,10 @@ export async function POST(request) {
       const embed = {
         title: `💳 Note de frais — ${data.kind}`,
         color: 0x10b981,
-        fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💵 Montant', value: formatAmount(data.amount), inline: true }],
+        fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '💵 Montant', value: formatAmount(data.amount), inline: true }],
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
+      await sendWebhook(WEBHOOKS.expenses, { username: 'Hen House - Dépenses', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
@@ -237,7 +224,7 @@ export async function POST(request) {
             fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '📝 Message', value: data.message, inline: false }],
             timestamp: new Date().toISOString()
         };
-        await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
+        await sendWebhook(WEBHOOKS.support, { username: 'Hen House - Support', embeds: [embed] });
         return NextResponse.json({ success: true });
     }
 
