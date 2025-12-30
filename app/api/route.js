@@ -64,12 +64,7 @@ async function sendWebhook(url, payload) {
 
 async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    const auth = new google.auth.JWT(
-      process.env.GOOGLE_CLIENT_EMAIL,
-      null,
-      privateKey,
-      ['https://www.googleapis.com/auth/spreadsheets']
-    );
+    const auth = new google.auth.JWT(process.env.GOOGLE_CLIENT_EMAIL, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
     return google.sheets({ version: 'v4', auth });
 }
 
@@ -97,7 +92,6 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     } catch (e) { console.error("Erreur update Sheet:", e); }
 }
 
-// ✅ MODIFICATION ICI : On récupère Nom (B), Poste (C), Tel (D), CA (G)
 async function getEmployeesFromGoogle() {
   try {
     const sheets = await getAuthSheets();
@@ -120,7 +114,6 @@ async function getEmployeesFromGoogle() {
   }
 }
 
-// ================= ROUTEUR API PRINCIPAL =================
 export async function POST(request) {
   try {
     let body = {};
@@ -191,7 +184,7 @@ export async function POST(request) {
         fields: [{ name: '🏢 Entreprise', value: data.company, inline: true }, { name: '📊 Total', value: `**${totalQuantity}**`, inline: true }],
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
+      await sendWebhook(WEBHOOKS.entreprise, { username: 'Hen House - Entreprise', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
@@ -230,6 +223,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: false, message: 'Action inconnue' });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
