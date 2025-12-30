@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= DONNÉES HEN HOUSE =================
-const APP_VERSION = '2025.11.14'; // J'ai monté la version pour être sûr que ça update
+const APP_VERSION = '2025.11.15'; // Version mise à jour
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 // TES WEBHOOKS DISCORD
@@ -63,7 +63,6 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-// --- GESTION GOOGLE SHEETS ---
 async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
       ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
@@ -78,78 +77,63 @@ async function getAuthSheets() {
     return google.sheets({ version: 'v4', auth });
 }
 
-// ✅ CORRECTION MAJEURE ICI : Lecture brute des chiffres
-async function updateEmployeeStats(employeeName, amountToAdd, type) {
-    try {
-        const sheets = await getAuthSheets();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-
-        // 1. Lire les noms (Col B) pour trouver la ligne
-        const listRes = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'B2:B100',
-        });
-        
-        const rows = listRes.data.values || [];
-        // On cherche le nom EXACT (en retirant les espaces inutiles)
-        const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
-
-        if (rowIndex === -1) {
-            console.error(`Employé introuvable: ${employeeName}`);
-            return; 
-        }
-
-        const realRow = rowIndex + 2; // Conversion index -> numéro de ligne Excel
-
-        // 2. Colonne à modifier : G pour CA, H pour Stock
-        const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-
-        // 3. Lire la valeur actuelle EN MODE BRUT (UNFORMATTED_VALUE)
-        // Cela permet de récupérer "100" au lieu de "$100.00"
-        const cellRes = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: targetCell,
-            valueRenderOption: 'UNFORMATTED_VALUE' 
-        });
-        
-        // On s'assure que c'est un nombre
-        let currentValue = cellRes.data.values?.[0]?.[0];
-        if (!currentValue || isNaN(Number(currentValue))) {
-            currentValue = 0;
-        }
-        currentValue = Number(currentValue);
-
-        const newValue = currentValue + Number(amountToAdd);
-
-        // 4. Écrire la nouvelle valeur
-        await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId,
-            range: targetCell,
-            valueInputOption: 'RAW',
-            requestBody: { values: [[newValue]] }
-        });
-
-        console.log(`Succès: ${employeeName} | ${type} | Ancien: ${currentValue} + Ajout: ${amountToAdd} = Nouveau: ${newValue}`);
-
-    } catch (e) {
-        console.error("Erreur CRITIQUE update Sheet:", e);
-    }
-}
-
+// ✅ NOUVEAU : Récupère TOUTES les infos (Rôles, CA, Téléphone)
 async function getEmployeesFromGoogle() {
   try {
     const sheets = await getAuthSheets();
+    // On lit de A2 à H pour avoir : A(ID), B(Nom), C(Poste), D(Tel)... G(CA)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'B2:B', 
+      range: 'A2:H', 
+      valueRenderOption: 'UNFORMATTED_VALUE'
     });
+    
     const rows = response.data.values;
     if (!rows) return [];
-    return rows.map(r => r[0]).filter(n => n && n.trim() !== '').sort((a,b)=>a.localeCompare(b,'fr'));
+
+    // On transforme le tableau en objets utilisables par le site
+    return rows.map(r => ({
+        nom: r[1] || '',      // Colonne B : Nom
+        poste: r[2] || 'Employé', // Colonne C : Poste
+        tel: r[3] || 'Non renseigné', // Colonne D : Téléphone
+        ca: Number(r[6]) || 0 // Colonne G : Chiffre d'Affaires
+    }))
+    .filter(emp => emp.nom && emp.nom.trim() !== '')
+    .sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+
   } catch (error) {
     console.error("Erreur Google:", error);
     return [];
   }
+}
+
+async function updateEmployeeStats(employeeName, amountToAdd, type) {
+    try {
+        const sheets = await getAuthSheets();
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+        const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'B2:B100' });
+        const rows = listRes.data.values || [];
+        const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
+
+        if (rowIndex === -1) return;
+
+        const realRow = rowIndex + 2; 
+        const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
+
+        const cellRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' 
+        });
+        
+        let currentValue = Number(cellRes.data.values?.[0]?.[0] || 0);
+        if (isNaN(currentValue)) currentValue = 0;
+
+        const newValue = currentValue + Number(amountToAdd);
+
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId, range: targetCell, valueInputOption: 'RAW',
+            requestBody: { values: [[newValue]] }
+        });
+    } catch (e) { console.error("Erreur update Sheet:", e); }
 }
 
 // ================= ROUTEUR API PRINCIPAL =================
@@ -160,13 +144,13 @@ export async function POST(request) {
 
     const { action, data } = body;
 
-    // --- INITIALISATION ---
+    // --- INITIALISATION (Renvoie maintenant les rôles et CA pour le podium) ---
     if (!action || action === 'getMeta') {
        const employees = await getEmployeesFromGoogle();
        return NextResponse.json({
         success: true,
         version: APP_VERSION,
-        employees,
+        employees, // Contient maintenant {nom, poste, tel, ca}
         products: Object.values(PRODUCTS).flat(),
         productsByCategory: PRODUCTS,
         prices: PRICE_LIST,
@@ -180,7 +164,6 @@ export async function POST(request) {
     if (action === 'sendFactures') {
       const items = data.items || [];
       const invoiceNumber = data.invoiceNumber || '???';
-      
       let grandTotal = 0;
       const fields = items.map(i => {
         const qty = Math.floor(Number(i.qty));
@@ -204,14 +187,9 @@ export async function POST(request) {
         timestamp: new Date().toISOString()
       };
 
-      // 1. Discord
       await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
-      
-      // 2. Google Sheet (Mise à jour CA)
-      // On le fait en arrière-plan (sans await bloquant strict) mais on attend quand même pour la réponse
       await updateEmployeeStats(data.employee, grandTotal, 'CA');
-
-      return NextResponse.json({ success: true, message: 'Facture envoyée et CA mis à jour' });
+      return NextResponse.json({ success: true, message: 'Facture envoyée' });
     }
 
     // --- 3. STOCK ---
@@ -233,10 +211,7 @@ export async function POST(request) {
       };
 
       await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
-      
-      // Mise à jour STOCK sur Google Sheet
       await updateEmployeeStats(data.employee, totalQuantity, 'STOCK');
-
       return NextResponse.json({ success: true });
     }
 
@@ -317,10 +292,8 @@ export async function POST(request) {
             ],
             timestamp: new Date().toISOString()
         };
-        
         const companyData = PARTNERS.companies[data.company];
         const targetWebhook = companyData ? companyData.webhook : WEBHOOKS.factures;
-        
         await sendWebhook(targetWebhook, { username: 'Hen House - Partenaires', embeds: [embed] });
         return NextResponse.json({ success: true });
     }
