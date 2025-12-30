@@ -63,8 +63,8 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-async function getEmployeesFromGoogle() {
-  try {
+// --- GESTION GOOGLE SHEETS ---
+async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
       ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
       : undefined;
@@ -73,26 +73,74 @@ async function getEmployeesFromGoogle() {
       process.env.GOOGLE_CLIENT_EMAIL,
       null,
       privateKey,
-      ['https://www.googleapis.com/auth/spreadsheets.readonly']
+      ['https://www.googleapis.com/auth/spreadsheets']
     );
+    return google.sheets({ version: 'v4', auth });
+}
 
-    const sheets = google.sheets({ version: 'v4', auth });
-    
-    // Lecture colonne B
+async function getEmployeesFromGoogle() {
+  try {
+    const sheets = await getAuthSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'B2:B', 
     });
-
     const rows = response.data.values;
     if (!rows) return [];
-
     return rows.map(r => r[0]).filter(n => n && n.trim() !== '').sort((a,b)=>a.localeCompare(b,'fr'));
-
   } catch (error) {
     console.error("Erreur Google:", error);
     return [];
   }
+}
+
+// ✅ NOUVELLE FONCTION : Met à jour le CA (Col G) ou Stock (Col H)
+async function updateEmployeeStats(employeeName, amountToAdd, type) {
+    try {
+        const sheets = await getAuthSheets();
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+
+        // 1. Lire les noms (Col B) pour trouver la ligne
+        const listRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'B2:B100', // On cherche dans les 100 premières lignes
+        });
+        
+        const rows = listRes.data.values || [];
+        // Trouver l'index de la ligne (Attention: range commence à la ligne 2, donc index 0 = ligne 2)
+        const rowIndex = rows.findIndex(r => r[0] === employeeName);
+
+        if (rowIndex === -1) return; // Employé pas trouvé
+
+        const realRow = rowIndex + 2; // Conversion index -> numéro de ligne Excel
+
+        // 2. Déterminer la colonne à modifier
+        // G = CA (Index 6 si A=0), H = Stock (Index 7)
+        // Mais en notation A1 : G{row} ou H{row}
+        const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
+
+        // 3. Lire la valeur actuelle de cette cellule
+        const cellRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: targetCell
+        });
+        
+        const currentValue = parseFloat(cellRes.data.values?.[0]?.[0] || '0');
+        const newValue = currentValue + parseFloat(amountToAdd);
+
+        // 4. Écrire la nouvelle valeur
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: targetCell,
+            valueInputOption: 'RAW',
+            requestBody: { values: [[newValue]] }
+        });
+
+        console.log(`Updated ${employeeName}: ${type} +${amountToAdd} = ${newValue}`);
+
+    } catch (e) {
+        console.error("Erreur update Sheet:", e);
+    }
 }
 
 // ================= ROUTEUR API PRINCIPAL =================
@@ -103,7 +151,7 @@ export async function POST(request) {
 
     const { action, data } = body;
 
-    // --- INITIALISATION / META ---
+    // --- INITIALISATION ---
     if (!action || action === 'getMeta') {
        const employees = await getEmployeesFromGoogle();
        return NextResponse.json({
@@ -119,7 +167,7 @@ export async function POST(request) {
       });
     }
 
-    // --- 2. FACTURES ---
+    // --- 2. FACTURES (Met à jour le C.A. sur Google Sheet) ---
     if (action === 'sendFactures') {
       const items = data.items || [];
       const invoiceNumber = data.invoiceNumber || '???';
@@ -147,11 +195,16 @@ export async function POST(request) {
         timestamp: new Date().toISOString()
       };
 
+      // Envoi Discord
       await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
+      
+      // ✅ MISE À JOUR GOOGLE SHEET (CA)
+      await updateEmployeeStats(data.employee, grandTotal, 'CA');
+
       return NextResponse.json({ success: true, message: 'Facture envoyée' });
     }
 
-    // --- 3. STOCK ---
+    // --- 3. STOCK (Met à jour le Stock sur Google Sheet) ---
     if (action === 'sendProduction') {
       const items = data.items || [];
       const totalQuantity = items.reduce((s,i) => s + Number(i.qty), 0);
@@ -170,6 +223,10 @@ export async function POST(request) {
       };
 
       await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
+
+      // ✅ MISE À JOUR GOOGLE SHEET (Stock)
+      await updateEmployeeStats(data.employee, totalQuantity, 'STOCK');
+
       return NextResponse.json({ success: true });
     }
 
@@ -195,7 +252,7 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- 5. GARAGE (CORRIGÉ ICI) ---
+    // --- 5. GARAGE ---
     if (action === 'sendGarage') {
       const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
       const embed = {
