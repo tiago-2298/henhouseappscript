@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= DONNÉES HEN HOUSE =================
-const APP_VERSION = '2025.11.14';
+const APP_VERSION = '2025.11.14'; 
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const WEBHOOKS = {
@@ -20,12 +20,8 @@ const RECIPES = {
     "Saumon Grillé": "🐟 Saumon, 🍋 Citron, 🌿 Aneth",
     "Wings épicé": "🍗 Ailes de poulet, 🌶️ Épices, 🍯 Sauce BBQ",
     "Filet Mignon": "🥩 Filet, 🍄 Champignons, 🥛 Crème Fraîche",
-    "Poulet Rôti": "🍗 Poulet entier, 🥔 Pommes de terre, 🌿 Herbes",
-    "Paella Méditerranéenne": "🍚 Riz, 🦐 Fruits de mer, 🍗 Poulet, 🌶️ Safran",
-    "Ribbs": "🍖 Travers de porc, 🍯 Miel, 🌭 Sauce fumée",
     "Tiramisu Fraise": "🍓 Fraises, 🧀 Mascarpone, 🍪 Biscuits",
-    "Los Churros Caramel": "🍩 Pâte frite, 🍬 Sauce Caramel",
-    "Tourte Myrtille": "🫐 Myrtilles, 🥧 Pâte brisée, 🥚 Oeuf"
+    "Los Churros Caramel": "🍩 Pâte frite, 🍬 Caramel"
 };
 
 const PRODUCTS = {
@@ -70,7 +66,7 @@ const PARTNERS = {
 function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
 
 async function sendWebhook(url, payload) {
-  if (!url) return;
+  if (!url) { console.error("Webhook manquant !"); return; }
   try {
     await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   } catch (e) { console.error("Erreur Webhook:", e); }
@@ -78,10 +74,16 @@ async function sendWebhook(url, payload) {
 
 async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    const auth = new google.auth.JWT(process.env.GOOGLE_CLIENT_EMAIL, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+    const auth = new google.auth.JWT(
+      process.env.GOOGLE_CLIENT_EMAIL,
+      null,
+      privateKey,
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
     return google.sheets({ version: 'v4', auth });
 }
 
+// Mise à jour CA (Col G) ou Stock (Col H)
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
     try {
         const sheets = await getAuthSheets();
@@ -90,15 +92,14 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
         const rows = listRes.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
 
-        if (rowIndex === -1) return;
+        if (rowIndex === -1) return; 
+
         const realRow = rowIndex + 2; 
         const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-
-        const cellRes = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' 
-        });
+        const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
         
         let currentValue = Number(cellRes.data.values?.[0]?.[0] || 0);
+        if (isNaN(currentValue)) currentValue = 0;
         const newValue = currentValue + Number(amountToAdd);
 
         await sheets.spreadsheets.values.update({
@@ -108,6 +109,30 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     } catch (e) { console.error("Erreur update Sheet:", e); }
 }
 
+async function getEmployeesFromGoogle() {
+  try {
+    const sheets = await getAuthSheets();
+    // Lecture de B (Nom), C (Poste), D (Tel) et G (CA)
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: 'A2:H100', 
+      valueRenderOption: 'UNFORMATTED_VALUE'
+    });
+    const rows = response.data.values;
+    if (!rows) return [];
+    return rows.map(r => ({
+        nom: r[1],
+        poste: r[2] || 'Employé',
+        tel: r[3] || 'Non renseigné',
+        ca: Number(r[6]) || 0
+    })).filter(n => n.nom);
+  } catch (error) {
+    console.error("Erreur Google:", error);
+    return [];
+  }
+}
+
+// ================= ROUTEUR API PRINCIPAL =================
 export async function POST(request) {
   try {
     let body = {};
@@ -115,50 +140,104 @@ export async function POST(request) {
     const { action, data } = body;
 
     if (!action || action === 'getMeta') {
-       const sheets = await getAuthSheets();
-       const res = await sheets.spreadsheets.values.get({
-          spreadsheetId: process.env.GOOGLE_SHEET_ID,
-          range: 'A2:H100',
-          valueRenderOption: 'UNFORMATTED_VALUE'
-       });
-       
-       // Lecture complète : ID (A), NOM (B), POSTE (C), TEL (D), CA (G)
-       const employees = (res.data.values || []).map(r => ({
-           nom: r[1],
-           poste: r[2] || 'Employé',
-           tel: r[3] || 'Non renseigné',
-           ca: Number(r[6]) || 0
-       })).filter(e => e.nom);
-
+       const employees = await getEmployeesFromGoogle();
        return NextResponse.json({
         success: true,
+        version: APP_VERSION,
         employees,
         products: Object.values(PRODUCTS).flat(),
         productsByCategory: PRODUCTS,
         recipes: RECIPES,
         prices: PRICE_LIST,
         vehicles: VEHICLES,
-        partners: PARTNERS
+        partners: PARTNERS,
+        currencySymbol: CURRENCY.symbol
       });
     }
 
     if (action === 'sendFactures') {
       const items = data.items || [];
-      const grandTotal = items.reduce((s, i) => s + (Math.floor(Number(i.qty)) * Number(PRICE_LIST[i.desc] || 0)), 0);
-      await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [{ title: `🍽️ Facture N°${data.invoiceNumber}`, color: 0xd35400, fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true }] }] });
+      const invoiceNumber = data.invoiceNumber || '???';
+      let grandTotal = 0;
+      const fields = items.map(i => {
+        const qty = Math.floor(Number(i.qty));
+        const price = Number(PRICE_LIST[i.desc] || 0);
+        const total = qty * price;
+        grandTotal += total;
+        return { name: `${i.desc} ×${qty}`, value: `${formatAmount(price)} → **${formatAmount(total)}**`, inline: false };
+      });
+
+      const embed = {
+        title: `🍽️ Facture N°${invoiceNumber}`,
+        description: `Déclaration de ${data.employee}`,
+        color: 0xd35400,
+        fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true }, ...fields],
+        footer: { text: `Hen House v${APP_VERSION}`, icon_url:'https://i.goopics.net/dskmxi.png' },
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
       await updateEmployeeStats(data.employee, grandTotal, 'CA');
       return NextResponse.json({ success: true });
     }
 
     if (action === 'sendProduction') {
-      const totalQty = data.items.reduce((s, i) => s + Number(i.qty), 0);
-      await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [{ title: '📦 Déclaration de Stock', color: 0xe67e22, fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '📊 Total', value: `**${totalQty}**`, inline: true }] }] });
-      await updateEmployeeStats(data.employee, totalQty, 'STOCK');
+      const totalQuantity = data.items.reduce((s,i) => s + Number(i.qty), 0);
+      const fields = data.items.map(i => ({ name: `📦 ${i.product}`, value: `**${i.qty}** unités`, inline: true }));
+      const embed = {
+        title: '📦 Déclaration de Stock',
+        description: `Production par ${data.employee}`,
+        color: 0xe67e22,
+        fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '📊 Total', value: `**${totalQuantity}**`, inline: true }, ...fields],
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
+      await updateEmployeeStats(data.employee, totalQuantity, 'STOCK');
       return NextResponse.json({ success: true });
     }
 
     if (action === 'sendEntreprise') {
-        await sendWebhook(WEBHOOKS.entreprise, { username: 'Hen House - Entreprise', embeds: [{ title: '🏭 Commande Entreprise', description: `Commande ${data.company} par ${data.employee}`, color: 0xf39c12 }] });
+      const totalQuantity = data.items.reduce((s,i) => s + Number(i.qty), 0);
+      const embed = {
+        title: '🏭 Déclaration Entreprise',
+        description: `Commande ${data.company} par ${data.employee}`,
+        color: 0xf39c12,
+        fields: [{ name: '🏢 Entreprise', value: data.company, inline: true }, { name: '📊 Total', value: `**${totalQuantity}**`, inline: true }],
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'sendGarage') {
+      const embed = {
+        title: `🚗 Garage - ${data.action}`,
+        color: 0x8e44ad,
+        fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }],
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'sendExpense') {
+      const embed = {
+        title: `💳 Note de frais — ${data.kind}`,
+        color: 0x10b981,
+        fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💵 Montant', value: formatAmount(data.amount), inline: true }],
+        timestamp: new Date().toISOString()
+      };
+      await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'sendSupport') {
+        const embed = {
+            title: `🆘 Support — ${data.subject}`,
+            color: 0xef4444,
+            fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '📝 Message', value: data.message, inline: false }],
+            timestamp: new Date().toISOString()
+        };
+        await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
         return NextResponse.json({ success: true });
     }
 
