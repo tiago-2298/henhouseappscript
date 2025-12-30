@@ -1,9 +1,19 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= DONNÉES HEN HOUSE =================
+// ================= DONNÉES HEN HOUSE (Copie conforme de ton script) =================
 const APP_VERSION = '2025.11.13';
 const CURRENCY = { symbol: '$', code: 'USD' };
+
+// TES WEBHOOKS (Hardcodés pour que ça marche direct sans réglage .env compliqué pour l'instant)
+const WEBHOOKS = {
+  factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
+  stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
+  entreprise: 'https://discord.com/api/webhooks/1389356140957274112/6AcD2wMTkn9_1lnZNpm4fOsXxGk0sZR5us-rWSrbdTBScu6JYbMtWi31No6wbepeg607',
+  garage:     'https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9',
+  expenses:   'https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R',
+  support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
+};
 
 const PRODUCTS = {
   plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
@@ -31,11 +41,13 @@ const PARTNERS = {
   companies: {
     'Biogood': {
       beneficiaries: ['PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago','RH - Jefferson Patt','RE - Gonzales Malya','C - Gilmore Jaden','C - Delgado Madison','C - Mehdi Rousseau'],
-      menus: [{ name: 'Wings + Berry Fizz', catalog: 80 }, { name: 'Ribbs + Agua Fresca Pastèque', catalog: 70 }, { name: 'Saumon + Jus de raisin rouge + Churros Caramel', catalog: 65 }, { name: 'Paella + Jus de raisin blanc', catalog: 65 }]
+      menus: [{ name: 'Wings + Berry Fizz', catalog: 80 }, { name: 'Ribbs + Agua Fresca Pastèque', catalog: 70 }, { name: 'Saumon + Jus de raisin rouge + Churros Caramel', catalog: 65 }, { name: 'Paella + Jus de raisin blanc', catalog: 65 }],
+      webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
     'SASP Nord': {
       beneficiaries: [ 'Agent SASP NORD' ],
-      menus: [{ name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 }, { name: 'Ribs + Berry Fizz', catalog: 65 }]
+      menus: [{ name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 }, { name: 'Ribs + Berry Fizz', catalog: 65 }],
+      webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
     },
   },
 };
@@ -53,6 +65,7 @@ async function sendWebhook(url, payload) {
 
 async function getEmployeesFromGoogle() {
   try {
+    // Nettoyage de la clé pour Vercel
     const privateKey = process.env.GOOGLE_PRIVATE_KEY
       ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
       : undefined;
@@ -66,7 +79,7 @@ async function getEmployeesFromGoogle() {
 
     const sheets = google.sheets({ version: 'v4', auth });
     
-    // On lit la colonne B (Prénoms/Noms) à partir de la ligne 2
+    // Lecture colonne B (Noms) à partir de la ligne 2
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'B2:B', 
@@ -75,12 +88,8 @@ async function getEmployeesFromGoogle() {
     const rows = response.data.values;
     if (!rows) return [];
 
-    return rows.map((row) => ({
-      nom: row[0] || '',     
-      prenom: '',            
-    }))
-    .filter(emp => emp.nom.trim() !== '')
-    .sort((a, b) => a.nom.localeCompare(b.nom));
+    // On ne garde que les noms non vides
+    return rows.map(r => r[0]).filter(n => n && n.trim() !== '').sort((a,b)=>a.localeCompare(b,'fr'));
 
   } catch (error) {
     console.error("Erreur Google:", error);
@@ -96,16 +105,10 @@ export async function POST(request) {
 
     const { action, data } = body;
 
-    // --- INITIALISATION ---
-    if (!action) {
+    // --- INITIALISATION / META ---
+    if (!action || action === 'getMeta') {
        const employees = await getEmployeesFromGoogle();
-       return NextResponse.json(employees);
-    }
-
-    // --- 1. METADATA ---
-    if (action === 'getMeta') {
-      const employees = await getEmployeesFromGoogle();
-      return NextResponse.json({
+       return NextResponse.json({
         success: true,
         version: APP_VERSION,
         employees,
@@ -113,7 +116,8 @@ export async function POST(request) {
         productsByCategory: PRODUCTS,
         prices: PRICE_LIST,
         vehicles: VEHICLES,
-        partners: PARTNERS
+        partners: PARTNERS,
+        currencySymbol: CURRENCY.symbol
       });
     }
 
@@ -141,11 +145,11 @@ export async function POST(request) {
           { name: '📊 Articles', value: `${items.length}`, inline: true },
           ...fields
         ],
-        footer: { text: `Hen House v${APP_VERSION}` },
+        footer: { text: `Hen House v${APP_VERSION}`, icon_url:'https://i.goopics.net/dskmxi.png' },
         timestamp: new Date().toISOString()
       };
 
-      await sendWebhook(process.env.WEBHOOK_FACTURES, { username: 'Hen House - Factures', embeds: [embed] });
+      await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
       return NextResponse.json({ success: true, message: 'Facture envoyée' });
     }
 
@@ -167,7 +171,7 @@ export async function POST(request) {
         timestamp: new Date().toISOString()
       };
 
-      await sendWebhook(process.env.WEBHOOK_STOCK, { username: 'Hen House - Production', embeds: [embed] });
+      await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
@@ -189,14 +193,13 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(process.env.WEBHOOK_ENTREPRISE, { username: 'Hen House - Entreprise', embeds: [embed] });
+      await sendWebhook(WEBHOOKS.entreprise, { username: 'Hen House - Entreprise', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
-    // --- 5. GARAGE (ERREUR CORRIGÉE ICI) ---
+    // --- 5. GARAGE ---
     if (action === 'sendGarage') {
       const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
-      
       const embed = {
         title: `🚗 Garage - ${data.action}`,
         description: `Véhicule traité par ${data.employee}`,
@@ -209,7 +212,7 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(process.env.WEBHOOK_GARAGE, { username: 'Hen House - Garage', embeds: [embed] });
+      await sendWebhook(WEBHOOKS.garage, { username: 'Hen House - Garage', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
@@ -225,7 +228,7 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(process.env.WEBHOOK_EXPENSES, { username: 'Hen House - Dépenses', embeds: [embed] });
+      await sendWebhook(WEBHOOKS.expenses, { username: 'Hen House - Dépenses', embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
@@ -249,8 +252,12 @@ export async function POST(request) {
             ],
             timestamp: new Date().toISOString()
         };
-        const partnerWebhook = process.env.WEBHOOK_FACTURES; 
-        await sendWebhook(partnerWebhook, { username: 'Hen House - Partenaires', embeds: [embed] });
+        
+        // On récupère le webhook spécifique du partenaire
+        const companyData = PARTNERS.companies[data.company];
+        const targetWebhook = companyData ? companyData.webhook : WEBHOOKS.factures;
+        
+        await sendWebhook(targetWebhook, { username: 'Hen House - Partenaires', embeds: [embed] });
         return NextResponse.json({ success: true });
     }
 
@@ -265,7 +272,7 @@ export async function POST(request) {
             ],
             timestamp: new Date().toISOString()
         };
-        await sendWebhook(process.env.WEBHOOK_SUPPORT, { username: 'Hen House - Support', embeds: [embed] });
+        await sendWebhook(WEBHOOKS.support, { username: 'Hen House - Support', embeds: [embed] });
         return NextResponse.json({ success: true });
     }
 
