@@ -1,0 +1,16 @@
+# --- GOOGLE SHEETS (Infos de ton fichier JSON téléchargé sur Google Cloud) ---
+# L'email du robot (client_email)
+GOOGLE_CLIENT_EMAIL="ton-service-account@....iam.gserviceaccount.com"
+# La clé privée (private_key) - Garde bien les \n
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nTaCléIci...\n-----END PRIVATE KEY-----\n"
+
+# ID de ton Google Sheet (celui dans l'URL de ton tableau)
+SPREADSHEET_ID="1OvH1B2s0u-4wX8wgyhHY5j6k02HP0e6pQ5pSybwQbCQ"
+
+# --- WEBHOOKS DISCORD (Mets tes nouveaux liens ici) ---
+WEBHOOK_FACTURES="https://discord.com/api/webhooks/..."
+WEBHOOK_STOCK="https://discord.com/api/webhooks/..."
+WEBHOOK_ENTREPRISE="https://discord.com/api/webhooks/..."
+WEBHOOK_GARAGE="https://discord.com/api/webhooks/..."
+WEBHOOK_EXPENSES="https://discord.com/api/webhooks/..."
+WEBHOOK_SUPPORT="https://discord.com/api/webhooks/..."
