@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEmployees } from '@/app/lib/google';
+import { getEmployees } from '../lib/google';
 
 // ================= DONNÉES HEN HOUSE =================
 const APP_VERSION = '2025.11.13';
@@ -232,4 +232,5 @@ export async function POST(request) {
     console.error(error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
+
 }
