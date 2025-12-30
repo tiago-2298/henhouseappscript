@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= DONNÉES HEN HOUSE =================
-const APP_VERSION = '2025.11.13';
+const APP_VERSION = '2025.11.14'; // J'ai monté la version pour être sûr que ça update
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 // TES WEBHOOKS DISCORD
@@ -78,6 +78,64 @@ async function getAuthSheets() {
     return google.sheets({ version: 'v4', auth });
 }
 
+// ✅ CORRECTION MAJEURE ICI : Lecture brute des chiffres
+async function updateEmployeeStats(employeeName, amountToAdd, type) {
+    try {
+        const sheets = await getAuthSheets();
+        const sheetId = process.env.GOOGLE_SHEET_ID;
+
+        // 1. Lire les noms (Col B) pour trouver la ligne
+        const listRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: 'B2:B100',
+        });
+        
+        const rows = listRes.data.values || [];
+        // On cherche le nom EXACT (en retirant les espaces inutiles)
+        const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
+
+        if (rowIndex === -1) {
+            console.error(`Employé introuvable: ${employeeName}`);
+            return; 
+        }
+
+        const realRow = rowIndex + 2; // Conversion index -> numéro de ligne Excel
+
+        // 2. Colonne à modifier : G pour CA, H pour Stock
+        const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
+
+        // 3. Lire la valeur actuelle EN MODE BRUT (UNFORMATTED_VALUE)
+        // Cela permet de récupérer "100" au lieu de "$100.00"
+        const cellRes = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: targetCell,
+            valueRenderOption: 'UNFORMATTED_VALUE' 
+        });
+        
+        // On s'assure que c'est un nombre
+        let currentValue = cellRes.data.values?.[0]?.[0];
+        if (!currentValue || isNaN(Number(currentValue))) {
+            currentValue = 0;
+        }
+        currentValue = Number(currentValue);
+
+        const newValue = currentValue + Number(amountToAdd);
+
+        // 4. Écrire la nouvelle valeur
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: targetCell,
+            valueInputOption: 'RAW',
+            requestBody: { values: [[newValue]] }
+        });
+
+        console.log(`Succès: ${employeeName} | ${type} | Ancien: ${currentValue} + Ajout: ${amountToAdd} = Nouveau: ${newValue}`);
+
+    } catch (e) {
+        console.error("Erreur CRITIQUE update Sheet:", e);
+    }
+}
+
 async function getEmployeesFromGoogle() {
   try {
     const sheets = await getAuthSheets();
@@ -92,55 +150,6 @@ async function getEmployeesFromGoogle() {
     console.error("Erreur Google:", error);
     return [];
   }
-}
-
-// ✅ NOUVELLE FONCTION : Met à jour le CA (Col G) ou Stock (Col H)
-async function updateEmployeeStats(employeeName, amountToAdd, type) {
-    try {
-        const sheets = await getAuthSheets();
-        const sheetId = process.env.GOOGLE_SHEET_ID;
-
-        // 1. Lire les noms (Col B) pour trouver la ligne
-        const listRes = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: 'B2:B100', // On cherche dans les 100 premières lignes
-        });
-        
-        const rows = listRes.data.values || [];
-        // Trouver l'index de la ligne (Attention: range commence à la ligne 2, donc index 0 = ligne 2)
-        const rowIndex = rows.findIndex(r => r[0] === employeeName);
-
-        if (rowIndex === -1) return; // Employé pas trouvé
-
-        const realRow = rowIndex + 2; // Conversion index -> numéro de ligne Excel
-
-        // 2. Déterminer la colonne à modifier
-        // G = CA (Index 6 si A=0), H = Stock (Index 7)
-        // Mais en notation A1 : G{row} ou H{row}
-        const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-
-        // 3. Lire la valeur actuelle de cette cellule
-        const cellRes = await sheets.spreadsheets.values.get({
-            spreadsheetId: sheetId,
-            range: targetCell
-        });
-        
-        const currentValue = parseFloat(cellRes.data.values?.[0]?.[0] || '0');
-        const newValue = currentValue + parseFloat(amountToAdd);
-
-        // 4. Écrire la nouvelle valeur
-        await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId,
-            range: targetCell,
-            valueInputOption: 'RAW',
-            requestBody: { values: [[newValue]] }
-        });
-
-        console.log(`Updated ${employeeName}: ${type} +${amountToAdd} = ${newValue}`);
-
-    } catch (e) {
-        console.error("Erreur update Sheet:", e);
-    }
 }
 
 // ================= ROUTEUR API PRINCIPAL =================
@@ -167,7 +176,7 @@ export async function POST(request) {
       });
     }
 
-    // --- 2. FACTURES (Met à jour le C.A. sur Google Sheet) ---
+    // --- 2. FACTURES ---
     if (action === 'sendFactures') {
       const items = data.items || [];
       const invoiceNumber = data.invoiceNumber || '???';
@@ -195,16 +204,17 @@ export async function POST(request) {
         timestamp: new Date().toISOString()
       };
 
-      // Envoi Discord
+      // 1. Discord
       await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
       
-      // ✅ MISE À JOUR GOOGLE SHEET (CA)
+      // 2. Google Sheet (Mise à jour CA)
+      // On le fait en arrière-plan (sans await bloquant strict) mais on attend quand même pour la réponse
       await updateEmployeeStats(data.employee, grandTotal, 'CA');
 
-      return NextResponse.json({ success: true, message: 'Facture envoyée' });
+      return NextResponse.json({ success: true, message: 'Facture envoyée et CA mis à jour' });
     }
 
-    // --- 3. STOCK (Met à jour le Stock sur Google Sheet) ---
+    // --- 3. STOCK ---
     if (action === 'sendProduction') {
       const items = data.items || [];
       const totalQuantity = items.reduce((s,i) => s + Number(i.qty), 0);
@@ -223,8 +233,8 @@ export async function POST(request) {
       };
 
       await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
-
-      // ✅ MISE À JOUR GOOGLE SHEET (Stock)
+      
+      // Mise à jour STOCK sur Google Sheet
       await updateEmployeeStats(data.employee, totalQuantity, 'STOCK');
 
       return NextResponse.json({ success: true });
