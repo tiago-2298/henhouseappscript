@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 const APP_VERSION = "2026.01.02";
 const CURRENCY = { symbol: "$", code: "USD" };
 
-// ⚠️ Conseil: idéalement mets ces URLs dans .env, mais je te laisse comme ton code
 const WEBHOOKS = {
   factures:
     "https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG",
@@ -205,7 +204,7 @@ const PARTNERS = {
   },
 };
 
-// ================= FONCTIONS =================
+// ================= FONCTIONS UTILES =================
 function formatAmount(n) {
   return `${CURRENCY.symbol}${(Number(n) || 0).toFixed(2)}`;
 }
@@ -219,7 +218,7 @@ async function sendWebhook(url, payload) {
       body: JSON.stringify(payload),
     });
   } catch (e) {
-    console.error("Webhook error:", e);
+    console.error("Erreur Webhook:", e);
   }
 }
 
@@ -237,48 +236,7 @@ async function getAuthSheets() {
   return google.sheets({ version: "v4", auth });
 }
 
-// ✅ Annuaire / Performance : on lit A:I
-async function getEmployeeDirectory() {
-  try {
-    const sheets = await getAuthSheets();
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    // A: ID perso | B: Nom | C: Poste | D: Tel | E: Date arrivée | F: Ancienneté | G: CA | H: Stock | I: Salaire
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "A2:I",
-      valueRenderOption: "UNFORMATTED_VALUE",
-    });
-
-    const rows = res.data.values || [];
-    const list = rows
-      .filter((r) => r && r[1] && String(r[1]).trim() !== "")
-      .map((r) => ({
-        id: r[0] ?? "",
-        name: String(r[1] ?? "").trim(),
-        poste: String(r[2] ?? "").trim(),
-        tel: String(r[3] ?? "").trim(),
-        dateArrivee: r[4] ?? "",
-        anciennete: Number(r[5] ?? 0),
-        ca: Number(r[6] ?? 0),
-        stock: Number(r[7] ?? 0),
-        salaire: Number(r[8] ?? 0),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
-
-    return list;
-  } catch (e) {
-    console.error("getEmployeeDirectory error:", e);
-    return [];
-  }
-}
-
-async function getEmployeesFromGoogle() {
-  const dir = await getEmployeeDirectory();
-  return dir.map((x) => x.name);
-}
-
-// ✅ MAJ CA / STOCK
+// ✅ Mets à jour CA/Stock (col G/H)
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
     const sheets = await getAuthSheets();
@@ -286,7 +244,7 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
 
     const listRes = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "B2:B100",
+      range: "B2:B200",
     });
 
     const rows = listRes.data.values || [];
@@ -305,10 +263,9 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     });
 
     let currentValue = cellRes.data.values?.[0]?.[0];
-    if (currentValue === undefined || currentValue === null || isNaN(Number(currentValue)))
-      currentValue = 0;
-
+    if (currentValue === undefined || currentValue === null || isNaN(Number(currentValue))) currentValue = 0;
     currentValue = Number(currentValue);
+
     const newValue = currentValue + Number(amountToAdd || 0);
 
     await sheets.spreadsheets.values.update({
@@ -318,11 +275,50 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
       requestBody: { values: [[newValue]] },
     });
   } catch (e) {
-    console.error("updateEmployeeStats error:", e);
+    console.error("Erreur updateEmployeeStats:", e);
   }
 }
 
-// ================= ROUTE =================
+// ✅ Annuaire complet depuis la feuille (A->I) :
+// A ID perso | B Nom&Prénom | C Poste | D Téléphone | E Date d'arrivée | F Ancienneté | G CA | H Stock | I Salaire
+async function getDirectoryFromGoogle() {
+  try {
+    const sheets = await getAuthSheets();
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "A2:I200",
+      valueRenderOption: "UNFORMATTED_VALUE",
+    });
+
+    const rows = res.data.values || [];
+    const directory = rows
+      .filter((r) => r[1] && String(r[1]).trim() !== "")
+      .map((r) => ({
+        id: String(r[0] ?? ""),
+        name: String(r[1] ?? ""),
+        role: String(r[2] ?? ""),
+        phone: String(r[3] ?? ""),
+        arrival: String(r[4] ?? ""),
+        seniority: Number(r[5] ?? 0) || 0,
+        ca: Number(r[6] ?? 0) || 0,
+        stock: Number(r[7] ?? 0) || 0,
+        salary: Number(r[8] ?? 0) || 0,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+
+    const topCA = [...directory].sort((a, b) => b.ca - a.ca).slice(0, 5);
+    const topStock = [...directory].sort((a, b) => b.stock - a.stock).slice(0, 5);
+
+    return { directory, topCA, topStock };
+  } catch (e) {
+    console.error("Erreur getDirectoryFromGoogle:", e);
+    return { directory: [], topCA: [], topStock: [] };
+  }
+}
+
+// ================= ROUTEUR API PRINCIPAL =================
 export async function POST(request) {
   try {
     let body = {};
@@ -334,19 +330,20 @@ export async function POST(request) {
 
     // --- META ---
     if (!action || action === "getMeta") {
-      const directory = await getEmployeeDirectory();
+      const { directory, topCA, topStock } = await getDirectoryFromGoogle();
 
       return NextResponse.json({
         success: true,
         version: APP_VERSION,
-        employees: directory.map((x) => x.name),
-        employeeDirectory: directory,
+        currencySymbol: CURRENCY.symbol,
+        directory,
+        employees: directory.map((e) => e.name),
+        leaderboard: { topCA, topStock },
         products: Object.values(PRODUCTS).flat(),
         productsByCategory: PRODUCTS,
         prices: PRICE_LIST,
         vehicles: VEHICLES,
         partners: PARTNERS,
-        currencySymbol: CURRENCY.symbol,
       });
     }
 
@@ -378,27 +375,26 @@ export async function POST(request) {
           { name: "📊 Articles", value: `${items.length}`, inline: true },
           ...fields,
         ],
-        footer: {
-          text: `Hen House v${APP_VERSION}`,
-          icon_url: "https://i.goopics.net/dskmxi.png",
-        },
+        footer: { text: `Hen House v${APP_VERSION}`, icon_url: "https://i.goopics.net/dskmxi.png" },
         timestamp: new Date().toISOString(),
       };
 
-      await sendWebhook(WEBHOOKS.factures, {
-        username: "Hen House - Factures",
-        embeds: [embed],
-      });
-
+      await sendWebhook(WEBHOOKS.factures, { username: "Hen House - Factures", embeds: [embed] });
       await updateEmployeeStats(data.employee, grandTotal, "CA");
 
-      return NextResponse.json({ success: true, message: "Facture envoyée + CA MAJ" });
+      return NextResponse.json({ success: true, message: "Facture envoyée + CA mis à jour" });
     }
 
     // --- STOCK ---
     if (action === "sendProduction") {
       const items = data.items || [];
-      const totalQuantity = items.reduce((s, i) => s + Number(i.qty || 0), 0);
+      const totalQuantity = items.reduce((s, i) => s + Number(i.qty), 0);
+
+      const fields = items.map((i) => ({
+        name: `📦 ${i.product}`,
+        value: `**${i.qty}** unités`,
+        inline: true,
+      }));
 
       const embed = {
         title: "📦 Déclaration de Stock",
@@ -407,28 +403,27 @@ export async function POST(request) {
         fields: [
           { name: "👤 Employé", value: data.employee, inline: true },
           { name: "📊 Total", value: `**${totalQuantity}**`, inline: true },
-          ...items.map((i) => ({
-            name: `📦 ${i.product}`,
-            value: `**${i.qty}** unités`,
-            inline: true,
-          })),
+          ...fields,
         ],
         timestamp: new Date().toISOString(),
       };
 
-      await sendWebhook(WEBHOOKS.stock, {
-        username: "Hen House - Production",
-        embeds: [embed],
-      });
-
+      await sendWebhook(WEBHOOKS.stock, { username: "Hen House - Production", embeds: [embed] });
       await updateEmployeeStats(data.employee, totalQuantity, "STOCK");
+
       return NextResponse.json({ success: true });
     }
 
     // --- ENTREPRISE ---
     if (action === "sendEntreprise") {
       const items = data.items || [];
-      const totalQuantity = items.reduce((s, i) => s + Number(i.qty || 0), 0);
+      const totalQuantity = items.reduce((s, i) => s + Number(i.qty), 0);
+
+      const fields = items.map((i) => ({
+        name: `🏭 ${i.product}`,
+        value: `**${i.qty}** unités`,
+        inline: true,
+      }));
 
       const embed = {
         title: "🏭 Déclaration Entreprise",
@@ -438,27 +433,18 @@ export async function POST(request) {
           { name: "👤 Employé", value: data.employee, inline: true },
           { name: "🏢 Entreprise", value: data.company, inline: true },
           { name: "📊 Total", value: `**${totalQuantity}**`, inline: true },
-          ...items.map((i) => ({
-            name: `🏭 ${i.product}`,
-            value: `**${i.qty}** unités`,
-            inline: true,
-          })),
+          ...fields,
         ],
         timestamp: new Date().toISOString(),
       };
 
-      await sendWebhook(WEBHOOKS.entreprise, {
-        username: "Hen House - Entreprise",
-        embeds: [embed],
-      });
-
+      await sendWebhook(WEBHOOKS.entreprise, { username: "Hen House - Entreprise", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
 
     // --- GARAGE ---
     if (action === "sendGarage") {
       const colors = { Entrée: 0x2ecc71, Sortie: 0xe74c3c, Maintenance: 0xf39c12, Réparation: 0x9b59b6 };
-
       const embed = {
         title: `🚗 Garage - ${data.action}`,
         description: `Véhicule traité par ${data.employee}`,
@@ -471,7 +457,6 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString(),
       };
-
       await sendWebhook(WEBHOOKS.garage, { username: "Hen House - Garage", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
@@ -488,7 +473,6 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString(),
       };
-
       await sendWebhook(WEBHOOKS.expenses, { username: "Hen House - Dépenses", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
@@ -504,9 +488,13 @@ export async function POST(request) {
 
       const embed = {
         title: `🤝 Partenaires - ${data.company}`,
-        description: `Bénéficiaire: **${data.beneficiary}**\nFacture: **${data.invoiceNumber || "?"}**`,
+        description: `Bénéficiaire: **${data.beneficiary}**`,
         color: 0x10b981,
-        fields: [{ name: "👤 Employé", value: data.employee, inline: true }, { name: "📦 Menus", value: String(total), inline: true }, ...fields],
+        fields: [
+          { name: "👤 Employé", value: data.employee, inline: true },
+          { name: "📦 Menus", value: String(total), inline: true },
+          ...fields,
+        ],
         timestamp: new Date().toISOString(),
       };
 
@@ -528,7 +516,6 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString(),
       };
-
       await sendWebhook(WEBHOOKS.support, { username: "Hen House - Support", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
