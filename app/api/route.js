@@ -2,10 +2,10 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= DONNÉES HEN HOUSE =================
-const APP_VERSION = '2025.11.14'; // J'ai monté la version pour être sûr que ça update
+const APP_VERSION = '2025.11.14'; 
 const CURRENCY = { symbol: '$', code: 'USD' };
 
-// TES WEBHOOKS DISCORD
+// WEBHOOKS DISCORD
 const WEBHOOKS = {
   factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
   stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
@@ -78,20 +78,17 @@ async function getAuthSheets() {
     return google.sheets({ version: 'v4', auth });
 }
 
-// ✅ CORRECTION MAJEURE ICI : Lecture brute des chiffres
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
     try {
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        // 1. Lire les noms (Col B) pour trouver la ligne
         const listRes = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
             range: 'B2:B100',
         });
         
         const rows = listRes.data.values || [];
-        // On cherche le nom EXACT (en retirant les espaces inutiles)
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
 
         if (rowIndex === -1) {
@@ -99,37 +96,28 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
             return; 
         }
 
-        const realRow = rowIndex + 2; // Conversion index -> numéro de ligne Excel
-
-        // 2. Colonne à modifier : G pour CA, H pour Stock
+        const realRow = rowIndex + 2; 
         const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
 
-        // 3. Lire la valeur actuelle EN MODE BRUT (UNFORMATTED_VALUE)
-        // Cela permet de récupérer "100" au lieu de "$100.00"
         const cellRes = await sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
             range: targetCell,
             valueRenderOption: 'UNFORMATTED_VALUE' 
         });
         
-        // On s'assure que c'est un nombre
         let currentValue = cellRes.data.values?.[0]?.[0];
         if (!currentValue || isNaN(Number(currentValue))) {
             currentValue = 0;
         }
         currentValue = Number(currentValue);
-
         const newValue = currentValue + Number(amountToAdd);
 
-        // 4. Écrire la nouvelle valeur
         await sheets.spreadsheets.values.update({
             spreadsheetId: sheetId,
             range: targetCell,
             valueInputOption: 'RAW',
             requestBody: { values: [[newValue]] }
         });
-
-        console.log(`Succès: ${employeeName} | ${type} | Ancien: ${currentValue} + Ajout: ${amountToAdd} = Nouveau: ${newValue}`);
 
     } catch (e) {
         console.error("Erreur CRITIQUE update Sheet:", e);
@@ -157,10 +145,8 @@ export async function POST(request) {
   try {
     let body = {};
     try { body = await request.json(); } catch (e) {}
-
     const { action, data } = body;
 
-    // --- INITIALISATION ---
     if (!action || action === 'getMeta') {
        const employees = await getEmployeesFromGoogle();
        return NextResponse.json({
@@ -176,11 +162,9 @@ export async function POST(request) {
       });
     }
 
-    // --- 2. FACTURES ---
     if (action === 'sendFactures') {
       const items = data.items || [];
       const invoiceNumber = data.invoiceNumber || '???';
-      
       let grandTotal = 0;
       const fields = items.map(i => {
         const qty = Math.floor(Number(i.qty));
@@ -204,22 +188,15 @@ export async function POST(request) {
         timestamp: new Date().toISOString()
       };
 
-      // 1. Discord
       await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
-      
-      // 2. Google Sheet (Mise à jour CA)
-      // On le fait en arrière-plan (sans await bloquant strict) mais on attend quand même pour la réponse
       await updateEmployeeStats(data.employee, grandTotal, 'CA');
-
       return NextResponse.json({ success: true, message: 'Facture envoyée et CA mis à jour' });
     }
 
-    // --- 3. STOCK ---
     if (action === 'sendProduction') {
       const items = data.items || [];
       const totalQuantity = items.reduce((s,i) => s + Number(i.qty), 0);
       const fields = items.map(i => ({ name: `📦 ${i.product}`, value: `**${i.qty}** unités`, inline: true }));
-
       const embed = {
         title: '📦 Déclaration de Stock',
         description: `Production par ${data.employee}`,
@@ -231,21 +208,15 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString()
       };
-
       await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
-      
-      // Mise à jour STOCK sur Google Sheet
       await updateEmployeeStats(data.employee, totalQuantity, 'STOCK');
-
       return NextResponse.json({ success: true });
     }
 
-    // --- 4. ENTREPRISE ---
     if (action === 'sendEntreprise') {
       const items = data.items || [];
       const totalQuantity = items.reduce((s,i) => s + Number(i.qty), 0);
       const fields = items.map(i => ({ name: `🏭 ${i.product}`, value: `**${i.qty}** unités`, inline: true }));
-
       const embed = {
         title: '🏭 Déclaration Entreprise',
         description: `Commande ${data.company}`,
@@ -262,7 +233,6 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- 5. GARAGE ---
     if (action === 'sendGarage') {
       const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
       const embed = {
@@ -281,7 +251,6 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- 6. FRAIS ---
     if (action === 'sendExpense') {
       const embed = {
         title: `💳 Note de frais — ${data.kind}`,
@@ -297,7 +266,6 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // --- 7. PARTENAIRES ---
     if (action === 'sendPartnerOrder') {
         const items = data.items || [];
         let total = 0;
@@ -305,7 +273,6 @@ export async function POST(request) {
             total += i.qty;
             return { name: i.menu, value: `x${i.qty}`, inline: true };
         });
-
         const embed = {
             title: `🤝 Partenaires - ${data.company}`,
             description: `Bénéficiaire: **${data.beneficiary}**`,
@@ -317,15 +284,12 @@ export async function POST(request) {
             ],
             timestamp: new Date().toISOString()
         };
-        
         const companyData = PARTNERS.companies[data.company];
         const targetWebhook = companyData ? companyData.webhook : WEBHOOKS.factures;
-        
         await sendWebhook(targetWebhook, { username: 'Hen House - Partenaires', embeds: [embed] });
         return NextResponse.json({ success: true });
     }
 
-    // --- 8. SUPPORT ---
     if (action === 'sendSupport') {
         const embed = {
             title: `🆘 Support — ${data.subject}`,
