@@ -112,9 +112,7 @@ async function getEmployeesFromGoogle() {
         nom: r[1],
         poste: r[2] || 'Employé',
         tel: r[3] || 'Non renseigné',
-        anciennete: r[5] || '0',
         ca: Number(r[6]) || 0,
-        stock_total: Number(r[7]) || 0,
         salaire: r[8] || '0'
     })).filter(n => n.nom);
   } catch (error) {
@@ -123,6 +121,7 @@ async function getEmployeesFromGoogle() {
   }
 }
 
+// ================= ROUTEUR API PRINCIPAL =================
 export async function POST(request) {
   try {
     let body = {};
@@ -155,14 +154,16 @@ export async function POST(request) {
         grandTotal += total;
         return { name: `${i.desc} ×${qty}`, value: `${formatAmount(price)} → **${formatAmount(total)}**`, inline: false };
       });
+
       const embed = {
         title: `🍽️ Facture N°${invoiceNumber}`,
         description: `Déclaration de ${data.employee}`,
         color: 0xd35400,
         fields: [{ name: '👤 Employé', value: data.employee, inline: true }, { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true }, ...fields],
+        footer: { text: `Hen House v${APP_VERSION}`, icon_url:'https://i.goopics.net/dskmxi.png' },
         timestamp: new Date().toISOString()
       };
-      await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
+      await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
       await updateEmployeeStats(data.employee, grandTotal, 'CA');
       return NextResponse.json({ success: true });
     }
@@ -174,24 +175,23 @@ export async function POST(request) {
       return NextResponse.json({ success: true });
     }
 
-    // Garder les autres actions (sendEntreprise, sendGarage, etc) à l'identique...
     if (action === 'sendEntreprise') {
-        await sendWebhook(WEBHOOKS.entreprise, { embeds: [{ title: '🏭 Commande Entreprise', description: `Commande ${data.company} par ${data.employee}`, color: 0xf39c12 }] });
-        return NextResponse.json({ success: true });
+      await sendWebhook(WEBHOOKS.entreprise, { embeds: [{ title: '🏭 Commande Pro', description: `Commande de ${data.company} par ${data.employee}`, color: 0xf39c12 }] });
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'sendGarage') {
-        await sendWebhook(WEBHOOKS.garage, { embeds: [{ title: '🚗 Garage', description: `${data.vehicle} (${data.action}) par ${data.employee}`, color: 0x8e44ad }] });
-        return NextResponse.json({ success: true });
+      await sendWebhook(WEBHOOKS.garage, { embeds: [{ title: '🚗 Garage', description: `${data.vehicle} : ${data.action} par ${data.employee}`, color: 0x8e44ad }] });
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'sendExpense') {
-        await sendWebhook(WEBHOOKS.expenses, { embeds: [{ title: '💳 Note de frais', description: `${data.kind} : ${data.amount}$ par ${data.employee}`, color: 0x10b981 }] });
-        return NextResponse.json({ success: true });
+      await sendWebhook(WEBHOOKS.expenses, { embeds: [{ title: '💳 Note de frais', description: `${data.kind} (${data.amount}$) par ${data.employee}`, color: 0x10b981 }] });
+      return NextResponse.json({ success: true });
     }
 
     if (action === 'sendSupport') {
-        await sendWebhook(WEBHOOKS.support, { embeds: [{ title: '🆘 Support', description: `Message de ${data.employee}: ${data.message}`, color: 0xef4444 }] });
+        await sendWebhook(WEBHOOKS.support, { embeds: [{ title: '🆘 Support', description: `Sujet: ${data.subject}\nMessage: ${data.message}\nPar: ${data.employee}`, color: 0xef4444 }] });
         return NextResponse.json({ success: true });
     }
 
