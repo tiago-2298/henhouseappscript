@@ -306,7 +306,7 @@ async function getEmployeesFull() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "A2:I200",
+      range: "'Employés'!A2:I200",
       valueRenderOption: "UNFORMATTED_VALUE",
     });
 
@@ -537,3 +537,4 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
