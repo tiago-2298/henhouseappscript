@@ -5,14 +5,20 @@ import { NextResponse } from "next/server";
 const APP_VERSION = "2026.01.02";
 const CURRENCY = { symbol: "$", code: "USD" };
 
-// ⚠️ Conseil: mets tes webhooks en .env (mais je te laisse comme tu as)
+// ⚠️ Conseil: idéalement mets ces URLs dans .env, mais je te laisse comme ton code
 const WEBHOOKS = {
-  factures: "https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG",
-  stock: "https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy",
-  entreprise: "https://discord.com/api/webhooks/1389356140957274112/6AcD2wMTkn9_1lnZNpm4fOsXxGk0sZR5us-rWSrbdTBScu6JYbMtWi31No6wbepeg607",
-  garage: "https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9",
-  expenses: "https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R",
-  support: "https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_",
+  factures:
+    "https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG",
+  stock:
+    "https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy",
+  entreprise:
+    "https://discord.com/api/webhooks/1389356140957274112/6AcD2wMTkn9_1lnZNpm4fOsXxGk0sZR5us-rWSrbdTBScu6JYbMtWi31No6wbepeg607",
+  garage:
+    "https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9",
+  expenses:
+    "https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R",
+  support:
+    "https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_",
 };
 
 const PRODUCTS = {
@@ -62,8 +68,8 @@ const PRODUCTS = {
     "Menu Le Nid Végé 5+1",
     "Menu Grillé du Nord 5+1",
     "Menu Fraîcheur Méditerranéenne 5+1",
-    "Menu Voyage Sucré-Salé 5+1",
     "Menu Flamme d OR 5+1",
+    "Menu Voyage Sucré-Salé 5+1",
     "Menu Happy Hen House 5+1",
   ],
   alcools: [
@@ -101,11 +107,13 @@ const PRICE_LIST = {
   Ribbs: 50,
   "Steak 'Potatoes": 50,
   "Rougail Saucisse": 50,
+
   "Brochettes de fruits frais": 25,
   "Mousse au café": 25,
   "Tiramisu Fraise": 30,
   "Los Churros Caramel": 35,
   "Tourte Myrtille": 35,
+
   Café: 15,
   "Jus de raisin rouge": 30,
   "Cidre Pression": 10,
@@ -118,18 +126,21 @@ const PRICE_LIST = {
   Cappuccino: 15,
   Bière: 20,
   Lutinade: 20,
+
   "Menu Le Nid Végé": 70,
   "Menu Grillé du Nord": 80,
   "Menu Fraîcheur Méditerranéenne": 95,
   "Menu Voyage Sucré-Salé": 100,
   "Menu Flamme d OR": 110,
   "Menu Happy Hen House": 110,
+
   "Menu Le Nid Végé 5+1": 350,
   "Menu Grillé du Nord 5+1": 400,
   "Menu Fraîcheur Méditerranéenne 5+1": 475,
   "Menu Voyage Sucré-Salé 5+1": 500,
   "Menu Flamme d OR 5+1": 550,
   "Menu Happy Hen House 5+1": 550,
+
   "Cocktail Citron-Myrtille": 40,
   "Verre de Bellini": 25,
   "Verre de Vodka": 45,
@@ -148,6 +159,7 @@ const PRICE_LIST = {
   "Gin Fizz Citron": 80,
   "Verre de rosé": 25,
   "Verre de Champomax": 30,
+
   "Livraison NORD": 100,
   "Livraison SUD": 150,
 };
@@ -193,7 +205,7 @@ const PARTNERS = {
   },
 };
 
-// ================= FONCTIONS UTILES =================
+// ================= FONCTIONS =================
 function formatAmount(n) {
   return `${CURRENCY.symbol}${(Number(n) || 0).toFixed(2)}`;
 }
@@ -207,11 +219,10 @@ async function sendWebhook(url, payload) {
       body: JSON.stringify(payload),
     });
   } catch (e) {
-    console.error("Erreur Webhook:", e);
+    console.error("Webhook error:", e);
   }
 }
 
-// --- GESTION GOOGLE SHEETS ---
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY
     ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n")
@@ -223,8 +234,48 @@ async function getAuthSheets() {
     privateKey,
     ["https://www.googleapis.com/auth/spreadsheets"]
   );
-
   return google.sheets({ version: "v4", auth });
+}
+
+// ✅ Annuaire / Performance : on lit A:I
+async function getEmployeeDirectory() {
+  try {
+    const sheets = await getAuthSheets();
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+
+    // A: ID perso | B: Nom | C: Poste | D: Tel | E: Date arrivée | F: Ancienneté | G: CA | H: Stock | I: Salaire
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "A2:I",
+      valueRenderOption: "UNFORMATTED_VALUE",
+    });
+
+    const rows = res.data.values || [];
+    const list = rows
+      .filter((r) => r && r[1] && String(r[1]).trim() !== "")
+      .map((r) => ({
+        id: r[0] ?? "",
+        name: String(r[1] ?? "").trim(),
+        poste: String(r[2] ?? "").trim(),
+        tel: String(r[3] ?? "").trim(),
+        dateArrivee: r[4] ?? "",
+        anciennete: Number(r[5] ?? 0),
+        ca: Number(r[6] ?? 0),
+        stock: Number(r[7] ?? 0),
+        salaire: Number(r[8] ?? 0),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+
+    return list;
+  } catch (e) {
+    console.error("getEmployeeDirectory error:", e);
+    return [];
+  }
+}
+
+async function getEmployeesFromGoogle() {
+  const dir = await getEmployeeDirectory();
+  return dir.map((x) => x.name);
 }
 
 // ✅ MAJ CA / STOCK
@@ -233,18 +284,15 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
-    // Noms en colonne B
     const listRes = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "B2:B200",
-      valueRenderOption: "FORMATTED_VALUE",
+      range: "B2:B100",
     });
 
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(
       (r) => r[0] && r[0].trim() === employeeName.trim()
     );
-
     if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
@@ -257,11 +305,10 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     });
 
     let currentValue = cellRes.data.values?.[0]?.[0];
-    if (currentValue === undefined || currentValue === null || isNaN(Number(currentValue))) {
+    if (currentValue === undefined || currentValue === null || isNaN(Number(currentValue)))
       currentValue = 0;
-    }
-    currentValue = Number(currentValue);
 
+    currentValue = Number(currentValue);
     const newValue = currentValue + Number(amountToAdd || 0);
 
     await sheets.spreadsheets.values.update({
@@ -271,67 +318,11 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
       requestBody: { values: [[newValue]] },
     });
   } catch (e) {
-    console.error("Erreur updateEmployeeStats:", e);
+    console.error("updateEmployeeStats error:", e);
   }
 }
 
-async function getEmployeesFromGoogle() {
-  try {
-    const sheets = await getAuthSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "B2:B",
-    });
-    const rows = response.data.values;
-    if (!rows) return [];
-    return rows
-      .map((r) => r[0])
-      .filter((n) => n && n.trim() !== "")
-      .sort((a, b) => a.localeCompare(b, "fr"));
-  } catch (error) {
-    console.error("Erreur Google:", error);
-    return [];
-  }
-}
-
-/**
- * ✅ NOUVEAU: annuaire complet
- * Colonnes attendues (comme ton sheet):
- * A=ID perso, B=Nom&Prénom, C=Poste, D=Téléphone, E=Date d'arrivée, F=Ancienneté, G=CA, H=Stock, I=Salaire
- */
-async function getEmployeesFull() {
-  try {
-    const sheets = await getAuthSheets();
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "'Employés'!A2:I200",
-      valueRenderOption: "UNFORMATTED_VALUE",
-    });
-
-    const rows = res.data.values || [];
-    return rows
-      .filter((r) => r[1])
-      .map((r) => ({
-        id: r[0] ?? "",
-        name: String(r[1] ?? "").trim(),
-        role: r[2] ?? "",
-        phone: r[3] ?? "",
-        arrival: r[4] ?? "",
-        seniority: Number(r[5] ?? 0) || 0,
-        ca: Number(r[6] ?? 0) || 0,
-        stock: Number(r[7] ?? 0) || 0,
-        salary: Number(r[8] ?? 0) || 0,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  } catch (e) {
-    console.error("Erreur getEmployeesFull:", e);
-    return [];
-  }
-}
-
-// ================= ROUTEUR API PRINCIPAL =================
+// ================= ROUTE =================
 export async function POST(request) {
   try {
     let body = {};
@@ -343,14 +334,13 @@ export async function POST(request) {
 
     // --- META ---
     if (!action || action === "getMeta") {
-      const employees = await getEmployeesFromGoogle();
-      const employeesFull = await getEmployeesFull();
+      const directory = await getEmployeeDirectory();
 
       return NextResponse.json({
         success: true,
         version: APP_VERSION,
-        employees,
-        employeesFull,
+        employees: directory.map((x) => x.name),
+        employeeDirectory: directory,
         products: Object.values(PRODUCTS).flat(),
         productsByCategory: PRODUCTS,
         prices: PRICE_LIST,
@@ -388,25 +378,27 @@ export async function POST(request) {
           { name: "📊 Articles", value: `${items.length}`, inline: true },
           ...fields,
         ],
-        footer: { text: `Hen House v${APP_VERSION}`, icon_url: "https://i.goopics.net/dskmxi.png" },
+        footer: {
+          text: `Hen House v${APP_VERSION}`,
+          icon_url: "https://i.goopics.net/dskmxi.png",
+        },
         timestamp: new Date().toISOString(),
       };
 
-      await sendWebhook(WEBHOOKS.factures, { username: "Hen House - Factures", embeds: [embed] });
+      await sendWebhook(WEBHOOKS.factures, {
+        username: "Hen House - Factures",
+        embeds: [embed],
+      });
+
       await updateEmployeeStats(data.employee, grandTotal, "CA");
 
-      return NextResponse.json({ success: true, message: "Facture envoyée et CA mis à jour" });
+      return NextResponse.json({ success: true, message: "Facture envoyée + CA MAJ" });
     }
 
     // --- STOCK ---
     if (action === "sendProduction") {
       const items = data.items || [];
-      const totalQuantity = items.reduce((s, i) => s + Number(i.qty), 0);
-      const fields = items.map((i) => ({
-        name: `📦 ${i.product}`,
-        value: `**${i.qty}** unités`,
-        inline: true,
-      }));
+      const totalQuantity = items.reduce((s, i) => s + Number(i.qty || 0), 0);
 
       const embed = {
         title: "📦 Déclaration de Stock",
@@ -415,26 +407,28 @@ export async function POST(request) {
         fields: [
           { name: "👤 Employé", value: data.employee, inline: true },
           { name: "📊 Total", value: `**${totalQuantity}**`, inline: true },
-          ...fields,
+          ...items.map((i) => ({
+            name: `📦 ${i.product}`,
+            value: `**${i.qty}** unités`,
+            inline: true,
+          })),
         ],
         timestamp: new Date().toISOString(),
       };
 
-      await sendWebhook(WEBHOOKS.stock, { username: "Hen House - Production", embeds: [embed] });
-      await updateEmployeeStats(data.employee, totalQuantity, "STOCK");
+      await sendWebhook(WEBHOOKS.stock, {
+        username: "Hen House - Production",
+        embeds: [embed],
+      });
 
+      await updateEmployeeStats(data.employee, totalQuantity, "STOCK");
       return NextResponse.json({ success: true });
     }
 
     // --- ENTREPRISE ---
     if (action === "sendEntreprise") {
       const items = data.items || [];
-      const totalQuantity = items.reduce((s, i) => s + Number(i.qty), 0);
-      const fields = items.map((i) => ({
-        name: `🏭 ${i.product}`,
-        value: `**${i.qty}** unités`,
-        inline: true,
-      }));
+      const totalQuantity = items.reduce((s, i) => s + Number(i.qty || 0), 0);
 
       const embed = {
         title: "🏭 Déclaration Entreprise",
@@ -444,18 +438,27 @@ export async function POST(request) {
           { name: "👤 Employé", value: data.employee, inline: true },
           { name: "🏢 Entreprise", value: data.company, inline: true },
           { name: "📊 Total", value: `**${totalQuantity}**`, inline: true },
-          ...fields,
+          ...items.map((i) => ({
+            name: `🏭 ${i.product}`,
+            value: `**${i.qty}** unités`,
+            inline: true,
+          })),
         ],
         timestamp: new Date().toISOString(),
       };
 
-      await sendWebhook(WEBHOOKS.entreprise, { username: "Hen House - Entreprise", embeds: [embed] });
+      await sendWebhook(WEBHOOKS.entreprise, {
+        username: "Hen House - Entreprise",
+        embeds: [embed],
+      });
+
       return NextResponse.json({ success: true });
     }
 
     // --- GARAGE ---
     if (action === "sendGarage") {
       const colors = { Entrée: 0x2ecc71, Sortie: 0xe74c3c, Maintenance: 0xf39c12, Réparation: 0x9b59b6 };
+
       const embed = {
         title: `🚗 Garage - ${data.action}`,
         description: `Véhicule traité par ${data.employee}`,
@@ -468,6 +471,7 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString(),
       };
+
       await sendWebhook(WEBHOOKS.garage, { username: "Hen House - Garage", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
@@ -484,6 +488,7 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString(),
       };
+
       await sendWebhook(WEBHOOKS.expenses, { username: "Hen House - Dépenses", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
@@ -499,13 +504,9 @@ export async function POST(request) {
 
       const embed = {
         title: `🤝 Partenaires - ${data.company}`,
-        description: `Bénéficiaire: **${data.beneficiary}**`,
+        description: `Bénéficiaire: **${data.beneficiary}**\nFacture: **${data.invoiceNumber || "?"}**`,
         color: 0x10b981,
-        fields: [
-          { name: "👤 Employé", value: data.employee, inline: true },
-          { name: "📦 Menus", value: String(total), inline: true },
-          ...fields,
-        ],
+        fields: [{ name: "👤 Employé", value: data.employee, inline: true }, { name: "📦 Menus", value: String(total), inline: true }, ...fields],
         timestamp: new Date().toISOString(),
       };
 
@@ -527,6 +528,7 @@ export async function POST(request) {
         ],
         timestamp: new Date().toISOString(),
       };
+
       await sendWebhook(WEBHOOKS.support, { username: "Hen House - Support", embeds: [embed] });
       return NextResponse.json({ success: true });
     }
@@ -537,4 +539,3 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
-
