@@ -1,8 +1,8 @@
-"use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+'use client';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-// --- SVG ICONS ---
-const Icon = ({ name, size = 20, className = "" }) => {
+// --- ICONS (SVG) ---
+const Icon = ({ name, size = 20, className = "", style }) => {
   const icons = {
     dashboard: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />,
     receipt: <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z" />,
@@ -40,26 +40,18 @@ const Icon = ({ name, size = 20, className = "" }) => {
     ),
     logout: <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />,
     x: <path d="M18 6 6 18M6 6l12 12" />,
-    users: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.13a4 4 0 0 1 0 7.75M20 21v-2a4 4 0 0 0-3-3.87M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />,
-    trophy: <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4zM5 6H3v2a4 4 0 0 0 4 4M19 6h2v2a4 4 0 0 1-4 4" />,
-    bell: <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7M13.73 21a2 2 0 0 1-3.46 0" />,
-    volume: <path d="M11 5 6 9H2v6h4l5 4V5zM15 9a3 3 0 0 1 0 6M17.5 6.5a6 6 0 0 1 0 11" />,
-    mute: <path d="M11 5 6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6" />,
+    refresh: <path d="M21 12a9 9 0 0 1-15.3 6.36L3 16m0 0v6m0-6h6M3 12a9 9 0 0 1 15.3-6.36L21 8m0 0V2m0 6h-6" />,
+    user: <path d="M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />,
+    volume2: <path d="M11 5 6 9H2v6h4l5 4V5ZM15.5 8.5a4.5 4.5 0 0 1 0 7M19 7a7 7 0 0 1 0 10" />,
+    volumeX: <path d="M11 5 6 9H2v6h4l5 4V5ZM22 9l-6 6M16 9l6 6" />,
+    trophy: <path d="M8 21h8M12 17v4M7 4h10v3a5 5 0 0 1-10 0V4ZM5 6H3a2 2 0 0 0 2 2h0M19 6h2a2 2 0 0 1-2 2h0" />,
+    phone: <path d="M22 16.92V21a2 2 0 0 1-2.18 2 19.86 19.86 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 1 4.18 2 2 0 0 1 3 2h4.09a2 2 0 0 1 2 1.72c.12.86.3 1.7.54 2.5a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.58-1.09a2 2 0 0 1 2.11-.45c.8.24 1.64.42 2.5.54A2 2 0 0 1 22 16.92z" />,
   };
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={className} style={style}>
       {icons[name]}
     </svg>
   );
@@ -73,7 +65,7 @@ const IMAGES = {
   "Filet Mignon": "https://files.catbox.moe/3dzjbx.png",
   "Poulet Rôti": "https://files.catbox.moe/8fyin5.png",
   "Paella Méditerranéenne": "https://files.catbox.moe/88udxk.png",
-  Ribbs: "https://files.catbox.moe/ej5jok.png",
+  "Ribbs": "https://files.catbox.moe/ej5jok.png",
   "Steak 'Potatoes": "https://files.catbox.moe/msdthe.png",
   "Rougail Saucisse": "https://files.catbox.moe/jqzox0.png",
   "Brochettes de fruits frais": "https://files.catbox.moe/cbmjou.png",
@@ -81,576 +73,1047 @@ const IMAGES = {
   "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
   "Tourte Myrtille": "https://files.catbox.moe/oxwlna.png",
   "Jus d'orange": "https://files.catbox.moe/u29syk.png",
-  "Lait de poule": "https://files.catbox.moe/jxgida.png",
+  "Lait de poule": "https://files.catbox.moe/jxgida.png"
 };
 
-function clampInt(v, fallback = 1) {
-  const n = parseInt(v, 10);
-  if (Number.isNaN(n)) return fallback;
-  return n;
+function money(n) { return `$${(Number(n)||0).toFixed(2)}`; }
+function clampNum(v, min=0, max=999999) {
+  const n = Number(String(v).replace(',', '.'));
+  if (Number.isNaN(n)) return min;
+  return Math.max(min, Math.min(max, n));
+}
+
+// Simple beep (WebAudio) - pas besoin de fichier son
+function beep(freq = 740, durationMs = 60, volume = 0.05) {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.value = freq;
+    g.gain.value = volume;
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start();
+    setTimeout(() => {
+      o.stop();
+      ctx.close();
+    }, durationMs);
+  } catch {}
 }
 
 export default function Home() {
-  const [view, setView] = useState("login");
-  const [user, setUser] = useState("");
+  const [view, setView] = useState('login');
+  const [user, setUser] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [currentTab, setCurrentTab] = useState("home");
+  const [currentTab, setCurrentTab] = useState('home');
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [catFilter, setCatFilter] = useState("Tous");
+
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('Tous');
+
   const [toast, setToast] = useState(null);
 
   const [darkMode, setDarkMode] = useState(true);
-  const [quickMode, setQuickMode] = useState(false);
-
-  // Son
   const [soundOn, setSoundOn] = useState(true);
-  const audioCtxRef = useRef(null);
+  const [fastMode, setFastMode] = useState(false);
 
   // Forms
-  const [invNum, setInvNum] = useState("");
-  const [stockItems, setStockItems] = useState([{ product: "", qty: 1 }]);
-  const [entName, setEntName] = useState("");
-  const [entItems, setEntItems] = useState([{ product: "", qty: 1 }]);
-  const [parItems, setParItems] = useState([{ menu: "", qty: 1 }]);
-  const [parCompany, setParCompany] = useState("");
-  const [parBenef, setParBenef] = useState("");
-  const [parNum, setParNum] = useState("");
-  const [expData, setExpData] = useState({ veh: "", kind: "Essence", amt: "" });
-  const [garData, setGarData] = useState({ veh: "", action: "Entrée", fuel: 50 });
-  const [supData, setSupData] = useState({ sub: "Autre", msg: "" });
+  const [invNum, setInvNum] = useState('');
+  const [stockItems, setStockItems] = useState([{product:'', qty:1}]);
+  const [entName, setEntName] = useState('');
+  const [entItems, setEntItems] = useState([{product:'', qty:1}]);
+  const [parItems, setParItems] = useState([{menu:'', qty:1}]);
+  const [parCompany, setParCompany] = useState('');
+  const [parBenef, setParBenef] = useState('');
+  const [parNum, setParNum] = useState('');
+  const [expData, setExpData] = useState({veh:'', kind:'Essence', amt:''});
+  const [garData, setGarData] = useState({veh:'', action:'Entrée', fuel:50});
+  const [supData, setSupData] = useState({sub:'Autre', msg:''});
 
-  // Annuaire
-  const [dirQuery, setDirQuery] = useState("");
-  const [dirRole, setDirRole] = useState("Tous");
-  const [dirOpen, setDirOpen] = useState(false);
-  const [selectedEmp, setSelectedEmp] = useState(null);
+  const [directoryQuery, setDirectoryQuery] = useState('');
+  const [directoryRole, setDirectoryRole] = useState('Tous');
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const currency = data?.currencySymbol || "$";
+  const sessionTotal = useMemo(
+    () => cart.reduce((a,b)=>a + (b.qty*b.pu), 0),
+    [cart]
+  );
 
-  const sessionTotal = useMemo(() => cart.reduce((a, b) => a + b.qty * b.pu, 0), [cart]);
+  const currentEmployee = useMemo(() => {
+    const list = data?.employeeDirectory || [];
+    return list.find(e => (e.name||'').trim() === (user||'').trim()) || null;
+  }, [data, user]);
 
-  // ---- SON (beep sans fichier) ----
-  const beep = (freq = 520, dur = 0.06, gain = 0.03) => {
-    if (!soundOn) return;
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      const ctx = audioCtxRef.current;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = freq;
-      g.gain.value = gain;
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      o.stop(ctx.currentTime + dur);
-    } catch {}
-  };
+  const topCA = useMemo(() => {
+    const list = (data?.employeeDirectory || []).slice();
+    list.sort((a,b)=> (b.ca||0) - (a.ca||0));
+    return list.slice(0,5);
+  }, [data]);
 
-  const notify = (title, msg, type = "info") => {
-    setToast({ title, msg, type });
+  const topStock = useMemo(() => {
+    const list = (data?.employeeDirectory || []).slice();
+    list.sort((a,b)=> (b.stock||0) - (a.stock||0));
+    return list.slice(0,5);
+  }, [data]);
+
+  const notify = (title, msg, type='info') => {
+    setToast({title, msg, type});
     setTimeout(() => setToast(null), 3200);
   };
 
+  const fetchMeta = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'getMeta' }) });
+      const json = await res.json();
+      setData(json);
+      setLoading(false);
+
+      if(json.vehicles?.length) {
+        setExpData(p => ({...p, veh: p.veh || json.vehicles[0]}));
+        setGarData(p => ({...p, veh: p.veh || json.vehicles[0]}));
+      }
+
+      if(json.partners && Object.keys(json.partners.companies || {}).length) {
+        const firstCompany = Object.keys(json.partners.companies)[0];
+        setParCompany(p => p || firstCompany);
+      }
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+      alert("Erreur chargement");
+    }
+  };
+
+  // INIT
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    fetchMeta();
+  }, []);
+
+  // Update Partner Beneficiaries
+  useEffect(() => {
+    if(data && parCompany) {
+      const comp = data.partners.companies[parCompany];
+      if(comp && comp.beneficiaries?.length) setParBenef(comp.beneficiaries[0]);
+      if(comp && comp.menus?.length) setParItems([{menu: comp.menus[0].name, qty:1}]);
+    }
+  }, [parCompany, data]);
+
   const toggleTheme = () => {
-    const newTheme = darkMode ? "light" : "dark";
+    const newTheme = !darkMode ? 'dark' : 'light';
     setDarkMode(!darkMode);
-    document.documentElement.setAttribute("data-theme", newTheme);
-    // important: aide les contrôles natifs à respecter le thème
-    document.documentElement.style.colorScheme = newTheme;
+    document.documentElement.setAttribute('data-theme', newTheme);
   };
 
-  const login = () => {
-    if (!user) return;
-    setView("app");
-    setCurrentTab("home");
-  };
-
-  const logout = () => {
-    setUser("");
-    setView("login");
-    setCart([]);
-    setInvNum("");
-    setCartOpen(false);
-  };
+  const login = () => { if(user) setView('app'); };
+  const logout = () => { setUser(''); setView('login'); setCurrentTab('home'); setCart([]); setCartOpen(false); };
 
   const addToCart = (prod) => {
-    const existing = cart.find((x) => x.name === prod);
-    if (existing) {
-      setCart(cart.map((x) => (x.name === prod ? { ...x, qty: x.qty + 1 } : x)));
+    const existing = cart.find(x => x.name === prod);
+    if(existing) {
+      setCart(cart.map(x => x.name === prod ? {...x, qty: x.qty + 1} : x));
     } else {
-      setCart([...cart, { name: prod, qty: 1, pu: data.prices[prod] || 0 }]);
+      setCart([...cart, {name: prod, qty: 1, pu: data.prices[prod] || 0}]);
     }
-    beep(650, 0.05, 0.03);
+    if (soundOn) beep(840, 40, 0.05);
     notify("Ajouté", prod, "success");
   };
 
-  const modQty = (idx, nextQty) => {
+  const modQty = (idx, delta) => {
     const newCart = [...cart];
-    const q = clampInt(nextQty, 1);
-    if (q <= 0) {
-      newCart.splice(idx, 1);
-    } else {
-      newCart[idx].qty = q;
-    }
+    newCart[idx].qty = clampNum(newCart[idx].qty + delta, 0, 9999);
+    if(newCart[idx].qty <= 0) newCart.splice(idx, 1);
+    setCart(newCart);
+  };
+
+  const setQtyDirect = (idx, value) => {
+    const newCart = [...cart];
+    newCart[idx].qty = clampNum(value, 0, 9999);
+    if(newCart[idx].qty <= 0) newCart.splice(idx, 1);
     setCart(newCart);
   };
 
   const sendForm = async (action, payload) => {
-    notify("Envoi…", "Veuillez patienter", "info");
+    notify("Envoi...", "Veuillez patienter", "info");
     try {
-      const res = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, data: { ...payload, employee: user } }),
+      const res = await fetch('/api', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ action, data: { ...payload, employee: user } })
       });
       const json = await res.json();
-      if (json.success) {
-        beep(880, 0.06, 0.03);
-        beep(990, 0.06, 0.03);
+
+      if(json.success) {
+        if (soundOn) beep(520, 70, 0.06);
         notify("Succès", "Action validée !", "success");
 
-        // reset
-        setCart([]);
-        setInvNum("");
-        setStockItems([{ product: data.products[0], qty: 1 }]);
-        setEntItems([{ product: data.products[0], qty: 1 }]);
-        setEntName("");
-        const firstMenu = data.partners.companies[parCompany]?.menus?.[0]?.name || "";
-        setParItems([{ menu: firstMenu, qty: 1 }]);
-        setParNum("");
-        setSupData({ sub: "Autre", msg: "" });
-        setExpData((p) => ({ ...p, amt: "" }));
-        setCartOpen(false);
+        // Reset forms
+        if(action === 'sendFactures') { setCart([]); setInvNum(''); setCartOpen(false); setCurrentTab('home'); }
+        if(action === 'sendProduction') setStockItems([{product:(data.products[0]), qty:1}]);
+        if(action === 'sendEntreprise') { setEntItems([{product:(data.products[0]), qty:1}]); setEntName(''); }
+        if(action === 'sendPartnerOrder') { setParItems([{menu:(data.partners.companies[parCompany]?.menus?.[0]?.name || ''), qty:1}]); setParNum(''); }
+        if(action === 'sendSupport') setSupData({sub:'Autre', msg:''});
+        if(action === 'sendExpense') setExpData(p => ({...p, amt:''}));
+
+        // ✅ soft refresh des stats (CA/Stock)
+        fetchMeta();
       } else {
         notify("Erreur", json.message || "Erreur", "error");
       }
-    } catch (e) {
+    } catch(e) {
       notify("Erreur", e.message, "error");
     }
   };
 
   const handleSendInvoice = () => {
-    if (!invNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
-    if (cart.length === 0) return notify("Erreur", "Le panier est vide", "error");
-    sendForm("sendFactures", { invoiceNumber: invNum, items: cart.map((x) => ({ desc: x.name, qty: x.qty })) });
+    if(!invNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
+    if(cart.length === 0) return notify("Erreur", "Le panier est vide", "error");
+    sendForm('sendFactures', {invoiceNumber:invNum, items:cart.map(x=>({desc:x.name, qty:x.qty}))});
   };
 
   const handleSendEnterprise = () => {
-    if (!entName.trim()) return notify("Erreur", "Le nom de l'entreprise est OBLIGATOIRE", "error");
-    sendForm("sendEntreprise", { company: entName, items: entItems });
+    if(!entName.trim()) return notify("Erreur", "Le nom de l'entreprise est OBLIGATOIRE", "error");
+    sendForm('sendEntreprise', {company:entName, items:entItems});
   };
 
   const handleSendPartner = () => {
-    if (!parNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
-    sendForm("sendPartnerOrder", { company: parCompany, beneficiary: parBenef, invoiceNumber: parNum, items: parItems });
+    if(!parNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
+    sendForm('sendPartnerOrder', {company:parCompany, beneficiary:parBenef, invoiceNumber:parNum, items:parItems});
   };
 
   const handleSendExpense = () => {
-    if (!expData.amt || Number(expData.amt) <= 0) return notify("Erreur", "Le montant est OBLIGATOIRE", "error");
-    sendForm("sendExpense", { vehicle: expData.veh, kind: expData.kind, amount: expData.amt });
+    if(!expData.amt || Number(expData.amt) <= 0) return notify("Erreur", "Le montant est OBLIGATOIRE", "error");
+    sendForm('sendExpense', {vehicle:expData.veh, kind:expData.kind, amount:Number(expData.amt)});
   };
 
-  // -------- INIT ----------
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "dark");
-    document.documentElement.style.colorScheme = "dark";
+  const directoryList = useMemo(() => {
+    let list = (data?.employeeDirectory || []).slice();
+    if(directoryRole !== 'Tous') list = list.filter(e => (e.role||'') === directoryRole);
+    if(directoryQuery.trim()) {
+      const q = directoryQuery.toLowerCase();
+      list = list.filter(e =>
+        (e.name||'').toLowerCase().includes(q) ||
+        (e.phone||'').toLowerCase().includes(q) ||
+        (e.role||'').toLowerCase().includes(q)
+      );
+    }
+    list.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+    return list;
+  }, [data, directoryQuery, directoryRole]);
 
-    fetch("/api", { method: "POST", body: JSON.stringify({ action: "getMeta" }) })
-      .then((res) => res.json())
-      .then((res) => {
-        setData(res);
-        setLoading(false);
-
-        // defaults
-        if (res.vehicles?.length) {
-          setExpData((p) => ({ ...p, veh: res.vehicles[0] }));
-          setGarData((p) => ({ ...p, veh: res.vehicles[0] }));
-        }
-        if (res.products?.length) {
-          setStockItems([{ product: res.products[0], qty: 1 }]);
-          setEntItems([{ product: res.products[0], qty: 1 }]);
-        }
-        if (res.partners && Object.keys(res.partners.companies).length) {
-          const firstC = Object.keys(res.partners.companies)[0];
-          setParCompany(firstC);
-          const comp = res.partners.companies[firstC];
-          setParBenef(comp?.beneficiaries?.[0] || "");
-          setParItems([{ menu: comp?.menus?.[0]?.name || "", qty: 1 }]);
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Erreur chargement");
-      });
-  }, []);
-
-  // Update Partner options when company changes
-  useEffect(() => {
-    if (!data || !parCompany) return;
-    const comp = data.partners.companies[parCompany];
-    if (comp?.beneficiaries?.length) setParBenef(comp.beneficiaries[0]);
-    if (comp?.menus?.length) setParItems([{ menu: comp.menus[0].name, qty: 1 }]);
-  }, [parCompany, data]);
-
-  const myProfile = useMemo(() => {
-    if (!data?.directory || !user) return null;
-    return data.directory.find((e) => e.name === user) || null;
-  }, [data, user]);
-
-  const dirRoles = useMemo(() => {
-    const set = new Set((data?.directory || []).map((e) => e.role).filter(Boolean));
-    return ["Tous", ...Array.from(set).sort((a, b) => a.localeCompare(b, "fr"))];
+  const allRoles = useMemo(() => {
+    const set = new Set((data?.employeeDirectory || []).map(e => e.role).filter(Boolean));
+    return ['Tous', ...Array.from(set)];
   }, [data]);
 
-  const directoryFiltered = useMemo(() => {
-    const list = data?.directory || [];
-    const q = dirQuery.trim().toLowerCase();
-    return list.filter((e) => {
-      const okRole = dirRole === "Tous" || e.role === dirRole;
-      const okQ =
-        !q ||
-        e.name.toLowerCase().includes(q) ||
-        (e.phone || "").toLowerCase().includes(q) ||
-        (e.role || "").toLowerCase().includes(q);
-      return okRole && okQ;
-    });
-  }, [data, dirQuery, dirRole]);
+  const copyToClipboard = async (txt) => {
+    try {
+      await navigator.clipboard.writeText(txt);
+      notify("Copié", txt, "success");
+      if (soundOn) beep(920, 40, 0.04);
+    } catch {
+      notify("Erreur", "Impossible de copier", "error");
+    }
+  };
 
-  // ----- UI: LOADING (skeleton) -----
-  if (loading) {
-    return (
-      <>
-        <style jsx global>{globalStyles}</style>
-        <div className="loading-wrap">
-          <div className="loading-card">
-            <img src="https://i.goopics.net/dskmxi.png" className="loading-logo" />
-            <div className="loading-title">Hen House</div>
-            <div className="loading-sub">Connexion…</div>
-
-            <div className="sk-grid">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="sk-card shimmer" />
-              ))}
-            </div>
-
-            <div className="loading-foot">v{data?.version || "…"} • Chargement des données</div>
-          </div>
+  if(loading) return (
+    <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1115', color:'white'}}>
+      <div style={{textAlign:'center', width:380}}>
+        <img src="https://i.goopics.net/dskmxi.png" style={{height:62, marginBottom:18, borderRadius:14}} />
+        <div style={{fontWeight:900, fontSize:'1.05rem', marginBottom:8}}>Chargement Hen House…</div>
+        <div style={{opacity:0.7, fontSize:'0.9rem'}}>Connexion aux données • v{data?.version || '...'}</div>
+        <div style={{marginTop:18}}>
+          <div className="skeleton-bar" />
+          <div className="skeleton-bar" />
+          <div className="skeleton-bar" />
         </div>
-      </>
-    );
-  }
+      </div>
+    </div>
+  );
 
   return (
     <>
-      <style jsx global>{globalStyles}</style>
+      <style jsx global>{`
+        :root {
+          --primary: #8b5cf6; /* violet par défaut */
+          --primary-2: rgba(139, 92, 246, 0.16);
+          --bg-body: #0f1115;
+          --bg-panel: #171a21;
+          --bg-panel-2: rgba(255,255,255,0.04);
+          --text-main: #f8fafc;
+          --text-muted: rgba(148,163,184,0.85);
+          --border: rgba(148,163,184,0.16);
+          --border-2: rgba(148,163,184,0.10);
+          --radius: 22px;
+          --sidebar-w: 280px;
+          --shadow: 0 25px 60px rgba(0,0,0,0.35);
+        }
 
-      {view === "login" ? (
+        [data-theme="light"] {
+          --bg-body: #f7f8fb;
+          --bg-panel: #ffffff;
+          --bg-panel-2: rgba(15,17,21,0.04);
+          --text-main: #0f172a;
+          --text-muted: rgba(71,85,105,0.85);
+          --border: rgba(15,23,42,0.12);
+          --border-2: rgba(15,23,42,0.08);
+          --shadow: 0 25px 60px rgba(15,23,42,0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+
+        /* ✅ SELECT FIX (dark / light) */
+        select, option {
+          color: var(--text-main);
+          background: var(--bg-panel);
+        }
+        select {
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 14px 14px;
+          font-weight: 800;
+          appearance: none;
+          background-image:
+            linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+            linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+          background-position:
+            calc(100% - 18px) calc(1em + 4px),
+            calc(100% - 13px) calc(1em + 4px);
+          background-size: 5px 5px, 5px 5px;
+          background-repeat: no-repeat;
+        }
+        select:focus {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 4px var(--primary-2);
+        }
+        option { padding: 10px; }
+        /* (sur certains navigateurs option reste natif : au minimum c'est lisible) */
+
+        input, textarea {
+          color: var(--text-main);
+        }
+
+        /* Sidebar */
+        .sidebar {
+          width: var(--sidebar-w);
+          height: 96vh;
+          margin: 2vh;
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border-radius: var(--radius);
+          display: flex;
+          flex-direction: column;
+          padding: 22px;
+          box-shadow: var(--shadow);
+          border: 1px solid var(--border);
+          position: relative;
+          overflow: hidden;
+        }
+        .sidebar:before {
+          content:"";
+          position:absolute;
+          inset:-2px;
+          background: radial-gradient(1200px 300px at 20% 0%, var(--primary-2), transparent 55%);
+          pointer-events:none;
+        }
+        .brand { display:flex; align-items:center; gap:12px; font-weight: 950; font-size: 1.15rem; margin-bottom: 22px; }
+        .brand img { height: 32px; width: 32px; border-radius: 10px; border: 1px solid var(--border); }
+        .nav-list { display:flex; flex-direction:column; gap: 8px; padding: 10px 0; }
+        .nav-btn {
+          display:flex; align-items:center; gap: 12px;
+          padding: 12px 14px;
+          border-radius: 16px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: var(--text-muted);
+          font-weight: 850;
+          font-size: 0.95rem;
+          cursor:pointer;
+          transition: 0.18s;
+        }
+        .nav-btn:hover { background: var(--bg-panel-2); color: var(--text-main); border-color: var(--border-2); }
+        .nav-btn.active {
+          background: var(--primary);
+          color: white;
+          box-shadow: 0 14px 34px rgba(0,0,0,0.2);
+        }
+
+        /* Main */
+        .main-content { flex:1; padding: 2vh 2vh 2vh 0; overflow-y:auto; overflow-x:hidden; }
+        .header-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 22px; padding: 0 10px; }
+        .page-title { font-size: 1.65rem; font-weight: 950; display:flex; align-items:center; gap: 10px; }
+
+        .top-actions { display:flex; gap: 10px; align-items:center; }
+        .chip {
+          background: var(--bg-panel);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          padding: 10px 14px;
+          font-weight: 900;
+          color: var(--text-muted);
+          display:flex;
+          align-items:center;
+          gap: 10px;
+        }
+        .chip strong { color: var(--text-main); }
+        .icon-btn {
+          width: 42px; height: 42px;
+          border-radius: 999px;
+          background: var(--bg-panel);
+          border: 1px solid var(--border);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          transition: 0.18s;
+        }
+        .icon-btn:hover { transform: translateY(-1px); border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+        .toggle {
+          display:flex; align-items:center; gap:10px;
+          background: var(--bg-panel);
+          border: 1px solid var(--border);
+          padding: 10px 14px;
+          border-radius: 999px;
+          font-weight: 900;
+          color: var(--text-muted);
+        }
+        .switch {
+          width: 46px; height: 26px;
+          border-radius: 999px;
+          background: var(--bg-panel-2);
+          border: 1px solid var(--border);
+          position: relative;
+          cursor: pointer;
+          flex-shrink:0;
+        }
+        .switch:after {
+          content:"";
+          position:absolute;
+          top: 3px; left: 3px;
+          width: 20px; height: 20px;
+          border-radius: 999px;
+          background: var(--text-main);
+          opacity: 0.9;
+          transition: 0.18s;
+        }
+        .switch.on {
+          background: var(--primary);
+          border-color: transparent;
+        }
+        .switch.on:after { left: 23px; background: white; }
+
+        /* Dashboard cards */
+        .dashboard-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+        .dash-card {
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border-radius: var(--radius);
+          padding: 22px;
+          border: 1px solid var(--border);
+          cursor:pointer;
+          transition: 0.22s;
+          min-height: 170px;
+          position: relative;
+          overflow: hidden;
+        }
+        .dash-card:before {
+          content:"";
+          position:absolute; inset:-2px;
+          background: radial-gradient(600px 220px at 0% 0%, var(--primary-2), transparent 60%);
+          pointer-events:none;
+          opacity: 0.9;
+        }
+        .dash-card:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: var(--shadow); }
+        .dash-icon { width: 48px; height: 48px; border-radius: 16px; background: var(--bg-panel-2); border: 1px solid var(--border-2); display:flex; align-items:center; justify-content:center; color: var(--primary); margin-bottom: 14px; }
+        .dash-title { font-size: 1.05rem; font-weight: 950; margin-bottom: 4px; }
+        .dash-desc { color: var(--text-muted); font-weight: 700; font-size: 0.9rem; }
+
+        /* Search / pills */
+        .search-container { position: relative; margin-bottom: 14px; max-width: 520px; }
+        .search-inp {
+          width: 100%;
+          padding: 14px 16px 14px 46px;
+          border-radius: 18px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          font-size: 1rem;
+          font-weight: 850;
+        }
+        .search-inp:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+        .search-icon { position:absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+        .cat-pills { display:flex; gap: 10px; overflow-x:auto; padding-bottom: 8px; margin-bottom: 14px; }
+        .pill {
+          padding: 9px 16px;
+          background: var(--bg-panel);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-weight: 900;
+          cursor:pointer;
+          white-space: nowrap;
+          transition: 0.18s;
+          color: var(--text-muted);
+        }
+        .pill:hover { border-color: var(--primary); color: var(--text-main); }
+        .pill.active { background: var(--primary); color: white; border-color: transparent; }
+
+        /* Products */
+        .prod-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; }
+        .prod-card {
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border-radius: 20px;
+          border: 1px solid var(--border);
+          cursor:pointer;
+          transition: 0.18s;
+          padding: 12px;
+        }
+        .prod-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+        .prod-img {
+          width: 100%;
+          aspect-ratio: 1 / 1;
+          border-radius: 16px;
+          object-fit: cover;
+          background: var(--bg-panel-2);
+          border: 1px solid var(--border-2);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size: 2rem;
+          color: var(--text-muted);
+        }
+        .prod-title { margin-top: 10px; font-weight: 950; font-size: 0.92rem; min-height: 38px; display:flex; align-items:center; justify-content:center; text-align:center; }
+        .prod-price { margin-top: 6px; font-weight: 950; color: var(--primary); font-size: 1.05rem; text-align:center; }
+
+        /* Forms */
+        .form-wrap {
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          padding: 28px;
+          border-radius: 26px;
+          max-width: 680px;
+          margin: 0 auto;
+          border: 1px solid var(--border);
+          box-shadow: var(--shadow);
+        }
+        .inp-group { margin-bottom: 14px; }
+        .inp-label { display:block; margin-bottom: 8px; font-weight: 900; color: var(--text-muted); }
+        .inp-field {
+          width: 100%;
+          padding: 14px 14px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          border-radius: 14px;
+          font-size: 1rem;
+          font-weight: 850;
+        }
+        .inp-field:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+
+        .rowline { display:flex; gap: 10px; margin-bottom: 10px; align-items:center; }
+        .mini-number {
+          width: 110px;
+          text-align: center;
+          padding: 14px 12px;
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          font-weight: 950;
+          font-size: 1rem;
+        }
+
+        .btn {
+          width: 100%;
+          padding: 14px 16px;
+          border: none;
+          border-radius: 16px;
+          font-weight: 950;
+          font-size: 1rem;
+          cursor:pointer;
+          transition: 0.18s;
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          gap: 10px;
+        }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 18px 40px rgba(0,0,0,0.25); }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-ghost:hover { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+        .btn-text { background: transparent; border: 1px dashed var(--border); color: var(--text-muted); }
+        .btn-text:hover { border-color: var(--primary); color: var(--text-main); }
+
+        .danger { border-color: rgba(239,68,68,0.5) !important; color: #ef4444 !important; }
+
+        /* Cart drawer */
+        .cart-drawer {
+          position: fixed;
+          top:0; right:0;
+          width: 420px;
+          height: 100vh;
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border-left: 1px solid var(--border);
+          box-shadow: -30px 0 80px rgba(0,0,0,0.35);
+          z-index: 100;
+          transform: translateX(100%);
+          transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+          display:flex;
+          flex-direction:column;
+        }
+        .cart-drawer.open { transform: translateX(0); }
+        .cart-head { padding: 18px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); }
+        .cart-body { flex:1; overflow-y:auto; padding: 14px 16px; }
+        .cart-foot { padding: 18px; background: var(--bg-panel-2); border-top: 1px solid var(--border); }
+        .cart-item {
+          display:flex; align-items:center; gap: 12px;
+          padding: 12px;
+          border-radius: 18px;
+          background: var(--bg-panel-2);
+          border: 1px solid var(--border-2);
+          margin-bottom: 10px;
+        }
+        .qty-ctrl { display:flex; gap: 8px; align-items:center; }
+        .qb {
+          width: 36px; height: 36px;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          cursor:pointer;
+          font-weight: 950;
+          color: var(--text-main);
+        }
+        .qb:hover { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+        .qty-input {
+          width: 64px;
+          text-align:center;
+          border-radius: 12px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          padding: 10px 10px;
+          font-weight: 950;
+        }
+        .cart-btn-float {
+          position: fixed;
+          bottom: 26px; right: 26px;
+          background: var(--bg-panel);
+          border: 1px solid var(--border);
+          padding: 14px 18px;
+          border-radius: 999px;
+          font-weight: 950;
+          cursor:pointer;
+          box-shadow: var(--shadow);
+          display:flex;
+          align-items:center;
+          gap: 10px;
+          z-index: 90;
+        }
+        .cart-btn-float:hover { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2), var(--shadow); }
+
+        /* Login */
+        #gate { position:fixed; inset:0; background: var(--bg-body); display:flex; align-items:center; justify-content:center; z-index: 2000; }
+        .login-box {
+          width: 420px;
+          padding: 28px;
+          border: 1px solid var(--border);
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border-radius: 26px;
+          box-shadow: var(--shadow);
+          text-align:center;
+        }
+
+        /* Toast */
+        .toast {
+          position: fixed;
+          top: 22px; right: 22px;
+          z-index: 3000;
+          background: var(--bg-panel);
+          border: 1px solid var(--border);
+          padding: 14px 16px;
+          border-radius: 18px;
+          box-shadow: var(--shadow);
+          min-width: 300px;
+          animation: slideIn 0.22s;
+          display:flex;
+          gap: 12px;
+          align-items:flex-start;
+        }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } }
+        .t-title { font-weight: 950; }
+        .t-msg { font-weight: 800; color: var(--text-muted); margin-top: 2px; font-size: 0.9rem; }
+
+        /* ✅ Bottom profile card */
+        .user-card {
+          margin-top: auto;
+          padding-top: 14px;
+        }
+        .uc-wrap {
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border: 1px solid var(--border);
+          border-radius: 22px;
+          padding: 14px;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+        }
+        .uc-top {
+          display:flex;
+          align-items:center;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .avatar {
+          width: 44px; height: 44px;
+          border-radius: 16px;
+          background: var(--primary);
+          color: white;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-weight: 950;
+          border: 1px solid rgba(255,255,255,0.18);
+          flex-shrink:0;
+        }
+        .uc-name { font-weight: 950; line-height: 1.1; }
+        .uc-sub {
+          display:flex;
+          gap: 8px;
+          align-items:center;
+          margin-top: 4px;
+          color: var(--text-muted);
+          font-weight: 900;
+          font-size: 0.85rem;
+        }
+        .badge {
+          padding: 5px 10px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel-2);
+          color: var(--text-main);
+          font-weight: 950;
+          font-size: 0.78rem;
+        }
+        .stats2 {
+          display:grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 12px;
+        }
+        .statbox {
+          background: var(--bg-panel-2);
+          border: 1px solid var(--border-2);
+          border-radius: 16px;
+          padding: 10px;
+        }
+        .statbox .k { color: var(--text-muted); font-weight: 950; font-size: 0.8rem; }
+        .statbox .v { font-weight: 950; margin-top: 4px; }
+        .uc-actions {
+          display:grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .uc-actions2 {
+          display:grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .small-btn {
+          width: 100%;
+          padding: 10px 12px;
+          border-radius: 16px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          color: var(--text-main);
+          font-weight: 950;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap: 10px;
+          transition: 0.18s;
+        }
+        .small-btn:hover { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+        .small-btn.danger:hover { box-shadow: 0 0 0 4px rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.55); }
+
+        .mini-actions {
+          display:flex;
+          gap: 10px;
+          justify-content:center;
+          margin-top: 10px;
+        }
+        .mini-icon {
+          width: 42px; height: 42px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          transition: 0.18s;
+        }
+        .mini-icon:hover { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-2); }
+
+        /* Directory */
+        .dir-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+        .dir-card {
+          background: linear-gradient(180deg, var(--bg-panel), rgba(255,255,255,0.02));
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 14px;
+          box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+        }
+        .dir-card .row { display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+        .dir-card .nm { font-weight: 950; }
+        .dir-card .ph { color: var(--text-muted); font-weight: 900; font-size: 0.92rem; margin-top: 6px; display:flex; align-items:center; gap: 8px; }
+        .dir-card .meta { margin-top: 10px; display:flex; gap: 8px; flex-wrap:wrap; }
+        .dir-card .meta .pill2 {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: var(--bg-panel-2);
+          font-weight: 950;
+          font-size: 0.8rem;
+          color: var(--text-muted);
+        }
+
+        /* Skeleton for loading screen */
+        .skeleton-bar {
+          height: 12px;
+          width: 100%;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.06);
+          overflow:hidden;
+          position:relative;
+          margin: 10px auto;
+        }
+        .skeleton-bar:after {
+          content:"";
+          position:absolute;
+          inset:0;
+          transform: translateX(-60%);
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+          animation: shimmer 1.2s infinite;
+        }
+        @keyframes shimmer { to { transform: translateX(60%); } }
+
+        /* Responsive */
+        @media (max-width: 980px) {
+          .sidebar { width: 260px; }
+          .cart-drawer { width: min(420px, 92vw); }
+        }
+      `}</style>
+
+      {view === 'login' ? (
         <div id="gate">
           <div className="login-box">
-            <img src="https://i.goopics.net/dskmxi.png" style={{ height: 60, marginBottom: 18 }} />
-            <h2 style={{ marginBottom: 8 }}>Bienvenue</h2>
-            <p style={{ color: "var(--text-muted)", marginBottom: 18 }}>
-              Connectez-vous pour commencer • <span style={{ opacity: 0.8 }}>v{data.version}</span>
-            </p>
+            <img src="https://i.goopics.net/dskmxi.png" style={{height:64, marginBottom:14, borderRadius:14}} />
+            <div style={{fontWeight:950, fontSize:'1.2rem'}}>Bienvenue</div>
+            <div style={{color:'var(--text-muted)', fontWeight:850, marginTop:6, marginBottom:18}}>Connectez-vous pour commencer</div>
 
-            {/* ✅ SELECT DARK (plus blanc) */}
-            <select className="inp-field select-dark" value={user} onChange={(e) => setUser(e.target.value)}>
-              <option value="">Sélectionner un nom…</option>
-              {data?.employees?.map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
+            <select className="inp-field" value={user} onChange={e => setUser(e.target.value)} style={{textAlign:'center', marginBottom:12}}>
+              <option value="">Sélectionner un nom...</option>
+              {data?.employees?.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
 
-            <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={login} disabled={!user}>
+            <button className="btn btn-primary" onClick={login} disabled={!user}>
               Accéder <Icon name="dashboard" size={18} />
             </button>
 
-            <div style={{ marginTop: 14, display: "flex", justifyContent: "center", gap: 10 }}>
-              <button className="pill" onClick={toggleTheme}>
-                {darkMode ? "Dark" : "Light"}
-              </button>
-              <button className="pill" onClick={() => setSoundOn((s) => !s)}>
-                {soundOn ? "Son: ON" : "Son: OFF"}
-              </button>
+            <div style={{marginTop:14, color:'var(--text-muted)', fontWeight:900, fontSize:'0.85rem'}}>
+              Hen House v{data?.version}
             </div>
           </div>
         </div>
       ) : (
         <>
-          <aside className={`sidebar ${quickMode ? "quick" : ""}`}>
+          <aside className="sidebar">
             <div className="brand">
-              <img src="https://i.goopics.net/dskmxi.png" alt="Logo" />
-              HEN HOUSE
+              <img src="https://i.goopics.net/dskmxi.png" alt="Logo"/> HEN HOUSE
             </div>
 
             <nav className="nav-list">
-              <button className={`nav-btn ${currentTab === "home" ? "active" : ""}`} onClick={() => setCurrentTab("home")}>
+              <button className={`nav-btn ${currentTab==='home'?'active':''}`} onClick={()=>setCurrentTab('home')}>
                 <Icon name="dashboard" /> Tableau de bord
               </button>
-              <button
-                className={`nav-btn ${currentTab === "invoices" ? "active" : ""}`}
-                onClick={() => setCurrentTab("invoices")}
-              >
+              <button className={`nav-btn ${currentTab==='invoices'?'active':''}`} onClick={()=>setCurrentTab('invoices')}>
                 <Icon name="receipt" /> Caisse
               </button>
-              <button className={`nav-btn ${currentTab === "stock" ? "active" : ""}`} onClick={() => setCurrentTab("stock")}>
+              <button className={`nav-btn ${currentTab==='stock'?'active':''}`} onClick={()=>setCurrentTab('stock')}>
                 <Icon name="package" /> Stock
               </button>
-              <button
-                className={`nav-btn ${currentTab === "enterprise" ? "active" : ""}`}
-                onClick={() => setCurrentTab("enterprise")}
-              >
+              <button className={`nav-btn ${currentTab==='enterprise'?'active':''}`} onClick={()=>setCurrentTab('enterprise')}>
                 <Icon name="building" /> Entreprise
               </button>
-              <button
-                className={`nav-btn ${currentTab === "partners" ? "active" : ""}`}
-                onClick={() => setCurrentTab("partners")}
-              >
+              <button className={`nav-btn ${currentTab==='partners'?'active':''}`} onClick={()=>setCurrentTab('partners')}>
                 <Icon name="handshake" /> Partenaires
               </button>
-              <button
-                className={`nav-btn ${currentTab === "expenses" ? "active" : ""}`}
-                onClick={() => setCurrentTab("expenses")}
-              >
+              <button className={`nav-btn ${currentTab==='expenses'?'active':''}`} onClick={()=>setCurrentTab('expenses')}>
                 <Icon name="creditCard" /> Frais
               </button>
-              <button className={`nav-btn ${currentTab === "garage" ? "active" : ""}`} onClick={() => setCurrentTab("garage")}>
+              <button className={`nav-btn ${currentTab==='garage'?'active':''}`} onClick={()=>setCurrentTab('garage')}>
                 <Icon name="car" /> Garage
               </button>
-
-              {/* ✅ Annuaire + Performance */}
-              <button
-                className={`nav-btn ${currentTab === "directory" ? "active" : ""}`}
-                onClick={() => setCurrentTab("directory")}
-              >
-                <Icon name="users" /> Annuaire
+              <button className={`nav-btn ${currentTab==='directory'?'active':''}`} onClick={()=>setCurrentTab('directory')}>
+                <Icon name="user" /> Annuaire
               </button>
-              <button
-                className={`nav-btn ${currentTab === "performance" ? "active" : ""}`}
-                onClick={() => setCurrentTab("performance")}
-              >
+              <button className={`nav-btn ${currentTab==='performance'?'active':''}`} onClick={()=>setCurrentTab('performance')}>
                 <Icon name="trophy" /> Performance
               </button>
-
-              <button
-                className={`nav-btn ${currentTab === "support" ? "active" : ""}`}
-                onClick={() => setCurrentTab("support")}
-              >
+              <button className={`nav-btn ${currentTab==='support'?'active':''}`} onClick={()=>setCurrentTab('support')}>
                 <Icon name="lifeBuoy" /> Support
               </button>
             </nav>
 
-            {/* ✅ BAS GAUCHE : propre */}
-            <div className="profileCard">
-              <div className="profileTop">
-                <div className="avatarLg">{user?.charAt(0) || "?"}</div>
-                <div style={{ flex: 1 }}>
-                  <div className="profileName">{user}</div>
-                  <div className="profileMeta">
-                    <span className="badge">{myProfile?.role || "Employé"}</span>
-                    <span className="muted">• {myProfile?.seniority ?? 0} j</span>
+            {/* ✅ Bottom Card refaite */}
+            <div className="user-card">
+              <div className="uc-wrap">
+                <div className="uc-top">
+                  <div className="avatar">{(user||'?').charAt(0)}</div>
+                  <div style={{flex:1}}>
+                    <div className="uc-name">{user}</div>
+                    <div className="uc-sub">
+                      <span className="badge">{currentEmployee?.role || 'Employé'}</span>
+                      <span style={{opacity:0.7}}>•</span>
+                      <span>{currentEmployee?.seniorityDays ?? 0} j</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="profileStats">
-                <div className="statMini">
-                  <span>CA</span>
-                  <b>
-                    {currency}
-                    {(myProfile?.ca || 0).toFixed(0)}
-                  </b>
+                <div className="stats2">
+                  <div className="statbox">
+                    <div className="k">CA</div>
+                    <div className="v">{money(currentEmployee?.ca || 0)}</div>
+                  </div>
+                  <div className="statbox">
+                    <div className="k">Stock</div>
+                    <div className="v">{Number(currentEmployee?.stock || 0)}</div>
+                  </div>
                 </div>
-                <div className="statMini">
-                  <span>Stock</span>
-                  <b>{(myProfile?.stock || 0).toFixed(0)}</b>
+
+                <div className="uc-actions">
+                  <button className="small-btn" onClick={()=>setCurrentTab('directory')}>
+                    <Icon name="user" size={18} /> Annuaire
+                  </button>
+                  <button className="small-btn" onClick={()=>setProfileOpen(true)}>
+                    <Icon name="user" size={18} /> Profil
+                  </button>
                 </div>
-              </div>
 
-              <div className="profileActions">
-                <button className="btnMini" onClick={() => setCurrentTab("directory")}>
-                  <Icon name="users" size={16} /> Annuaire
-                </button>
-                <button className="btnMini" onClick={() => setSelectedEmp(myProfile) || setDirOpen(true)}>
-                  <Icon name="dashboard" size={16} /> Profil
-                </button>
-                <button className="btnMini danger" onClick={logout}>
-                  <Icon name="logout" size={16} /> Quitter
-                </button>
-              </div>
+                <div className="uc-actions2">
+                  <button className="small-btn" onClick={fetchMeta}>
+                    <Icon name="refresh" size={18} /> Rafraîchir
+                  </button>
+                  <button className="small-btn danger" onClick={logout}>
+                    <Icon name="logout" size={18} /> Quitter
+                  </button>
+                </div>
 
-              <div className="tinyToggles">
-                <button className="pill" onClick={toggleTheme}>
-                  {darkMode ? "☀" : "🌙"}
-                </button>
-                <button className="pill" onClick={() => setSoundOn((s) => !s)} title="Son">
-                  {soundOn ? <Icon name="volume" size={16} /> : <Icon name="mute" size={16} />}
-                </button>
+                <div className="mini-actions">
+                  <button className="mini-icon" title="Son ON/OFF" onClick={()=>setSoundOn(v=>!v)}>
+                    {soundOn ? <Icon name="volume2" size={18} /> : <Icon name="volumeX" size={18} />}
+                  </button>
+                  <button className="mini-icon" title="Rafraîchir le site" onClick={()=>window.location.reload()}>
+                    <Icon name="refresh" size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </aside>
 
-          <main className={`main-content ${quickMode ? "quick" : ""}`}>
+          <main className="main-content">
             <header className="header-bar">
               <div className="page-title">
-                {currentTab === "home" && (
-                  <>
-                    <Icon name="dashboard" size={32} /> Tableau de bord
-                  </>
-                )}
-                {currentTab === "invoices" && (
-                  <>
-                    <Icon name="receipt" size={32} /> Caisse
-                  </>
-                )}
-                {currentTab === "stock" && (
-                  <>
-                    <Icon name="package" size={32} /> Stock
-                  </>
-                )}
-                {currentTab === "enterprise" && (
-                  <>
-                    <Icon name="building" size={32} /> Entreprise
-                  </>
-                )}
-                {currentTab === "partners" && (
-                  <>
-                    <Icon name="handshake" size={32} /> Partenaires
-                  </>
-                )}
-                {currentTab === "garage" && (
-                  <>
-                    <Icon name="car" size={32} /> Garage
-                  </>
-                )}
-                {currentTab === "expenses" && (
-                  <>
-                    <Icon name="creditCard" size={32} /> Frais
-                  </>
-                )}
-                {currentTab === "support" && (
-                  <>
-                    <Icon name="lifeBuoy" size={32} /> Support
-                  </>
-                )}
-                {currentTab === "directory" && (
-                  <>
-                    <Icon name="users" size={32} /> Annuaire
-                  </>
-                )}
-                {currentTab === "performance" && (
-                  <>
-                    <Icon name="trophy" size={32} /> Performance
-                  </>
-                )}
+                {currentTab === 'home' && <><Icon name="dashboard" size={30} /> Tableau de bord</>}
+                {currentTab === 'invoices' && <><Icon name="receipt" size={30} /> Caisse</>}
+                {currentTab === 'stock' && <><Icon name="package" size={30} /> Stock</>}
+                {currentTab === 'enterprise' && <><Icon name="building" size={30} /> Entreprise</>}
+                {currentTab === 'partners' && <><Icon name="handshake" size={30} /> Partenaires</>}
+                {currentTab === 'garage' && <><Icon name="car" size={30} /> Garage</>}
+                {currentTab === 'expenses' && <><Icon name="creditCard" size={30} /> Frais</>}
+                {currentTab === 'support' && <><Icon name="lifeBuoy" size={30} /> Support</>}
+                {currentTab === 'directory' && <><Icon name="user" size={30} /> Annuaire</>}
+                {currentTab === 'performance' && <><Icon name="trophy" size={30} /> Performance</>}
               </div>
 
-              <div className="top-stats">
-                <div className="mini-stat">
-                  Session:{" "}
-                  <strong>
-                    {currency}
-                    {sessionTotal.toFixed(2)}
-                  </strong>
-                </div>
+              <div className="top-actions">
+                <div className="chip">Session: <strong>{money(sessionTotal)}</strong></div>
 
-                <label className="toggle">
-                  <span>Mode rapide</span>
-                  <input type="checkbox" checked={quickMode} onChange={() => setQuickMode((q) => !q)} />
-                  <span className="slider" />
-                </label>
+                {currentTab === 'invoices' && (
+                  <div className="toggle">
+                    Mode rapide
+                    <div className={`switch ${fastMode ? 'on' : ''}`} onClick={()=>setFastMode(v=>!v)} />
+                  </div>
+                )}
 
-                <button className="theme-btn" onClick={toggleTheme} title="Thème">
-                  {darkMode ? <Icon name="sun" size={20} /> : <Icon name="moon" size={20} />}
+                <button className="icon-btn" title="Rafraîchir" onClick={fetchMeta}>
+                  <Icon name="refresh" size={18} />
+                </button>
+
+                <button className="icon-btn" title="Theme" onClick={toggleTheme}>
+                  {darkMode ? <Icon name="sun" size={18} /> : <Icon name="moon" size={18} />}
                 </button>
               </div>
             </header>
 
             {/* HOME */}
-            {currentTab === "home" && (
+            {currentTab === 'home' && (
               <>
-                <div className="dashboard-grid">
-                  <div className="dash-card" onClick={() => setCurrentTab("invoices")}>
-                    <div className="dash-icon">
-                      <Icon name="receipt" size={28} />
-                    </div>
+                <div className="dashboard-grid" style={{marginBottom: 18}}>
+                  <div className="dash-card" onClick={()=>setCurrentTab('invoices')}>
+                    <div className="dash-icon"><Icon name="receipt" size={24} /></div>
                     <div>
                       <div className="dash-title">Caisse</div>
                       <div className="dash-desc">Nouvelle vente</div>
                     </div>
                   </div>
-
-                  <div className="dash-card" onClick={() => setCurrentTab("stock")}>
-                    <div className="dash-icon">
-                      <Icon name="package" size={28} />
-                    </div>
+                  <div className="dash-card" onClick={()=>setCurrentTab('stock')}>
+                    <div className="dash-icon"><Icon name="package" size={24} /></div>
                     <div>
                       <div className="dash-title">Stock</div>
-                      <div className="dash-desc">Production cuisine</div>
+                      <div className="dash-desc">Déclaration cuisine</div>
                     </div>
                   </div>
-
-                  <div className="dash-card" onClick={() => setCurrentTab("enterprise")}>
-                    <div className="dash-icon">
-                      <Icon name="building" size={28} />
-                    </div>
+                  <div className="dash-card" onClick={()=>setCurrentTab('enterprise')}>
+                    <div className="dash-icon"><Icon name="building" size={24} /></div>
                     <div>
                       <div className="dash-title">Entreprise</div>
                       <div className="dash-desc">Commandes B2B</div>
                     </div>
                   </div>
-
-                  <div className="dash-card" onClick={() => setCurrentTab("performance")}>
-                    <div className="dash-icon">
-                      <Icon name="trophy" size={28} />
-                    </div>
+                  <div className="dash-card" onClick={()=>setCurrentTab('performance')}>
+                    <div className="dash-icon"><Icon name="trophy" size={24} /></div>
                     <div>
-                      <div className="dash-title">Classements</div>
-                      <div className="dash-desc">Top CA & Production</div>
+                      <div className="dash-title">Performance</div>
+                      <div className="dash-desc">Top vendeurs & production</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="homeRow">
-                  <div className="panel">
-                    <div className="panelHead">
-                      <b>🏆 Top CA</b>
-                      <span className="muted">Top 5</span>
-                    </div>
-                    <div className="rankList">
-                      {(data.leaderboard?.topCA || []).map((p, i) => (
-                        <div key={p.name} className="rankItem" onClick={() => (setSelectedEmp(p), setDirOpen(true))}>
-                          <span className="rankN">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}</span>
-                          <span className="rankName">{p.name}</span>
-                          <span className="rankVal">
-                            {currency}
-                            {Number(p.ca || 0).toFixed(0)}
-                          </span>
+                {/* Mini ranking */}
+                <div className="dashboard-grid">
+                  <div className="dash-card" style={{cursor:'default'}}>
+                    <div className="dash-icon"><Icon name="trophy" size={24} /></div>
+                    <div className="dash-title">Top CA</div>
+                    <div className="dash-desc" style={{marginTop:10}}>
+                      {topCA.map((e, i)=>(
+                        <div key={e.name} style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:6}}>
+                          <span>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'•'} {e.name}</span>
+                          <span style={{color:'var(--primary)'}}>{money(e.ca)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="panel">
-                    <div className="panelHead">
-                      <b>📦 Top Production</b>
-                      <span className="muted">Top 5</span>
-                    </div>
-                    <div className="rankList">
-                      {(data.leaderboard?.topStock || []).map((p, i) => (
-                        <div key={p.name} className="rankItem" onClick={() => (setSelectedEmp(p), setDirOpen(true))}>
-                          <span className="rankN">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}</span>
-                          <span className="rankName">{p.name}</span>
-                          <span className="rankVal">{Number(p.stock || 0).toFixed(0)}</span>
+                  <div className="dash-card" style={{cursor:'default'}}>
+                    <div className="dash-icon"><Icon name="package" size={24} /></div>
+                    <div className="dash-title">Top Stock</div>
+                    <div className="dash-desc" style={{marginTop:10}}>
+                      {topStock.map((e, i)=>(
+                        <div key={e.name} style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:6}}>
+                          <span>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'•'} {e.name}</span>
+                          <span style={{color:'var(--primary)'}}>{Number(e.stock)}</span>
                         </div>
                       ))}
                     </div>
@@ -660,291 +1123,212 @@ export default function Home() {
             )}
 
             {/* CAISSE */}
-            {currentTab === "invoices" && (
+            {currentTab === 'invoices' && (
               <>
                 <div className="search-container">
-                  <div className="search-icon">
-                    <Icon name="search" size={20} />
-                  </div>
-                  <input className="search-inp" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <div className="search-icon"><Icon name="search" size={18} /></div>
+                  <input className="search-inp" placeholder="Rechercher..." onChange={e=>setSearch(e.target.value)} />
                 </div>
 
                 <div className="cat-pills">
-                  <button className={`pill ${catFilter === "Tous" ? "active" : ""}`} onClick={() => setCatFilter("Tous")}>
-                    Tous
-                  </button>
-                  {Object.keys(data.productsByCategory).map((c) => (
-                    <button
-                      key={c}
-                      className={`pill ${catFilter === c ? "active" : ""}`}
-                      onClick={() => setCatFilter(c)}
-                    >
-                      {c.replace(/_/g, " ")}
-                    </button>
+                  <div className={`pill ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
+                  {Object.keys(data.productsByCategory).map(c => (
+                    <div key={c} className={`pill ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>
+                      {c.replace(/_/g,' ')}
+                    </div>
                   ))}
                 </div>
 
-                <div className="prod-grid">
+                <div className="prod-grid" style={{gridTemplateColumns: fastMode ? 'repeat(auto-fill, minmax(210px, 1fr))' : undefined}}>
                   {data.products
-                    .filter((p) => {
-                      const cat = Object.keys(data.productsByCategory).find((k) => data.productsByCategory[k].includes(p));
-                      return (catFilter === "Tous" || cat === catFilter) && p.toLowerCase().includes(search.toLowerCase());
+                    .filter(p => {
+                      const cat = Object.keys(data.productsByCategory).find(k=>data.productsByCategory[k].includes(p));
+                      return (catFilter==='Tous' || cat===catFilter) && p.toLowerCase().includes(search.toLowerCase());
                     })
-                    .map((p) => (
-                      <button key={p} className="prod-card" onClick={() => addToCart(p)}>
-                        {IMAGES[p] ? <img src={IMAGES[p]} className="prod-img" /> : <div className="prod-img letter">{p.charAt(0)}</div>}
+                    .map(p => (
+                      <div key={p} className="prod-card" onClick={()=>addToCart(p)}>
+                        {IMAGES[p] ? <img src={IMAGES[p]} className="prod-img" /> : <div className="prod-img">{p.charAt(0)}</div>}
                         <div className="prod-title">{p}</div>
-                        <div className="prod-price">
-                          {currency}
-                          {Number(data.prices[p] || 0).toFixed(0)}
-                        </div>
-                      </button>
-                    ))}
+                        <div className="prod-price">{money(data.prices[p])}</div>
+                      </div>
+                    ))
+                  }
                 </div>
               </>
             )}
 
             {/* STOCK */}
-            {currentTab === "stock" && (
+            {currentTab === 'stock' && (
               <div className="form-wrap">
-                <h2 className="form-title">
-                  <Icon name="package" /> Déclaration Stock
-                </h2>
+                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="package" /> Déclaration Stock</h2>
 
                 {stockItems.map((item, i) => (
-                  <div key={i} className="rowLine">
-                    <select
-                      className="inp-field select-dark"
-                      value={item.product}
-                      onChange={(e) => {
-                        const n = [...stockItems];
-                        n[i].product = e.target.value;
-                        setStockItems(n);
-                      }}
-                    >
-                      <option value="" disabled>
-                        Produit…
-                      </option>
-                      {data.products.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
+                  <div key={i} className="rowline">
+                    <select className="inp-field" value={item.product} onChange={e=>{const n=[...stockItems]; n[i].product=e.target.value; setStockItems(n)}} style={{flex:1}}>
+                      <option value="" disabled>Produit...</option>
+                      {data.products.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
 
-                    {/* ✅ clavier */}
                     <input
                       type="number"
-                      className="inp-field qty"
+                      className="mini-number"
                       value={item.qty}
+                      onChange={e=>{const n=[...stockItems]; n[i].qty = clampNum(e.target.value,0,99999); setStockItems(n)}}
                       inputMode="numeric"
-                      step="1"
-                      onChange={(e) => {
-                        const n = [...stockItems];
-                        n[i].qty = e.target.value;
-                        setStockItems(n);
-                      }}
                     />
 
-                    <button className="iconBtn danger" onClick={() => setStockItems(stockItems.filter((_, idx) => idx !== i))}>
-                      <Icon name="x" size={18} />
+                    <button className="qb danger" onClick={()=>{
+                      const n=[...stockItems]; n.splice(i,1);
+                      setStockItems(n.length ? n : [{product:data.products[0], qty:1}]);
+                    }}>
+                      <Icon name="x" size={16}/>
                     </button>
                   </div>
                 ))}
 
-                <button className="btn btn-text" onClick={() => setStockItems([...stockItems, { product: data.products[0], qty: 1 }])}>
+                <button className="btn btn-text" onClick={()=>setStockItems([...stockItems, {product:data.products[0], qty:1}])}>
                   + Ajouter ligne
                 </button>
-                <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => sendForm("sendProduction", { items: stockItems })}>
+                <button className="btn btn-primary" style={{marginTop:14}} onClick={()=>sendForm('sendProduction', {items:stockItems})}>
                   Envoyer
                 </button>
               </div>
             )}
 
             {/* ENTREPRISE */}
-            {currentTab === "enterprise" && (
+            {currentTab === 'enterprise' && (
               <div className="form-wrap">
-                <h2 className="form-title">
-                  <Icon name="building" /> Commande Pro
-                </h2>
+                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="building" /> Commande Pro</h2>
 
                 <div className="inp-group">
                   <label className="inp-label">Nom Entreprise</label>
-                  <input className="inp-field" value={entName} onChange={(e) => setEntName(e.target.value)} />
+                  <input className="inp-field" value={entName} onChange={e=>setEntName(e.target.value)} />
                 </div>
 
                 {entItems.map((item, i) => (
-                  <div key={i} className="rowLine">
-                    <select
-                      className="inp-field select-dark"
-                      value={item.product}
-                      onChange={(e) => {
-                        const n = [...entItems];
-                        n[i].product = e.target.value;
-                        setEntItems(n);
-                      }}
-                    >
-                      <option value="" disabled>
-                        Produit…
-                      </option>
-                      {data.products.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
+                  <div key={i} className="rowline">
+                    <select className="inp-field" value={item.product} onChange={e=>{const n=[...entItems]; n[i].product=e.target.value; setEntItems(n)}} style={{flex:1}}>
+                      <option value="" disabled>Produit...</option>
+                      {data.products.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
 
                     <input
                       type="number"
-                      className="inp-field qty"
-                      inputMode="numeric"
-                      step="1"
+                      className="mini-number"
                       value={item.qty}
-                      onChange={(e) => {
-                        const n = [...entItems];
-                        n[i].qty = e.target.value;
-                        setEntItems(n);
-                      }}
+                      onChange={e=>{const n=[...entItems]; n[i].qty = clampNum(e.target.value,0,99999); setEntItems(n)}}
+                      inputMode="numeric"
                     />
 
-                    <button className="iconBtn danger" onClick={() => setEntItems(entItems.filter((_, idx) => idx !== i))}>
-                      <Icon name="x" size={18} />
+                    <button className="qb danger" onClick={()=>{
+                      const n=[...entItems]; n.splice(i,1);
+                      setEntItems(n.length ? n : [{product:data.products[0], qty:1}]);
+                    }}>
+                      <Icon name="x" size={16}/>
                     </button>
                   </div>
                 ))}
 
-                <button className="btn btn-text" onClick={() => setEntItems([...entItems, { product: data.products[0], qty: 1 }])}>
+                <button className="btn btn-text" onClick={()=>setEntItems([...entItems, {product:data.products[0], qty:1}])}>
                   + Ajouter ligne
                 </button>
-                <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={handleSendEnterprise}>
+
+                <button className="btn btn-primary" style={{marginTop:14}} onClick={handleSendEnterprise}>
                   Valider
                 </button>
               </div>
             )}
 
             {/* PARTENAIRES */}
-            {currentTab === "partners" && (
+            {currentTab === 'partners' && (
               <div className="form-wrap">
-                <h2 className="form-title">
-                  <Icon name="handshake" /> Partenaires
-                </h2>
+                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="handshake" /> Partenaires</h2>
 
                 <div className="inp-group">
                   <label className="inp-label">N° Facture</label>
-                  <input className="inp-field" value={parNum} onChange={(e) => setParNum(e.target.value)} />
+                  <input className="inp-field" value={parNum} onChange={e=>setParNum(e.target.value)} />
                 </div>
 
-                <div className="grid2">
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
                   <div className="inp-group">
                     <label className="inp-label">Société</label>
-                    <select className="inp-field select-dark" value={parCompany} onChange={(e) => setParCompany(e.target.value)}>
-                      {Object.keys(data.partners.companies).map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
+                    <select className="inp-field" value={parCompany} onChange={e=>setParCompany(e.target.value)}>
+                      {Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
-
                   <div className="inp-group">
                     <label className="inp-label">Bénéficiaire</label>
-                    <select className="inp-field select-dark" value={parBenef} onChange={(e) => setParBenef(e.target.value)}>
-                      {parCompany &&
-                        data.partners.companies[parCompany].beneficiaries.map((b) => (
-                          <option key={b} value={b}>
-                            {b}
-                          </option>
-                        ))}
+                    <select className="inp-field" value={parBenef} onChange={e=>setParBenef(e.target.value)}>
+                      {parCompany && data.partners.companies[parCompany].beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                 </div>
 
                 {parItems.map((item, i) => (
-                  <div key={i} className="rowLine">
-                    <select
-                      className="inp-field select-dark"
-                      value={item.menu}
-                      onChange={(e) => {
-                        const n = [...parItems];
-                        n[i].menu = e.target.value;
-                        setParItems(n);
-                      }}
-                    >
-                      {parCompany &&
-                        data.partners.companies[parCompany].menus.map((m) => (
-                          <option key={m.name} value={m.name}>
-                            {m.name}
-                          </option>
-                        ))}
+                  <div key={i} className="rowline">
+                    <select className="inp-field" value={item.menu} onChange={e=>{const n=[...parItems]; n[i].menu=e.target.value; setParItems(n)}} style={{flex:1}}>
+                      {parCompany && data.partners.companies[parCompany].menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
                     </select>
 
                     <input
                       type="number"
-                      className="inp-field qty"
-                      inputMode="numeric"
-                      step="1"
+                      className="mini-number"
                       value={item.qty}
-                      onChange={(e) => {
-                        const n = [...parItems];
-                        n[i].qty = e.target.value;
-                        setParItems(n);
-                      }}
+                      onChange={e=>{const n=[...parItems]; n[i].qty = clampNum(e.target.value,0,99999); setParItems(n)}}
+                      inputMode="numeric"
                     />
 
-                    <button className="iconBtn danger" onClick={() => setParItems(parItems.filter((_, idx) => idx !== i))}>
-                      <Icon name="x" size={18} />
+                    <button className="qb danger" onClick={()=>{
+                      const n=[...parItems]; n.splice(i,1);
+                      const first = data.partners.companies[parCompany]?.menus?.[0]?.name || '';
+                      setParItems(n.length ? n : [{menu:first, qty:1}]);
+                    }}>
+                      <Icon name="x" size={16}/>
                     </button>
                   </div>
                 ))}
 
-                <button
-                  className="btn btn-text"
-                  onClick={() =>
-                    setParItems([...parItems, { menu: data.partners.companies[parCompany].menus[0].name, qty: 1 }])
-                  }
-                >
+                <button className="btn btn-text" onClick={()=>{
+                  const first = data.partners.companies[parCompany]?.menus?.[0]?.name || '';
+                  setParItems([...parItems, {menu:first, qty:1}]);
+                }}>
                   + Menu
                 </button>
-                <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={handleSendPartner}>
+
+                <button className="btn btn-primary" style={{marginTop:14}} onClick={handleSendPartner}>
                   Confirmer
                 </button>
               </div>
             )}
 
             {/* FRAIS */}
-            {currentTab === "expenses" && (
+            {currentTab === 'expenses' && (
               <div className="form-wrap">
-                <h2 className="form-title">
-                  <Icon name="creditCard" /> Frais
-                </h2>
+                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="creditCard" /> Frais</h2>
 
                 <div className="inp-group">
                   <label className="inp-label">Véhicule</label>
-                  <select className="inp-field select-dark" value={expData.veh} onChange={(e) => setExpData({ ...expData, veh: e.target.value })}>
-                    {data.vehicles.map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
+                  <select className="inp-field" value={expData.veh} onChange={e=>setExpData({...expData, veh:e.target.value})}>
+                    {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
 
                 <div className="inp-group">
                   <label className="inp-label">Type</label>
-                  <select className="inp-field select-dark" value={expData.kind} onChange={(e) => setExpData({ ...expData, kind: e.target.value })}>
+                  <select className="inp-field" value={expData.kind} onChange={e=>setExpData({...expData, kind:e.target.value})}>
                     <option>Essence</option>
                     <option>Réparation</option>
                   </select>
                 </div>
 
                 <div className="inp-group">
-                  <label className="inp-label">Montant ({currency})</label>
+                  <label className="inp-label">Montant ($)</label>
                   <input
                     type="number"
-                    inputMode="decimal"
                     className="inp-field"
                     value={expData.amt}
-                    onChange={(e) => setExpData({ ...expData, amt: e.target.value })}
+                    onChange={e=>setExpData({...expData, amt:e.target.value})}
+                    inputMode="decimal"
                   />
                 </div>
 
@@ -955,55 +1339,50 @@ export default function Home() {
             )}
 
             {/* GARAGE */}
-            {currentTab === "garage" && (
+            {currentTab === 'garage' && (
               <div className="form-wrap">
-                <h2 className="form-title">
-                  <Icon name="car" /> Garage
-                </h2>
+                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="car" /> Garage</h2>
 
                 <div className="inp-group">
                   <label className="inp-label">Véhicule</label>
-                  <select className="inp-field select-dark" value={garData.veh} onChange={(e) => setGarData({ ...garData, veh: e.target.value })}>
-                    {data.vehicles.map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
+                  <select className="inp-field" value={garData.veh} onChange={e=>setGarData({...garData, veh:e.target.value})}>
+                    {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
 
                 <div className="inp-group">
                   <label className="inp-label">Action</label>
-                  <select className="inp-field select-dark" value={garData.action} onChange={(e) => setGarData({ ...garData, action: e.target.value })}>
+                  <select className="inp-field" value={garData.action} onChange={e=>setGarData({...garData, action:e.target.value})}>
                     <option>Entrée</option>
                     <option>Sortie</option>
-                    <option>Maintenance</option>
-                    <option>Réparation</option>
                   </select>
                 </div>
 
                 <div className="inp-group">
                   <label className="inp-label">Essence (%)</label>
-                  <input type="range" className="range" value={garData.fuel} onChange={(e) => setGarData({ ...garData, fuel: e.target.value })} />
-                  <div className="muted">{garData.fuel}%</div>
+                  <input
+                    type="number"
+                    className="inp-field"
+                    value={garData.fuel}
+                    onChange={e=>setGarData({...garData, fuel: clampNum(e.target.value,0,100)})}
+                    inputMode="numeric"
+                  />
                 </div>
 
-                <button className="btn btn-primary" onClick={() => sendForm("sendGarage", { vehicle: garData.veh, action: garData.action, fuel: garData.fuel })}>
+                <button className="btn btn-primary" onClick={()=>sendForm('sendGarage', {vehicle:garData.veh, action:garData.action, fuel:garData.fuel})}>
                   Mettre à jour
                 </button>
               </div>
             )}
 
             {/* SUPPORT */}
-            {currentTab === "support" && (
+            {currentTab === 'support' && (
               <div className="form-wrap">
-                <h2 className="form-title">
-                  <Icon name="lifeBuoy" /> Support
-                </h2>
+                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="lifeBuoy" /> Support</h2>
 
                 <div className="inp-group">
                   <label className="inp-label">Sujet</label>
-                  <select className="inp-field select-dark" value={supData.sub} onChange={(e) => setSupData({ ...supData, sub: e.target.value })}>
+                  <select className="inp-field" value={supData.sub} onChange={e=>setSupData({...supData, sub:e.target.value})}>
                     <option>Problème Stock</option>
                     <option>Autre</option>
                   </select>
@@ -1011,176 +1390,163 @@ export default function Home() {
 
                 <div className="inp-group">
                   <label className="inp-label">Message</label>
-                  <textarea className="inp-field" style={{ height: 110 }} value={supData.msg} onChange={(e) => setSupData({ ...supData, msg: e.target.value })} />
+                  <textarea className="inp-field" style={{height:110}} value={supData.msg} onChange={e=>setSupData({...supData, msg:e.target.value})}></textarea>
                 </div>
 
-                <button className="btn btn-primary" onClick={() => sendForm("sendSupport", { subject: supData.sub, message: supData.msg })}>
+                <button className="btn btn-primary" onClick={()=>sendForm('sendSupport', {subject:supData.sub, message:supData.msg})}>
                   Envoyer
                 </button>
               </div>
             )}
 
             {/* ANNUAIRE */}
-            {currentTab === "directory" && (
+            {currentTab === 'directory' && (
               <>
-                <div className="dirBar">
-                  <div className="search-container" style={{ marginBottom: 0, maxWidth: 520 }}>
-                    <div className="search-icon">
-                      <Icon name="search" size={20} />
-                    </div>
-                    <input
-                      className="search-inp"
-                      placeholder="Rechercher nom / téléphone / poste…"
-                      value={dirQuery}
-                      onChange={(e) => setDirQuery(e.target.value)}
-                    />
+                <div style={{display:'flex', gap: 12, marginBottom: 14, flexWrap:'wrap'}}>
+                  <div style={{flex:'1 1 320px'}} className="search-container">
+                    <div className="search-icon"><Icon name="search" size={18} /></div>
+                    <input className="search-inp" placeholder="Rechercher (nom, tel, poste)..." value={directoryQuery} onChange={e=>setDirectoryQuery(e.target.value)} />
                   </div>
 
-                  <select className="inp-field select-dark" style={{ maxWidth: 240 }} value={dirRole} onChange={(e) => setDirRole(e.target.value)}>
-                    {dirRoles.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{width: 240}}>
+                    <select className="inp-field" value={directoryRole} onChange={e=>setDirectoryRole(e.target.value)}>
+                      {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+
+                  <button className="btn btn-ghost" style={{width: 200, height: 52}} onClick={fetchMeta}>
+                    <Icon name="refresh" size={18} /> Rafraîchir
+                  </button>
                 </div>
 
-                <div className="dirGrid">
-                  {directoryFiltered.map((p) => (
-                    <button key={p.name} className="dirCard" onClick={() => (setSelectedEmp(p), setDirOpen(true))}>
-                      <div className="dirTop">
-                        <div className="avatarLg">{p.name?.charAt(0) || "?"}</div>
-                        <div style={{ flex: 1 }}>
-                          <div className="dirName">{p.name}</div>
-                          <div className="dirMeta">
-                            <span className="badge">{p.role || "Employé"}</span>
-                            <span className="muted">• {p.seniority ?? 0} j</span>
-                          </div>
-                        </div>
+                <div className="dir-grid">
+                  {directoryList.map(emp => (
+                    <div key={emp.id + emp.name} className="dir-card">
+                      <div className="row">
+                        <div className="nm">{emp.name}</div>
+                        <span className="badge">{emp.role || 'Employé'}</span>
                       </div>
 
-                      <div className="dirBottom">
-                        <div className="muted">{p.phone || "—"}</div>
-                        <div className="dirQuick">
-                          <span className="dirMini">
-                            CA: <b>{currency + Number(p.ca || 0).toFixed(0)}</b>
-                          </span>
-                          <span className="dirMini">
-                            Stock: <b>{Number(p.stock || 0).toFixed(0)}</b>
-                          </span>
-                        </div>
+                      <div className="ph">
+                        <Icon name="phone" size={16} />
+                        <span>{emp.phone || '—'}</span>
+                        {emp.phone ? (
+                          <button className="small-btn" style={{width:'auto', padding:'8px 10px', borderRadius:14}} onClick={()=>copyToClipboard(emp.phone)}>
+                            Copier
+                          </button>
+                        ) : null}
                       </div>
-                    </button>
+
+                      <div className="meta">
+                        <span className="pill2">Ancienneté: {emp.seniorityDays || 0} j</span>
+                        <span className="pill2">CA: {money(emp.ca || 0)}</span>
+                        <span className="pill2">Stock: {Number(emp.stock || 0)}</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </>
             )}
 
             {/* PERFORMANCE */}
-            {currentTab === "performance" && (
-              <div className="perfGrid">
-                <div className="panel">
-                  <div className="panelHead">
-                    <b>🏆 Top CA</b>
-                    <span className="muted">Top 5</span>
-                  </div>
-                  <div className="rankList">
-                    {(data.leaderboard?.topCA || []).map((p, i) => (
-                      <div key={p.name} className="rankItem" onClick={() => (setSelectedEmp(p), setDirOpen(true))}>
-                        <span className="rankN">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}</span>
-                        <span className="rankName">{p.name}</span>
-                        <span className="rankVal">
-                          {currency}
-                          {Number(p.ca || 0).toFixed(0)}
-                        </span>
-                      </div>
-                    ))}
+            {currentTab === 'performance' && (
+              <div className="form-wrap" style={{maxWidth: 920}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', gap: 10, flexWrap:'wrap'}}>
+                  <h2 style={{display:'flex', alignItems:'center', gap:10}}><Icon name="trophy" /> Classements</h2>
+                  <div style={{display:'flex', gap: 10}}>
+                    <button className="btn btn-ghost" style={{width: 220}} onClick={fetchMeta}>
+                      <Icon name="refresh" size={18} /> Rafraîchir (stats)
+                    </button>
+                    <button className="btn btn-primary" style={{width: 220}} onClick={()=>window.location.reload()}>
+                      <Icon name="refresh" size={18} /> Rafraîchir le site
+                    </button>
                   </div>
                 </div>
 
-                <div className="panel">
-                  <div className="panelHead">
-                    <b>📦 Top Production</b>
-                    <span className="muted">Top 5</span>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap: 14, marginTop: 14}}>
+                  <div className="dir-card">
+                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                      <div style={{fontWeight:950, fontSize:'1.05rem'}}>Top CA</div>
+                      <span className="badge">5</span>
+                    </div>
+                    <div style={{marginTop:10}}>
+                      {topCA.map((e, i)=>(
+                        <div key={e.name} style={{display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid var(--border-2)', fontWeight:900}}>
+                          <span>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'•'} {e.name}</span>
+                          <span style={{color:'var(--primary)'}}>{money(e.ca)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="rankList">
-                    {(data.leaderboard?.topStock || []).map((p, i) => (
-                      <div key={p.name} className="rankItem" onClick={() => (setSelectedEmp(p), setDirOpen(true))}>
-                        <span className="rankN">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}</span>
-                        <span className="rankName">{p.name}</span>
-                        <span className="rankVal">{Number(p.stock || 0).toFixed(0)}</span>
-                      </div>
-                    ))}
+
+                  <div className="dir-card">
+                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                      <div style={{fontWeight:950, fontSize:'1.05rem'}}>Top Stock</div>
+                      <span className="badge">5</span>
+                    </div>
+                    <div style={{marginTop:10}}>
+                      {topStock.map((e, i)=>(
+                        <div key={e.name} style={{display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid var(--border-2)', fontWeight:900}}>
+                          <span>{i===0?'🥇':i===1?'🥈':i===2?'🥉':'•'} {e.name}</span>
+                          <span style={{color:'var(--primary)'}}>{Number(e.stock)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                </div>
+
+                <div style={{marginTop: 14, color:'var(--text-muted)', fontWeight:900}}>
+                  Astuce: clique “Rafraîchir (stats)” après une vente/stock pour actualiser le classement.
                 </div>
               </div>
             )}
           </main>
 
-          {/* CART */}
-          {currentTab === "invoices" && (
+          {/* CART DRAWER */}
+          {currentTab === 'invoices' && (
             <>
-              <button className="cart-btn-float" onClick={() => setCartOpen(true)}>
-                <Icon name="cart" size={24} />{" "}
-                <span>
-                  {currency}
-                  {sessionTotal.toFixed(2)}
-                </span>
-              </button>
+              <div className="cart-btn-float" onClick={()=>setCartOpen(true)}>
+                <Icon name="cart" size={20} />
+                <span>Panier</span>
+                <span style={{marginLeft:'auto', fontWeight:950, color:'var(--primary)'}}>{money(sessionTotal)}</span>
+              </div>
 
-              <aside className={`cart-drawer ${cartOpen ? "open" : ""}`}>
+              <aside className={`cart-drawer ${cartOpen ? 'open' : ''}`}>
                 <div className="cart-head">
-                  <h2 style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Icon name="cart" /> Panier
-                  </h2>
-                  <button className="iconBtn" onClick={() => setCartOpen(false)}>
-                    <Icon name="x" size={22} />
-                  </button>
+                  <h2 style={{display:'flex', alignItems:'center', gap:10}}><Icon name="cart" /> Panier</h2>
+                  <button className="icon-btn" onClick={()=>setCartOpen(false)}><Icon name="x" size={18} /></button>
                 </div>
 
-                <div style={{ padding: 18 }}>
-                  <input
-                    className="inp-field"
-                    placeholder="N° Facture (Obligatoire)"
-                    style={{ textAlign: "center", fontWeight: 800 }}
-                    value={invNum}
-                    onChange={(e) => setInvNum(e.target.value)}
-                  />
+                <div style={{padding:16}}>
+                  <input className="inp-field" placeholder="N° Facture (Obligatoire)" style={{textAlign:'center'}} value={invNum} onChange={e=>setInvNum(e.target.value)} />
                 </div>
 
                 <div className="cart-body">
-                  {cart.length === 0 && <div className="empty">Panier vide</div>}
+                  {cart.length === 0 && <div style={{textAlign:'center', marginTop:50, color:'var(--text-muted)', fontWeight:900}}>Panier vide</div>}
 
                   {cart.map((c, i) => (
                     <div key={i} className="cart-item">
-                      <div style={{ flex: 1 }}>
-                        <b>{c.name}</b>
-                        <div className="muted">
-                          {currency}
-                          {Number(c.pu).toFixed(2)}
-                        </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:950}}>{c.name}</div>
+                        <div style={{color:'var(--text-muted)', fontWeight:900}}>{money(c.pu)}</div>
                       </div>
 
-                      {/* ✅ quantité clavier */}
                       <div className="qty-ctrl">
-                        <button className="qb" onClick={() => modQty(i, c.qty - 1)}>
-                          -
-                        </button>
+                        <button className="qb" onClick={()=>modQty(i,-1)}>-</button>
+
+                        {/* ✅ quantité au clavier */}
                         <input
-                          className="qiInput"
+                          className="qty-input"
                           type="number"
-                          inputMode="numeric"
-                          step="1"
-                          min="0"
                           value={c.qty}
-                          onChange={(e) => modQty(i, e.target.value)}
+                          onChange={(e)=>setQtyDirect(i, e.target.value)}
+                          inputMode="numeric"
                         />
-                        <button className="qb" onClick={() => modQty(i, c.qty + 1)}>
-                          +
-                        </button>
+
+                        <button className="qb" onClick={()=>modQty(i,1)}>+</button>
                       </div>
 
-                      <button className="iconBtn danger" onClick={() => setCart(cart.filter((_, idx) => idx !== i))}>
+                      <button className="qb danger" onClick={()=>setQtyDirect(i, 0)}>
                         <Icon name="x" size={16} />
                       </button>
                     </div>
@@ -1188,12 +1554,9 @@ export default function Home() {
                 </div>
 
                 <div className="cart-foot">
-                  <div className="totalRow">
+                  <div style={{display:'flex', justifyContent:'space-between', fontSize:'1.2rem', fontWeight:950, marginBottom:12}}>
                     <span>Total</span>
-                    <span className="totalVal">
-                      {currency}
-                      {sessionTotal.toFixed(2)}
-                    </span>
+                    <span style={{color:'var(--primary)'}}>{money(sessionTotal)}</span>
                   </div>
                   <button className="btn btn-primary" onClick={handleSendInvoice}>
                     Valider la vente
@@ -1203,70 +1566,60 @@ export default function Home() {
             </>
           )}
 
-          {/* MODAL PROFIL EMPLOYÉ */}
-          {dirOpen && selectedEmp && (
-            <div className="modalBack" onClick={() => setDirOpen(false)}>
-              <div className="modalCard" onClick={(e) => e.stopPropagation()}>
-                <div className="modalHead">
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div className="avatarLg">{selectedEmp.name?.charAt(0) || "?"}</div>
-                    <div>
-                      <div className="dirName">{selectedEmp.name}</div>
-                      <div className="dirMeta">
-                        <span className="badge">{selectedEmp.role || "Employé"}</span>
-                        <span className="muted">• {selectedEmp.seniority ?? 0} jours</span>
-                      </div>
-                    </div>
+          {/* PROFIL MODAL (simple) */}
+          {profileOpen && (
+            <div
+              onClick={()=>setProfileOpen(false)}
+              style={{
+                position:'fixed', inset:0, background:'rgba(0,0,0,0.55)',
+                display:'flex', alignItems:'center', justifyContent:'center', zIndex: 4000,
+                padding: 18
+              }}
+            >
+              <div
+                onClick={(e)=>e.stopPropagation()}
+                className="dir-card"
+                style={{width:'min(520px, 92vw)', borderRadius: 24}}
+              >
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <div style={{fontWeight:950, fontSize:'1.1rem', display:'flex', alignItems:'center', gap:10}}>
+                    <Icon name="user" /> Profil
                   </div>
-                  <button className="iconBtn" onClick={() => setDirOpen(false)}>
-                    <Icon name="x" size={20} />
-                  </button>
+                  <button className="icon-btn" onClick={()=>setProfileOpen(false)}><Icon name="x" size={18} /></button>
                 </div>
 
-                <div className="modalBody">
-                  <div className="infoRow">
-                    <span className="muted">Téléphone</span>
-                    <div className="infoRight">
-                      <b>{selectedEmp.phone || "—"}</b>
-                      {selectedEmp.phone && (
-                        <button
-                          className="btnMini"
-                          onClick={() => {
-                            navigator.clipboard.writeText(selectedEmp.phone);
-                            notify("Copié", "Numéro copié", "success");
-                            beep(740, 0.05, 0.03);
-                          }}
-                        >
-                          Copier
-                        </button>
-                      )}
+                <div style={{marginTop:14}}>
+                  <div style={{fontWeight:950, fontSize:'1.15rem'}}>{user}</div>
+                  <div style={{marginTop:6, color:'var(--text-muted)', fontWeight:900}}>
+                    Poste: <span style={{color:'var(--text-main)'}}>{currentEmployee?.role || 'Employé'}</span> • Ancienneté: <span style={{color:'var(--text-main)'}}>{currentEmployee?.seniorityDays ?? 0} jours</span>
+                  </div>
+
+                  <div style={{marginTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap: 12}}>
+                    <div className="statbox">
+                      <div className="k">Téléphone</div>
+                      <div className="v">{currentEmployee?.phone || '—'}</div>
+                    </div>
+                    <div className="statbox">
+                      <div className="k">Salaire</div>
+                      <div className="v">{money(currentEmployee?.salary || 0)}</div>
+                    </div>
+                    <div className="statbox">
+                      <div className="k">CA</div>
+                      <div className="v">{money(currentEmployee?.ca || 0)}</div>
+                    </div>
+                    <div className="statbox">
+                      <div className="k">Stock</div>
+                      <div className="v">{Number(currentEmployee?.stock || 0)}</div>
                     </div>
                   </div>
 
-                  <div className="infoRow">
-                    <span className="muted">Date d'arrivée</span>
-                    <b>{selectedEmp.arrival || "—"}</b>
-                  </div>
-
-                  <div className="stats3">
-                    <div className="statBox">
-                      <span>CA</span>
-                      <b>
-                        {currency}
-                        {Number(selectedEmp.ca || 0).toFixed(0)}
-                      </b>
-                    </div>
-                    <div className="statBox">
-                      <span>Stock</span>
-                      <b>{Number(selectedEmp.stock || 0).toFixed(0)}</b>
-                    </div>
-                    <div className="statBox">
-                      <span>Salaire</span>
-                      <b>
-                        {currency}
-                        {Number(selectedEmp.salary || 0).toFixed(0)}
-                      </b>
-                    </div>
+                  <div style={{marginTop:14, display:'flex', gap: 10}}>
+                    <button className="btn btn-ghost" onClick={()=>{ setProfileOpen(false); setCurrentTab('directory'); }}>
+                      <Icon name="user" size={18} /> Ouvrir annuaire
+                    </button>
+                    <button className="btn btn-primary" onClick={()=>setProfileOpen(false)}>
+                      Fermer
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1275,9 +1628,22 @@ export default function Home() {
 
           {/* TOAST */}
           {toast && (
-            <div className="toast" data-type={toast.type}>
-              <div className="t-title">{toast.title}</div>
-              <div className="t-msg">{toast.msg}</div>
+            <div className="toast" style={{
+              borderLeft: `6px solid ${
+                toast.type==='error' ? '#ef4444' : (toast.type==='success' ? '#10b981' : 'var(--primary)')
+              }`
+            }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 12,
+                background: toast.type==='error' ? 'rgba(239,68,68,0.15)' : toast.type==='success' ? 'rgba(16,185,129,0.15)' : 'var(--primary-2)',
+                display:'flex', alignItems:'center', justifyContent:'center'
+              }}>
+                {toast.type==='error' ? <Icon name="x" size={18}/> : toast.type==='success' ? <Icon name="dashboard" size={18}/> : <Icon name="refresh" size={18}/>}
+              </div>
+              <div>
+                <div className="t-title">{toast.title}</div>
+                <div className="t-msg">{toast.msg}</div>
+              </div>
             </div>
           )}
         </>
@@ -1285,416 +1651,3 @@ export default function Home() {
     </>
   );
 }
-
-// ----------------- GLOBAL STYLES -----------------
-const globalStyles = `
-:root{
-  --primary:#8b5cf6; /* purple */
-  --primary-light: rgba(139,92,246,.16);
-  --bg-body:#0f1115;
-  --bg-panel:#171a21;
-  --bg-panel-2:#12151b;
-  --text-main:#f8fafc;
-  --text-muted:#94a3b8;
-  --border:#2a2f3a;
-  --radius:24px;
-  --sidebar-w:270px;
-}
-[data-theme="light"]{
-  --bg-body:#f7f8fc;
-  --bg-panel:#ffffff;
-  --bg-panel-2:#f2f4f8;
-  --text-main:#111827;
-  --text-muted:#6b7280;
-  --border:#e5e7eb;
-  --primary-light: rgba(139,92,246,.15);
-}
-
-*{box-sizing:border-box;margin:0;padding:0;outline:none;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
-body{
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  background: var(--bg-body);
-  color: var(--text-main);
-  overflow:hidden;
-}
-
-/* ✅ IMPORTANT: force les contrôles natifs */
-html{ color-scheme: dark; }
-[data-theme="light"]{ color-scheme: light; }
-
-/* -------- LOADING -------- */
-.loading-wrap{height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.loading-card{
-  width:min(860px, 94vw);
-  border:1px solid var(--border);
-  background:linear-gradient(180deg, var(--bg-panel), var(--bg-panel-2));
-  border-radius:32px;
-  padding:28px;
-  box-shadow:0 30px 60px rgba(0,0,0,.35);
-}
-.loading-logo{height:56px;border-radius:14px;margin-bottom:10px}
-.loading-title{font-weight:900;font-size:1.2rem}
-.loading-sub{color:var(--text-muted);margin-top:4px}
-.loading-foot{color:var(--text-muted);margin-top:16px;font-size:.9rem}
-.sk-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
-.sk-card{height:72px;border-radius:18px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
-@media (max-width:900px){.sk-grid{grid-template-columns:repeat(2,1fr)}}
-.shimmer{
-  background:linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.10), rgba(255,255,255,.04));
-  background-size:200% 100%;
-  animation:shimmer 1.2s infinite;
-}
-@keyframes shimmer{0%{background-position:0% 0}100%{background-position:200% 0}}
-
-/* SIDEBAR */
-.sidebar{
-  width:var(--sidebar-w);
-  height:96vh;
-  margin:2vh;
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border-radius:var(--radius);
-  display:flex;
-  flex-direction:column;
-  padding:22px;
-  border:1px solid var(--border);
-  box-shadow:0 20px 40px rgba(0,0,0,.25);
-}
-.brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:1.1rem;margin-bottom:18px}
-.brand img{height:32px;border-radius:10px}
-.nav-list{display:flex;flex-direction:column;gap:8px;flex:1;overflow:auto;padding-right:2px}
-.nav-btn{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 14px;border-radius:14px;border:none;background:transparent;
-  color:var(--text-muted);font-weight:800;cursor:pointer;
-  transition:.18s;
-}
-.nav-btn:hover{background:rgba(255,255,255,.04);color:var(--text-main)}
-.nav-btn.active{background:var(--primary);color:white;box-shadow:0 14px 30px rgba(139,92,246,.25)}
-.nav-btn.active svg{stroke-width:3}
-
-/* BAS GAUCHE PROFIL */
-.profileCard{
-  margin-top:14px;
-  padding:14px;
-  border-radius:20px;
-  border:1px solid var(--border);
-  background:rgba(0,0,0,.10);
-}
-.profileTop{display:flex;align-items:center;gap:12px}
-.avatarLg{
-  width:42px;height:42px;border-radius:16px;
-  background:var(--primary);
-  display:flex;align-items:center;justify-content:center;
-  font-weight:900;color:white;
-}
-.profileName{font-weight:900}
-.profileMeta{display:flex;align-items:center;gap:8px;margin-top:2px}
-.badge{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:4px 10px;border-radius:999px;
-  background:rgba(255,255,255,.07);
-  border:1px solid var(--border);
-  font-weight:800;font-size:.78rem;color:var(--text-main);
-}
-.muted{color:var(--text-muted)}
-.profileStats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.statMini{
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.04);
-  border-radius:14px;padding:10px;
-  display:flex;flex-direction:column;gap:4px;
-  font-size:.85rem;
-}
-.statMini b{font-size:1rem}
-.profileActions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
-.btnMini{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  padding:10px;border-radius:14px;border:1px solid var(--border);
-  background:rgba(255,255,255,.04);color:var(--text-main);
-  font-weight:900;cursor:pointer;transition:.15s;
-}
-.btnMini:hover{transform:translateY(-1px);border-color:rgba(139,92,246,.55)}
-.btnMini.danger{border-color:rgba(239,68,68,.45);color:#fecaca}
-.btnMini.danger:hover{border-color:#ef4444}
-.tinyToggles{display:flex;gap:10px;margin-top:10px;justify-content:flex-end}
-
-/* MAIN */
-.main-content{flex:1;padding:2vh 2vh 2vh 0;overflow:auto}
-.header-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding:0 10px}
-.page-title{font-size:1.75rem;font-weight:950;display:flex;align-items:center;gap:10px}
-.top-stats{display:flex;gap:12px;align-items:center}
-.mini-stat{
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  padding:10px 16px;border-radius:999px;border:1px solid var(--border);
-  display:flex;gap:10px;align-items:center;font-weight:800;font-size:.92rem;color:var(--text-muted);
-}
-.mini-stat strong{color:var(--text-main)}
-.theme-btn{
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border:1px solid var(--border);
-  width:42px;height:42px;border-radius:999px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--text-main);transition:.15s;
-}
-.theme-btn:hover{transform:rotate(10deg)}
-
-/* Toggle */
-.toggle{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);padding:10px 12px;border-radius:999px;font-weight:800;color:var(--text-muted)}
-.toggle input{display:none}
-.toggle .slider{
-  width:46px;height:26px;border-radius:999px;border:1px solid var(--border);
-  background:rgba(255,255,255,.06);position:relative;display:inline-block;
-}
-.toggle .slider:after{
-  content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:999px;
-  background:var(--text-main);transition:.2s;
-}
-.toggle input:checked + .slider{background:rgba(139,92,246,.28);border-color:rgba(139,92,246,.55)}
-.toggle input:checked + .slider:after{transform:translateX(20px);background:var(--primary)}
-.toggle span{font-size:.9rem}
-
-/* DASHBOARD */
-.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
-.dash-card{
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border-radius:var(--radius);
-  padding:24px;border:1px solid var(--border);
-  cursor:pointer;transition:.2s;
-  display:flex;flex-direction:column;justify-content:space-between;height:170px;
-}
-.dash-card:hover{transform:translateY(-4px);border-color:rgba(139,92,246,.55);box-shadow:0 18px 40px rgba(0,0,0,.25)}
-.dash-icon{width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;color:var(--primary)}
-.dash-title{font-size:1.15rem;font-weight:950;margin-bottom:4px}
-.dash-desc{font-size:.92rem;color:var(--text-muted)}
-
-/* Home panels */
-.homeRow{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
-@media (max-width:1100px){.homeRow{grid-template-columns:1fr}}
-.panel{
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border:1px solid var(--border);
-  border-radius:24px;padding:18px;
-}
-.panelHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.rankList{display:flex;flex-direction:column;gap:8px}
-.rankItem{
-  display:grid;grid-template-columns:48px 1fr auto;
-  align-items:center;gap:10px;
-  padding:12px 12px;border-radius:16px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.04);
-  cursor:pointer;transition:.15s;
-}
-.rankItem:hover{border-color:rgba(139,92,246,.55);transform:translateY(-1px)}
-.rankN{font-weight:950}
-.rankName{font-weight:900}
-.rankVal{font-weight:950;color:var(--primary)}
-
-/* SEARCH + PILLS */
-.search-container{position:relative;margin-bottom:16px;max-width:520px}
-.search-inp{
-  width:100%;
-  padding:14px 16px 14px 46px;
-  border-radius:18px;border:1px solid var(--border);
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  font-size:1rem;color:var(--text-main);font-weight:800;
-}
-.search-inp:focus{border-color:rgba(139,92,246,.65);box-shadow:0 0 0 3px var(--primary-light)}
-.search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-muted)}
-.cat-pills{display:flex;gap:10px;overflow:auto;padding-bottom:8px;margin-bottom:16px}
-.pill{
-  padding:8px 14px;
-  background:rgba(255,255,255,.04);
-  border:1px solid var(--border);
-  border-radius:999px;
-  font-weight:900;cursor:pointer;white-space:nowrap;
-  transition:.15s;color:var(--text-muted)
-}
-.pill:hover,.pill.active{border-color:rgba(139,92,246,.65);color:white;background:var(--primary)}
-
-/* PRODUITS */
-.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
-.prod-card{
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border-radius:20px;padding:14px;text-align:center;
-  border:1px solid var(--border);cursor:pointer;
-  transition:.18s;position:relative;
-  display:flex;flex-direction:column;gap:10px;
-}
-.prod-card:hover{border-color:rgba(139,92,246,.55);transform:translateY(-3px);box-shadow:0 14px 30px rgba(0,0,0,.25)}
-.prod-img{
-  width:100%;aspect-ratio:1;border-radius:16px;object-fit:cover;
-  background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;
-}
-.prod-img.letter{font-size:2rem;font-weight:950;color:var(--text-muted)}
-.prod-title{font-weight:900;font-size:.92rem;line-height:1.2;min-height:40px;display:flex;align-items:center;justify-content:center}
-.prod-price{color:var(--primary);font-weight:950;font-size:1.05rem}
-
-/* CART */
-.cart-drawer{
-  position:fixed;top:0;right:0;width:420px;height:100vh;
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  box-shadow:-20px 0 60px rgba(0,0,0,.35);
-  z-index:100;transform:translateX(100%);
-  transition:transform .35s cubic-bezier(.16,1,.3,1);
-  display:flex;flex-direction:column;border-left:1px solid var(--border);
-}
-.cart-drawer.open{transform:translateX(0)}
-.cart-head{padding:18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-.cart-body{flex:1;overflow:auto;padding:14px}
-.cart-foot{padding:18px;background:rgba(255,255,255,.03);border-top:1px solid var(--border)}
-.cart-item{
-  display:flex;align-items:center;gap:12px;
-  padding:12px;background:rgba(255,255,255,.04);
-  border-radius:16px;margin-bottom:10px;border:1px solid var(--border);
-}
-.qty-ctrl{display:flex;align-items:center;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid var(--border);overflow:hidden}
-.qb{width:34px;height:34px;border:none;background:transparent;cursor:pointer;color:var(--text-main);font-weight:950}
-.qiInput{
-  width:52px;border:none;background:transparent;text-align:center;
-  font-weight:950;color:var(--text-main);
-  padding:6px 0;
-}
-.qiInput::-webkit-outer-spin-button,.qiInput::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
-.qiInput{ -moz-appearance: textfield; }
-.iconBtn{
-  width:38px;height:38px;border-radius:12px;border:1px solid var(--border);
-  background:rgba(255,255,255,.04);cursor:pointer;color:var(--text-main);
-  display:flex;align-items:center;justify-content:center;transition:.15s;
-}
-.iconBtn:hover{transform:translateY(-1px);border-color:rgba(139,92,246,.55)}
-.iconBtn.danger{border-color:rgba(239,68,68,.45);color:#fecaca}
-.iconBtn.danger:hover{border-color:#ef4444}
-.empty{text-align:center;margin-top:40px;color:var(--text-muted)}
-.totalRow{display:flex;justify-content:space-between;font-size:1.3rem;font-weight:950;margin-bottom:12px}
-.totalVal{color:var(--primary)}
-.cart-btn-float{
-  position:fixed;bottom:28px;right:28px;
-  background:var(--text-main);color:var(--bg-panel);
-  padding:14px 18px;border-radius:999px;font-weight:950;
-  cursor:pointer;box-shadow:0 16px 40px rgba(0,0,0,.35);
-  display:flex;align-items:center;gap:10px;z-index:90;border:none;
-}
-.cart-btn-float:hover{transform:scale(1.03)}
-
-/* FORMS */
-.form-wrap{
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  padding:26px;border-radius:28px;max-width:640px;margin:0 auto;
-  border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.25)
-}
-.form-title{margin-bottom:16px;display:flex;align-items:center;gap:10px;font-weight:950}
-.inp-group{margin-bottom:14px}
-.inp-label{display:block;margin-bottom:8px;font-weight:900;font-size:.9rem;color:var(--text-muted)}
-.inp-field{
-  width:100%;padding:14px;border:1px solid var(--border);
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border-radius:14px;font-size:1rem;font-weight:800;color:var(--text-main);
-}
-.inp-field:focus{border-color:rgba(139,92,246,.65);box-shadow:0 0 0 3px var(--primary-light)}
-.rowLine{display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.inp-field.qty{width:110px;text-align:center;font-weight:950}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:700px){.grid2{grid-template-columns:1fr}}
-.range{width:100%}
-
-/* ✅ SELECT DARK FIX (plus blanc !) */
-.select-dark{
-  appearance:none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-                    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%),
-                    linear-gradient(to right, transparent, transparent);
-  background-position: calc(100% - 22px) calc(1em + 2px), calc(100% - 16px) calc(1em + 2px), 100% 0;
-  background-size: 6px 6px, 6px 6px, 2.5em 2.5em;
-  background-repeat: no-repeat;
-  padding-right: 44px;
-}
-select.select-dark, select.select-dark option{
-  background-color: var(--bg-panel) !important;
-  color: var(--text-main) !important;
-}
-select.select-dark option{
-  border: none;
-}
-select.select-dark option:checked{
-  background: var(--primary) !important;
-  color: white !important;
-}
-
-/* LOGIN */
-#gate{position:fixed;inset:0;background:var(--bg-body);display:flex;align-items:center;justify-content:center}
-.login-box{
-  text-align:center;width:420px;max-width:92vw;
-  padding:28px;border:1px solid var(--border);
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border-radius:30px;box-shadow:0 25px 60px rgba(0,0,0,.35)
-}
-
-/* BUTTONS */
-.btn{
-  width:100%;padding:14px;border:none;border-radius:16px;
-  font-weight:950;font-size:1rem;cursor:pointer;transition:.15s;
-  display:flex;justify-content:center;align-items:center;gap:10px;
-}
-.btn-primary{background:var(--primary);color:white;box-shadow:0 16px 30px rgba(139,92,246,.25)}
-.btn-primary:hover{transform:translateY(-2px)}
-.btn-text{background:transparent;border:1px dashed var(--border);color:var(--text-muted)}
-.btn-text:hover{border-color:rgba(139,92,246,.6);color:var(--primary)}
-.perfGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-@media (max-width:1100px){.perfGrid{grid-template-columns:1fr}}
-
-/* ANNUAIRE */
-.dirBar{display:flex;gap:12px;align-items:center;margin-bottom:14px}
-.dirGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.dirCard{
-  text-align:left;
-  border:1px solid var(--border);
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  border-radius:22px;padding:14px;cursor:pointer;
-  transition:.15s;
-}
-.dirCard:hover{border-color:rgba(139,92,246,.55);transform:translateY(-2px)}
-.dirTop{display:flex;gap:12px;align-items:center;margin-bottom:10px}
-.dirName{font-weight:950}
-.dirMeta{display:flex;gap:8px;align-items:center;margin-top:2px}
-.dirBottom{display:flex;justify-content:space-between;align-items:center}
-.dirQuick{display:flex;gap:10px}
-.dirMini{font-size:.85rem;color:var(--text-muted)}
-.dirMini b{color:var(--text-main)}
-
-/* MODAL */
-.modalBack{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:18px}
-.modalCard{
-  width:min(520px, 96vw);
-  border-radius:26px;
-  border:1px solid var(--border);
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  box-shadow:0 30px 80px rgba(0,0,0,.45);
-}
-.modalHead{display:flex;justify-content:space-between;align-items:center;padding:14px;border-bottom:1px solid var(--border)}
-.modalBody{padding:14px}
-.infoRow{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);border-radius:16px;margin-bottom:10px}
-.infoRight{display:flex;gap:10px;align-items:center}
-.stats3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
-.statBox{border:1px solid var(--border);background:rgba(255,255,255,.04);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}
-.statBox span{color:var(--text-muted);font-weight:900;font-size:.85rem}
-.statBox b{font-weight:950}
-
-/* TOAST */
-.toast{
-  position:fixed;top:22px;right:22px;z-index:3000;
-  background:linear-gradient(180deg,var(--bg-panel),var(--bg-panel-2));
-  padding:14px 18px;border-radius:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.35);
-  border:1px solid var(--border);
-  border-left:5px solid var(--primary);
-  min-width:260px;
-  animation:slideIn .22s ease-out;
-}
-.toast[data-type="error"]{border-left-color:#ef4444}
-.toast[data-type="success"]{border-left-color:#10b981}
-@keyframes slideIn{from{transform:translateX(120%);opacity:0}}
-.t-title{font-weight:950;margin-bottom:4px}
-.t-msg{color:var(--text-muted);font-weight:800;font-size:.9rem}
-`;
