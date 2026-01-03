@@ -1,5 +1,9 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+
 
 // ================= DONNÉES HEN HOUSE =================
 const APP_VERSION = '2026.01.02';
@@ -368,3 +372,4 @@ export async function POST(request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
