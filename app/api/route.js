@@ -60,7 +60,7 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
     // On récupère les noms en colonne B
-    const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'B2:B200' });
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = res.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
     
@@ -107,7 +107,7 @@ export async function POST(request) {
       const sheets = await getAuthSheets();
       const resFull = await sheets.spreadsheets.values.get({ 
         spreadsheetId: process.env.GOOGLE_SHEET_ID, 
-        range: 'A2:I200', 
+        range: "'Employés'!A2:I200", 
         valueRenderOption: 'UNFORMATTED_VALUE' 
       });
       
@@ -237,3 +237,4 @@ export async function POST(request) {
     }, { status: 500 });
   }
 }
+
