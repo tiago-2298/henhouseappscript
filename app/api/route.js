@@ -1,34 +1,21 @@
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-
-// ================= DONNÉES HEN HOUSE =================
+// ================= CONFIGURATION & CONSTANTES =================
 const APP_VERSION = '2026.01.02';
-const CURRENCY = { symbol: '$', code: 'USD' };
+const CURRENCY_SYMBOL = '$';
 
-// TES WEBHOOKS DISCORD
+// Tes Webhooks Discord
 const WEBHOOKS = {
-  factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
-  stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
+  factures: 'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
+  stock: 'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
   entreprise: 'https://discord.com/api/webhooks/1389356140957274112/6AcD2wMTkn9_1lnZNpm4fOsXxGk0sZR5us-rWSrbdTBScu6JYbMtWi31No6wbepeg607',
-  garage:     'https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9',
-  expenses:   'https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R',
-  support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
+  garage: 'https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9',
+  expenses: 'https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R',
+  support: 'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
 };
 
-const PRODUCTS = {
-  plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-  desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
-  boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
-  menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
-  menus_groupe: ['Menu Le Nid Végé 5+1','Menu Grillé du Nord 5+1','Menu Fraîcheur Méditerranéenne 5+1',"Menu Flamme d OR 5+1",'Menu Voyage Sucré-Salé 5+1','Menu Happy Hen House 5+1'],
-  alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax'],
-  services: ['Livraison NORD','Livraison SUD']
-};
-
+// Liste des prix pour calcul automatique du CA
 const PRICE_LIST = {
   'Boeuf bourguignon':50,'Saumon Grillé':35,'Quiche aux légumes':30,'Crousti-Douce':50,'Wings épicé':60,'Filet Mignon':50,'Poulet Rôti':60,'Paella Méditerranéenne':50,'Ribbs':50,"Steak 'Potatoes":50,'Rougail Saucisse':50,
   'Brochettes de fruits frais':25,'Mousse au café':25,'Tiramisu Fraise':30,'Los Churros Caramel':35,'Tourte Myrtille':35,
@@ -38,8 +25,6 @@ const PRICE_LIST = {
   'Cocktail Citron-Myrtille':40,'Verre de Bellini':25,'Verre de Vodka':45,'Verre de Rhum':45,'Verre de Cognac':45,'Verre de Brandy':50,'Verre de Whisky':40,'Verre de Gin':60,'Tequila Citron':50,'Verre Vin Blanc':35,'Verre Vin Rouge':35,'Shot de Tequila':40,'Verre de Champagne':15,'Bouteille de Champagne':100,'Bouteille de Cidre':40,'Gin Fizz Citron':80,'Verre de rosé':25,'Verre de Champomax':30,
   'Livraison NORD':100,'Livraison SUD':150
 };
-
-const VEHICLES = ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'];
 
 const PARTNERS = {
   companies: {
@@ -56,22 +41,11 @@ const PARTNERS = {
   },
 };
 
-// ================= FONCTIONS UTILES =================
-function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
+// ================= UTILS =================
+const formatAmount = (n) => `${CURRENCY_SYMBOL}${(Number(n)||0).toFixed(2)}`;
 
-async function sendWebhook(url, payload) {
-  if (!url) { console.error("Webhook manquant !"); return; }
-  try {
-    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  } catch (e) { console.error("Erreur Webhook:", e); }
-}
-
-// --- GESTION GOOGLE SHEETS ---
 async function getAuthSheets() {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY
-    ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : undefined;
-
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const auth = new google.auth.JWT(
     process.env.GOOGLE_CLIENT_EMAIL,
     null,
@@ -81,295 +55,185 @@ async function getAuthSheets() {
   return google.sheets({ version: 'v4', auth });
 }
 
-// ✅ Lecture simple des employés (noms) (pour login)
-async function getEmployeesFromGoogle() {
-  try {
-    const sheets = await getAuthSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'B2:B',
-    });
-    const rows = response.data.values;
-    if (!rows) return [];
-    return rows.map(r => r[0]).filter(n => n && n.trim() !== '').sort((a,b)=>a.localeCompare(b,'fr'));
-  } catch (error) {
-    console.error("Erreur Google:", error);
-    return [];
-  }
-}
-
-// ✅ Full data pour Annuaire / Profil / Performance
-async function getEmployeesFullFromGoogle() {
-  try {
-    const sheets = await getAuthSheets();
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    // A:I = ID / Nom / Poste / Téléphone / Date / Ancienneté / CA / Stock / Salaire
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: 'A2:I200',
-      valueRenderOption: 'UNFORMATTED_VALUE',
-    });
-
-    const rows = res.data.values || [];
-    const clean = rows
-      .filter(r => r && r[1] && String(r[1]).trim() !== '')
-      .map(r => ({
-        id: String(r[0] ?? ''),
-        name: String(r[1] ?? '').trim(),
-        role: String(r[2] ?? '').trim(),
-        phone: String(r[3] ?? '').trim(),
-        arrival: String(r[4] ?? '').trim(),
-        seniority: Number(r[5] ?? 0) || 0,
-        ca: Number(r[6] ?? 0) || 0,
-        stock: Number(r[7] ?? 0) || 0,
-        salary: Number(r[8] ?? 0) || 0,
-      }))
-      .sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-
-    return clean;
-  } catch (e) {
-    console.error("Erreur getEmployeesFull:", e);
-    return [];
-  }
-}
-
-// ✅ Update CA / Stock
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    const listRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: 'B2:B200',
-    });
-
-    const rows = listRes.data.values || [];
+    // On récupère les noms en colonne B
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'B2:B200' });
+    const rows = res.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
-
-    if (rowIndex === -1) {
-      console.error(`Employé introuvable: ${employeeName}`);
-      return;
-    }
+    
+    if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
+    // G = CA (7ème col), H = Stock (8ème col)
     const targetCell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-
-    const cellRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: targetCell,
-      valueRenderOption: 'UNFORMATTED_VALUE'
-    });
-
-    let currentValue = cellRes.data.values?.[0]?.[0];
-    if (!currentValue || isNaN(Number(currentValue))) currentValue = 0;
-    currentValue = Number(currentValue);
-
-    const newValue = currentValue + Number(amountToAdd);
-
+    
+    const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell });
+    let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
+    
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
       range: targetCell,
       valueInputOption: 'RAW',
-      requestBody: { values: [[newValue]] }
+      requestBody: { values: [[currentVal + Number(amountToAdd)]] }
     });
-
-    console.log(`OK: ${employeeName} | ${type} | ${currentValue} + ${amountToAdd} = ${newValue}`);
   } catch (e) {
-    console.error("Erreur CRITIQUE update Sheet:", e);
+    console.error("Erreur mise à jour Sheets:", e);
   }
 }
 
-// ================= ROUTEUR API PRINCIPAL =================
+async function sendWebhook(url, payload) {
+  try {
+    await fetch(url, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(payload) 
+    });
+  } catch (e) {
+    console.error("Erreur Webhook Discord:", e);
+  }
+}
+
+// ================= ROUTEUR POST =================
 export async function POST(request) {
   try {
-    let body = {};
-    try { body = await request.json(); } catch (e) {}
-
+    const body = await request.json();
     const { action, data } = body;
 
-    // --- INITIALISATION / SYNC DATA ---
+    // --- INITIALISATION & SYNC ---
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const employees = await getEmployeesFromGoogle();
-      const employeesFull = await getEmployeesFullFromGoogle();
+      const sheets = await getAuthSheets();
+      const resFull = await sheets.spreadsheets.values.get({ 
+        spreadsheetId: process.env.GOOGLE_SHEET_ID, 
+        range: 'A2:I200', 
+        valueRenderOption: 'UNFORMATTED_VALUE' 
+      });
+      
+      const rows = resFull.data.values || [];
+      const employeesFull = rows.filter(r => r[1]).map(r => ({
+        id: String(r[0] || ''),
+        name: String(r[1] || '').trim(),
+        role: String(r[2] || ''),
+        phone: String(r[3] || ''),
+        arrival: String(r[4] || ''),
+        seniority: Number(r[5] || 0),
+        ca: Number(r[6] || 0),
+        stock: Number(r[7] || 0),
+        salary: Number(r[8] || 0),
+      }));
 
       return NextResponse.json({
         success: true,
         version: APP_VERSION,
-        employees,
+        employees: employeesFull.map(e => e.name),
         employeesFull,
-        products: Object.values(PRODUCTS).flat(),
-        productsByCategory: PRODUCTS,
-        prices: PRICE_LIST,
-        vehicles: VEHICLES,
         partners: PARTNERS,
-        currencySymbol: CURRENCY.symbol
+        vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217']
       });
     }
 
-    // --- 2. FACTURES ---
-    if (action === 'sendFactures') {
-      const items = data.items || [];
-      const invoiceNumber = data.invoiceNumber || '???';
+    // --- TRAITEMENT DES ACTIONS ---
+    let embed = { 
+      timestamp: new Date().toISOString(), 
+      footer: { text: `Hen House v${APP_VERSION}`, icon_url: 'https://i.goopics.net/dskmxi.png' } 
+    };
 
-      let grandTotal = 0;
-      const fields = items.map(i => {
-        const qty = Math.floor(Number(i.qty));
-        const price = Number(PRICE_LIST[i.desc] || 0);
-        const total = qty * price;
-        grandTotal += total;
-        return { name: `${i.desc} ×${qty}`, value: `${formatAmount(price)} → **${formatAmount(total)}**`, inline: false };
-      });
-
-      const embed = {
-        title: `🍽️ Facture N°${invoiceNumber}`,
-        description: `Déclaration de ${data.employee}`,
-        color: 0xd35400,
-        fields: [
+    switch (action) {
+      case 'sendFactures':
+        let grandTotal = data.items.reduce((acc, i) => acc + (i.qty * (PRICE_LIST[i.desc] || 0)), 0);
+        embed.title = `🍽️ Facture N°${data.invoiceNumber}`;
+        embed.color = 0xd35400;
+        embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true },
-          { name: '📊 Articles', value: `${items.length}`, inline: true },
-          ...fields
-        ],
-        footer: { text: `Hen House v${APP_VERSION}`, icon_url:'https://i.goopics.net/dskmxi.png' },
-        timestamp: new Date().toISOString()
-      };
+          { name: '📦 Détails', value: data.items.map(i => `• ${i.desc} x${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
+        await updateEmployeeStats(data.employee, grandTotal, 'CA');
+        break;
 
-      await sendWebhook(WEBHOOKS.factures, { username: 'Hen House - Factures', embeds: [embed] });
-      await updateEmployeeStats(data.employee, grandTotal, 'CA');
-
-      return NextResponse.json({ success: true, message: 'Facture envoyée et CA mis à jour' });
-    }
-
-    // --- 3. STOCK ---
-    if (action === 'sendProduction') {
-      const items = data.items || [];
-      const totalQuantity = items.reduce((s,i) => s + Number(i.qty), 0);
-      const fields = items.map(i => ({ name: `📦 ${i.product}`, value: `**${i.qty}** unités`, inline: true }));
-
-      const embed = {
-        title: '📦 Déclaration de Stock',
-        description: `Production par ${data.employee}`,
-        color: 0xe67e22,
-        fields: [
+      case 'sendProduction':
+        let totalProd = data.items.reduce((s, i) => s + Number(i.qty), 0);
+        embed.title = '📦 Déclaration de Stock';
+        embed.color = 0xe67e22;
+        embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '📊 Total', value: `**${totalQuantity}**`, inline: true },
-          ...fields
-        ],
-        timestamp: new Date().toISOString()
-      };
+          { name: '📊 Total Unités', value: `**${totalProd}**`, inline: true },
+          { name: '📝 Produits', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
+        await updateEmployeeStats(data.employee, totalProd, 'STOCK');
+        break;
 
-      await sendWebhook(WEBHOOKS.stock, { username: 'Hen House - Production', embeds: [embed] });
-      await updateEmployeeStats(data.employee, totalQuantity, 'STOCK');
-
-      return NextResponse.json({ success: true });
-    }
-
-    // --- 4. ENTREPRISE ---
-    if (action === 'sendEntreprise') {
-      const items = data.items || [];
-      const totalQuantity = items.reduce((s,i) => s + Number(i.qty), 0);
-      const fields = items.map(i => ({ name: `🏭 ${i.product}`, value: `**${i.qty}** unités`, inline: true }));
-
-      const embed = {
-        title: '🏭 Déclaration Entreprise',
-        description: `Commande ${data.company}`,
-        color: 0xf39c12,
-        fields: [
+      case 'sendEntreprise':
+        embed.title = '🏭 Commande Entreprise';
+        embed.color = 0xf39c12;
+        embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🏢 Entreprise', value: data.company, inline: true },
-          { name: '📊 Total', value: `**${totalQuantity}**`, inline: true },
-          ...fields
-        ],
-        timestamp: new Date().toISOString()
-      };
-      await sendWebhook(WEBHOOKS.entreprise, { username: 'Hen House - Entreprise', embeds: [embed] });
-      return NextResponse.json({ success: true });
-    }
+          { name: '📋 Commande', value: data.items.map(i => `• ${i.product} x${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
+        break;
 
-    // --- 5. GARAGE ---
-    if (action === 'sendGarage') {
-      const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
-      const embed = {
-        title: `🚗 Garage - ${data.action}`,
-        description: `Véhicule traité par ${data.employee}`,
-        color: colors[data.action] || 0x8e44ad,
-        fields: [
+      case 'sendGarage':
+        embed.title = `🚗 Garage - ${data.action}`;
+        embed.color = data.action === 'Entrée' ? 0x2ecc71 : 0xe74c3c;
+        embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🚗 Véhicule', value: data.vehicle, inline: true },
-          { name: '⚙️ Action', value: data.action, inline: true },
           { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
-        ],
-        timestamp: new Date().toISOString()
-      };
-      await sendWebhook(WEBHOOKS.garage, { username: 'Hen House - Garage', embeds: [embed] });
-      return NextResponse.json({ success: true });
-    }
+        ];
+        await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
+        break;
 
-    // --- 6. FRAIS ---
-    if (action === 'sendExpense') {
-      const embed = {
-        title: `💳 Note de frais — ${data.kind}`,
-        color: data.kind === 'Essence' ? 0x10b981 : 0x3b82f6,
-        fields: [
+      case 'sendExpense':
+        embed.title = `💳 Note de frais - ${data.kind}`;
+        embed.color = 0x3498db;
+        embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '🚗 Véhicule', value: data.vehicle, inline: true },
-          { name: '💵 Montant', value: formatAmount(data.amount), inline: true }
-        ],
-        timestamp: new Date().toISOString()
-      };
-      await sendWebhook(WEBHOOKS.expenses, { username: 'Hen House - Dépenses', embeds: [embed] });
-      return NextResponse.json({ success: true });
-    }
+          { name: '💵 Montant', value: formatAmount(data.amount), inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true }
+        ];
+        await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
+        break;
 
-    // --- 7. PARTENAIRES ---
-    if (action === 'sendPartnerOrder') {
-      const items = data.items || [];
-      let total = 0;
-      const fields = items.map(i => {
-        total += i.qty;
-        return { name: i.menu, value: `x${i.qty}`, inline: true };
-      });
-
-      const embed = {
-        title: `🤝 Partenaires - ${data.company}`,
-        description: `Bénéficiaire: **${data.beneficiary}**`,
-        color: 0x10b981,
-        fields: [
+      case 'sendPartnerOrder':
+        const partnerCompany = PARTNERS.companies[data.company];
+        const partnerWebhook = partnerCompany?.webhook || WEBHOOKS.factures;
+        embed.title = `🤝 Partenaire - ${data.company}`;
+        embed.color = 0x10b981;
+        embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '📦 Menus', value: String(total), inline: true },
-          ...fields
-        ],
-        timestamp: new Date().toISOString()
-      };
+          { name: '🔑 Bénéficiaire', value: data.beneficiary, inline: true },
+          { name: '🧾 Facture N°', value: data.invoiceNumber, inline: true },
+          { name: '🍱 Menus', value: data.items.map(i => `• ${i.menu} x${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(partnerWebhook, { embeds: [embed] });
+        break;
 
-      const companyData = PARTNERS.companies[data.company];
-      const targetWebhook = companyData ? companyData.webhook : WEBHOOKS.factures;
+      case 'sendSupport':
+        embed.title = `🆘 Support - ${data.subject}`;
+        embed.color = 0xef4444;
+        embed.description = `**Message :**\n${data.message}`;
+        embed.fields = [{ name: '👤 De', value: data.employee, inline: true }];
+        await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
+        break;
 
-      await sendWebhook(targetWebhook, { username: 'Hen House - Partenaires', embeds: [embed] });
-      return NextResponse.json({ success: true });
+      default:
+        return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
     }
 
-    // --- 8. SUPPORT ---
-    if (action === 'sendSupport') {
-      const embed = {
-        title: `🆘 Support — ${data.subject}`,
-        color: 0xef4444,
-        fields: [
-          { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '📝 Message', value: data.message, inline: false }
-        ],
-        timestamp: new Date().toISOString()
-      };
-      await sendWebhook(WEBHOOKS.support, { username: 'Hen House - Support', embeds: [embed] });
-      return NextResponse.json({ success: true });
-    }
+    return NextResponse.json({ success: true });
 
-    return NextResponse.json({ success: false, message: 'Action inconnue' });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  } catch (err) {
+    console.error("CRITICAL API ERROR:", err);
+    // On renvoie toujours du JSON pour éviter l'erreur "Unexpected token <"
+    return NextResponse.json({ 
+      success: false, 
+      message: err.message || "Erreur interne du serveur" 
+    }, { status: 500 });
   }
 }
-
