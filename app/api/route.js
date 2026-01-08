@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= CONFIGURATION & WEBHOOKS =================
+// ================= CONFIGURATION =================
 const APP_VERSION = '2026.01.02';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
@@ -52,39 +52,38 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-async function getSheetData() {
+async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const spreadsheetId = process.env.GOOGLE_SHEET_ID || process.env.SPREADSHEET_ID;
 
-  if (!privateKey || !clientEmail || !spreadsheetId) {
-    throw new Error("Identifiants Google manquants");
+  if (!privateKey || !clientEmail) {
+    throw new Error("Identifiants Google manquants (GOOGLE_PRIVATE_KEY ou GOOGLE_CLIENT_EMAIL)");
   }
 
-  const auth = new google.auth.GoogleAuth({
-    credentials: { client_email: clientEmail, private_key: privateKey },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-
-  const sheets = google.sheets({ version: 'v4', auth });
-  return { sheets, spreadsheetId };
+  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+  return google.sheets({ version: 'v4', auth });
 }
 
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
-    const { sheets, spreadsheetId } = await getSheetData();
-    const listRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: "'Employés'!B2:B200" });
+    const sheets = await getAuthSheets();
+    const sheetId = process.env.GOOGLE_SHEET_ID;
+    if (!sheetId) throw new Error("GOOGLE_SHEET_ID manquant");
+
+    const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
-    if (rowIndex === -1) return;
+
+    if (rowIndex === -1) return console.error(`Employé introuvable: ${employeeName}`);
 
     const realRow = rowIndex + 2;
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
-    const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
+
+    const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
     let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
 
     await sheets.spreadsheets.values.update({
-      spreadsheetId,
+      spreadsheetId: sheetId,
       range: targetCell,
       valueInputOption: 'RAW',
       requestBody: { values: [[currentVal + Number(amountToAdd)]] }
@@ -98,19 +97,28 @@ export async function POST(request) {
     const body = await request.json();
     const { action, data } = body;
 
-    // --- SYNC / GET META ---
+    // --- INITIALISATION / SYNC ---
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const { sheets, spreadsheetId } = await getSheetData();
+      const sheets = await getAuthSheets();
+      const sheetId = process.env.GOOGLE_SHEET_ID;
+
       const resFull = await sheets.spreadsheets.values.get({ 
-        spreadsheetId, 
+        spreadsheetId: sheetId, 
         range: "'Employés'!A2:I200", 
         valueRenderOption: 'UNFORMATTED_VALUE' 
       });
+
       const rows = resFull.data.values || [];
       const employeesFull = rows.filter(r => r[1]).map(r => ({
-        id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
-        phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
-        ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
+        id: String(r[0] ?? ''),
+        name: String(r[1] ?? '').trim(),
+        role: String(r[2] ?? ''),
+        phone: String(r[3] ?? ''),
+        arrival: String(r[4] ?? ''),
+        seniority: Number(r[5] ?? 0),
+        ca: Number(r[6] ?? 0),
+        stock: Number(r[7] ?? 0),
+        salary: Number(r[8] ?? 0),
       }));
 
       return NextResponse.json({
@@ -132,7 +140,7 @@ export async function POST(request) {
       });
     }
 
-    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}`, icon_url: 'https://i.goopics.net/dskmxi.png' } };
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` } };
 
     switch (action) {
       case 'sendFactures':
@@ -155,7 +163,7 @@ export async function POST(request) {
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '📊 Total', value: `**${totalProd}**`, inline: true },
-          { name: '📝 Produits', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
+          ...data.items.map(i => ({ name: i.product, value: `${i.qty} unités`, inline: true }))
         ];
         await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalProd, 'STOCK');
@@ -173,8 +181,9 @@ export async function POST(request) {
         break;
 
       case 'sendGarage':
+        const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
         embed.title = `🚗 Garage - ${data.action}`;
-        embed.color = data.action === 'Entrée' ? 0x2ecc71 : 0xe74c3c;
+        embed.color = colors[data.action] || 0x8e44ad;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🚗 Véhicule', value: data.vehicle, inline: true },
@@ -185,7 +194,7 @@ export async function POST(request) {
 
       case 'sendExpense':
         embed.title = `💳 Note de frais — ${data.kind}`;
-        embed.color = 0x3498db;
+        embed.color = data.kind === 'Essence' ? 0x10b981 : 0x3b82f6;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '💵 Montant', value: formatAmount(data.amount), inline: true },
