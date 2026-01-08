@@ -4,11 +4,10 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= DONNÉES HEN HOUSE =================
+// ================= CONFIGURATION & WEBHOOKS =================
 const APP_VERSION = '2026.01.02';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
-// WEBHOOKS DISCORD
 const WEBHOOKS = {
   factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
   stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
@@ -53,31 +52,39 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-async function getAuthSheets() {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined;
-  const auth = new google.auth.JWT(process.env.GOOGLE_CLIENT_EMAIL, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-  return google.sheets({ version: 'v4', auth });
+async function getSheetData() {
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID || process.env.SPREADSHEET_ID;
+
+  if (!privateKey || !clientEmail || !spreadsheetId) {
+    throw new Error("Identifiants Google manquants");
+  }
+
+  const auth = new google.auth.GoogleAuth({
+    credentials: { client_email: clientEmail, private_key: privateKey },
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+
+  const sheets = google.sheets({ version: 'v4', auth });
+  return { sheets, spreadsheetId };
 }
 
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
-    const sheets = await getAuthSheets();
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-    
-    // CIBLAGE FEUILLE "Employés"
-    const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
+    const { sheets, spreadsheetId } = await getSheetData();
+    const listRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
     if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
-    
-    const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
+    const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
     let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
 
     await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
+      spreadsheetId,
       range: targetCell,
       valueInputOption: 'RAW',
       requestBody: { values: [[currentVal + Number(amountToAdd)]] }
@@ -91,11 +98,11 @@ export async function POST(request) {
     const body = await request.json();
     const { action, data } = body;
 
-    // --- SYNC / INIT ---
+    // --- SYNC / GET META ---
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const sheets = await getAuthSheets();
+      const { sheets, spreadsheetId } = await getSheetData();
       const resFull = await sheets.spreadsheets.values.get({ 
-        spreadsheetId: process.env.GOOGLE_SHEET_ID, 
+        spreadsheetId, 
         range: "'Employés'!A2:I200", 
         valueRenderOption: 'UNFORMATTED_VALUE' 
       });
@@ -125,7 +132,7 @@ export async function POST(request) {
       });
     }
 
-    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` } };
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}`, icon_url: 'https://i.goopics.net/dskmxi.png' } };
 
     switch (action) {
       case 'sendFactures':
@@ -213,7 +220,7 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true }); // GARANTIT UNE RÉPONSE JSON
+    return NextResponse.json({ success: true });
 
   } catch (err) {
     console.error("API ERROR:", err);
