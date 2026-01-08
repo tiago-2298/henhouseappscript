@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= CONFIGURATION =================
+// ================= CONFIGURATION & WEBHOOKS =================
 const APP_VERSION = '2026.01.02';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
@@ -62,14 +62,17 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    // CORRECTION : AJOUT DU NOM DE FEUILLE "Employés"
+    
+    // Range mis à jour avec le nom de ta feuille "Employés"
     const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
     if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
+    // G = CA, H = Stock
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
+    
     const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
     let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
 
@@ -91,7 +94,6 @@ export async function POST(request) {
     // --- SYNC / INIT ---
     if (!action || action === 'getMeta' || action === 'syncData') {
       const sheets = await getAuthSheets();
-      // CORRECTION : AJOUT DU NOM DE FEUILLE "Employés"
       const resFull = await sheets.spreadsheets.values.get({ 
         spreadsheetId: process.env.GOOGLE_SHEET_ID, 
         range: "'Employés'!A2:I200", 
@@ -109,17 +111,13 @@ export async function POST(request) {
         version: APP_VERSION,
         employees: employeesFull.map(e => e.name),
         employeesFull,
-        products: [
-          ...PRICE_LIST ? Object.keys(PRICE_LIST) : []
-        ],
         prices: PRICE_LIST,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
         partners: PARTNERS,
         currencySymbol: CURRENCY.symbol,
-        // Helper pour le frontend car il l'attend :
         productsByCategory: {
           plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-          desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
+          desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Tourte Myrtille'],
           boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
           menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
           alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
@@ -150,7 +148,7 @@ export async function POST(request) {
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '📊 Total', value: `**${totalProd}**`, inline: true },
-          { name: '📝 Produits', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
+          ...data.items.map(i => ({ name: i.product, value: `${i.qty} unités`, inline: true }))
         ];
         await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalProd, 'STOCK');
