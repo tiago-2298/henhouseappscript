@@ -4,10 +4,11 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= CONFIGURATION & WEBHOOKS =================
+// ================= DONNÉES HEN HOUSE =================
 const APP_VERSION = '2026.01.02';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
+// WEBHOOKS DISCORD
 const WEBHOOKS = {
   factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
   stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
@@ -63,14 +64,13 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
     
-    // Range mis à jour avec le nom de ta feuille "Employés"
+    // CIBLAGE FEUILLE "Employés"
     const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
     if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
-    // G = CA, H = Stock
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
     
     const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
@@ -148,7 +148,7 @@ export async function POST(request) {
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '📊 Total', value: `**${totalProd}**`, inline: true },
-          ...data.items.map(i => ({ name: i.product, value: `${i.qty} unités`, inline: true }))
+          { name: '📝 Produits', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalProd, 'STOCK');
@@ -213,7 +213,7 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }); // GARANTIT UNE RÉPONSE JSON
 
   } catch (err) {
     console.error("API ERROR:", err);
