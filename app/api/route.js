@@ -4,12 +4,10 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-
-// ================= DONNÉES HEN HOUSE =================
+// ================= CONFIGURATION =================
 const APP_VERSION = '2026.01.02';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
-// TES WEBHOOKS DISCORD
 const WEBHOOKS = {
   factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
   stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
@@ -17,16 +15,6 @@ const WEBHOOKS = {
   garage:     'https://discord.com/api/webhooks/1392213573668962475/uAp9DZrX3prvwTk050bSImOSPXqI3jxxMXm2P8VIFQvC5Kwi5G2RGgG6wv1H5Hp0sGX9',
   expenses:   'https://discord.com/api/webhooks/1365865037755056210/9k15GPoBOPbSlktv3HH9wzcR3VMrrO128HIkGuDqCdzR8qKpdGbMf2sidbemUnAdxI-R',
   support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
-};
-
-const PRODUCTS = {
-  plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-  desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
-  boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
-  menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
-  menus_groupe: ['Menu Le Nid Végé 5+1','Menu Grillé du Nord 5+1','Menu Fraîcheur Méditerranéenne 5+1',"Menu Flamme d OR 5+1",'Menu Voyage Sucré-Salé 5+1','Menu Happy Hen House 5+1'],
-  alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax'],
-  services: ['Livraison NORD','Livraison SUD']
 };
 
 const PRICE_LIST = {
@@ -56,7 +44,7 @@ const PARTNERS = {
   },
 };
 
-// ================= FONCTIONS UTILES =================
+// ================= UTILS =================
 function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
 
 async function sendWebhook(url, payload) {
@@ -66,67 +54,13 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-// --- GESTION GOOGLE SHEETS ---
 async function getAuthSheets() {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY
-    ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    : undefined;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  if (!privateKey || !clientEmail) throw new Error("Identifiants Google manquants");
 
-  const auth = new google.auth.JWT(
-    process.env.GOOGLE_CLIENT_EMAIL,
-    null,
-    privateKey,
-    ['https://www.googleapis.com/auth/spreadsheets']
-  );
+  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
   return google.sheets({ version: 'v4', auth });
-}
-
-async function getEmployeesFromGoogle() {
-  try {
-    const sheets = await getAuthSheets();
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "'Employés'!B2:B",
-    });
-    const rows = response.data.values;
-    if (!rows) return [];
-    return rows.map(r => r[0]).filter(n => n && n.trim() !== '').sort((a,b)=>a.localeCompare(b,'fr'));
-  } catch (error) {
-    console.error("Erreur Google:", error);
-    return [];
-  }
-}
-
-async function getEmployeesFullFromGoogle() {
-  try {
-    const sheets = await getAuthSheets();
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "'Employés'!A2:I200",
-      valueRenderOption: 'UNFORMATTED_VALUE',
-    });
-
-    const rows = res.data.values || [];
-    return rows
-      .filter(r => r && r[1] && String(r[1]).trim() !== '')
-      .map(r => ({
-        id: String(r[0] ?? ''),
-        name: String(r[1] ?? '').trim(),
-        role: String(r[2] ?? ''),
-        phone: String(r[3] ?? ''),
-        arrival: String(r[4] ?? ''),
-        seniority: Number(r[5] ?? 0) || 0,
-        ca: Number(r[6] ?? 0) || 0,
-        stock: Number(r[7] ?? 0) || 0,
-        salary: Number(r[8] ?? 0) || 0,
-      }))
-      .sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-  } catch (e) {
-    console.error("Erreur getEmployeesFull:", e);
-    return [];
-  }
 }
 
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
@@ -134,211 +68,159 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
-    const listRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "'Employés'!B2:B200",
-    });
-
+    // CIBLAGE DE L'ONGLET "Employés"
+    const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
-
     if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
 
-    const cellRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: targetCell,
-      valueRenderOption: 'UNFORMATTED_VALUE'
-    });
-
-    let currentValue = Number(cellRes.data.values?.[0]?.[0] || 0);
-    const newValue = currentValue + Number(amountToAdd);
+    const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
+    let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
 
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
       range: targetCell,
       valueInputOption: 'RAW',
-      requestBody: { values: [[newValue]] }
+      requestBody: { values: [[currentVal + Number(amountToAdd)]] }
     });
-  } catch (e) {
-    console.error("Erreur update Sheet:", e);
-  }
+  } catch (e) { console.error("Erreur Sheets:", e); }
 }
 
-// ================= ROUTEUR API PRINCIPAL =================
+// ================= ROUTEUR API =================
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    // --- INITIALISATION / SYNC DATA ---
+    // --- SYNC / INIT ---
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const employees = await getEmployeesFromGoogle();
-      const employeesFull = await getEmployeesFullFromGoogle();
+      const sheets = await getAuthSheets();
+      const resFull = await sheets.spreadsheets.values.get({ 
+        spreadsheetId: process.env.GOOGLE_SHEET_ID, 
+        range: "'Employés'!A2:I200", 
+        valueRenderOption: 'UNFORMATTED_VALUE' 
+      });
+      const rows = resFull.data.values || [];
+      const employeesFull = rows.filter(r => r[1]).map(r => ({
+        id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
+        phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
+        ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
+      }));
 
       return NextResponse.json({
         success: true,
         version: APP_VERSION,
-        employees,
+        employees: employeesFull.map(e => e.name),
         employeesFull,
-        products: Object.values(PRODUCTS).flat(),
-        productsByCategory: PRODUCTS,
         prices: PRICE_LIST,
         vehicles: VEHICLES,
         partners: PARTNERS,
-        currencySymbol: CURRENCY.symbol
+        currencySymbol: CURRENCY.symbol,
+        productsByCategory: {
+          plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
+          desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Tourte Myrtille'],
+          boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
+          menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
+          alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
+        }
       });
     }
 
-    // --- ACTIONS ---
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` } };
+
     switch (action) {
       case 'sendFactures':
-        const invItems = data.items || [];
-        let grandTotal = 0;
-        const fields = invItems.map(i => {
-          const qty = Math.floor(Number(i.qty));
-          const price = Number(PRICE_LIST[i.desc] || 0);
-          const total = qty * price;
-          grandTotal += total;
-          return { name: `${i.desc} ×${qty}`, value: `${formatAmount(price)} → **${formatAmount(total)}**`, inline: false };
-        });
-
-        await sendWebhook(WEBHOOKS.factures, { 
-          username: 'Hen House - Factures', 
-          embeds: [{
-            title: `🍽️ Facture N°${data.invoiceNumber || '???'}`,
-            description: `Déclaration de ${data.employee}`,
-            color: 0xd35400,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true },
-              { name: '📊 Articles', value: `${invItems.length}`, inline: true },
-              ...fields
-            ],
-            footer: { text: `Hen House v${APP_VERSION}`, icon_url: 'https://i.goopics.net/dskmxi.png' },
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        const grandTotal = data.items.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
+        embed.title = `🍽️ Facture N°${data.invoiceNumber || '???'}`;
+        embed.color = 0xd35400;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true },
+          { name: '📋 Détails', value: data.items.map(i => `• ${i.desc} x${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, grandTotal, 'CA');
         break;
 
       case 'sendProduction':
-        const prodItems = data.items || [];
-        const totalProd = prodItems.reduce((s,i) => s + Number(i.qty), 0);
-        await sendWebhook(WEBHOOKS.stock, { 
-          username: 'Hen House - Production', 
-          embeds: [{
-            title: '📦 Déclaration de Stock',
-            description: `Production par ${data.employee}`,
-            color: 0xe67e22,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '📊 Total', value: `**${totalProd}**`, inline: true },
-              ...prodItems.map(i => ({ name: `📦 ${i.product}`, value: `**${i.qty}** unités`, inline: true }))
-            ],
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        const totalProd = data.items.reduce((s, i) => s + Number(i.qty), 0);
+        embed.title = '📦 Déclaration de Stock';
+        embed.color = 0xe67e22;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '📊 Total', value: `**${totalProd}** unités`, inline: true },
+          { name: '📝 Détails', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalProd, 'STOCK');
         break;
 
       case 'sendEntreprise':
-        const entItems = data.items || [];
-        await sendWebhook(WEBHOOKS.entreprise, { 
-          username: 'Hen House - Entreprise', 
-          embeds: [{
-            title: '🏭 Déclaration Entreprise',
-            description: `Commande ${data.company}`,
-            color: 0xf39c12,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '🏢 Entreprise', value: data.company, inline: true },
-              ...entItems.map(i => ({ name: `🏭 ${i.product}`, value: `**${i.qty}** unités`, inline: true }))
-            ],
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        embed.title = '🏭 Commande Entreprise';
+        embed.color = 0xf39c12;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🏢 Société', value: data.company, inline: true },
+          { name: '📋 Items', value: data.items.map(i => `• ${i.product} x${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
         break;
 
       case 'sendGarage':
-        const garColors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
-        await sendWebhook(WEBHOOKS.garage, { 
-          username: 'Hen House - Garage', 
-          embeds: [{
-            title: `🚗 Garage - ${data.action}`,
-            description: `Véhicule traité par ${data.employee}`,
-            color: garColors[data.action] || 0x8e44ad,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '🚗 Véhicule', value: data.vehicle, inline: true },
-              { name: '⚙️ Action', value: data.action, inline: true },
-              { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
-            ],
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        embed.title = `🚗 Garage - ${data.action}`;
+        embed.color = data.action === 'Entrée' ? 0x2ecc71 : 0xe74c3c;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true },
+          { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
+        ];
+        await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
         break;
 
       case 'sendExpense':
-        await sendWebhook(WEBHOOKS.expenses, { 
-          username: 'Hen House - Dépenses', 
-          embeds: [{
-            title: `💳 Note de frais — ${data.kind}`,
-            color: data.kind === 'Essence' ? 0x10b981 : 0x3b82f6,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '🚗 Véhicule', value: data.vehicle, inline: true },
-              { name: '💵 Montant', value: formatAmount(data.amount), inline: true }
-            ],
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        embed.title = `💳 Note de frais — ${data.kind}`;
+        embed.color = 0x3498db;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '💵 Montant', value: formatAmount(data.amount), inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true }
+        ];
+        await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
         break;
 
       case 'sendPartnerOrder':
-        const parItems = data.items || [];
-        const parTotal = parItems.reduce((s,i) => s + Number(i.qty), 0);
-        const parWb = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
-        await sendWebhook(parWb, { 
-          username: 'Hen House - Partenaires', 
-          embeds: [{
-            title: `🤝 Partenaires - ${data.company}`,
-            description: `Bénéficiaire: **${data.beneficiary}**`,
-            color: 0x10b981,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '📦 Menus', value: String(parTotal), inline: true },
-              ...parItems.map(i => ({ name: i.menu, value: `x${i.qty}`, inline: true }))
-            ],
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        const partnerWb = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
+        embed.title = `🤝 Partenaire - ${data.company}`;
+        embed.color = 0x10b981;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🔑 Bénéficiaire', value: data.beneficiary, inline: true },
+          { name: '🍱 Menus', value: data.items.map(i => `• ${i.menu} x${i.qty}`).join('\n') }
+        ];
+        await sendWebhook(partnerWb, { embeds: [embed] });
         break;
 
       case 'sendSupport':
-        await sendWebhook(WEBHOOKS.support, { 
-          username: 'Hen House - Support', 
-          embeds: [{
-            title: `🆘 Support — ${data.subject}`,
-            color: 0xef4444,
-            fields: [
-              { name: '👤 Employé', value: data.employee, inline: true },
-              { name: '📝 Message', value: data.message, inline: false }
-            ],
-            timestamp: new Date().toISOString()
-          }] 
-        });
+        embed.title = `🆘 Support — ${data.subject}`;
+        embed.color = 0xef4444;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '📝 Message', value: data.message, inline: false }
+        ];
+        await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
 
       default:
-        return NextResponse.json({ success: false, message: 'Action inconnue' });
+        return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("API ERROR:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+
+  } catch (err) {
+    console.error("API ERROR:", err);
+    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
