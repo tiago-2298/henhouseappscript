@@ -27,33 +27,7 @@ const PRICE_LIST = {
   'Livraison NORD':100,'Livraison SUD':150
 };
 
-const VEHICLES = ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'];
-
-const PARTNERS = {
-  companies: {
-    'Biogood': {
-      beneficiaries: ['PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago','RH - Jefferson Patt','RE - Gonzales Malya','C - Gilmore Jaden','C - Delgado Madison','C - Mehdi Rousseau'],
-      menus: [{ name: 'Wings + Berry Fizz', catalog: 80 }, { name: 'Ribbs + Agua Fresca Pastèque', catalog: 70 }, { name: 'Saumon + Jus de raisin rouge + Churros Caramel', catalog: 65 }, { name: 'Paella + Jus de raisin blanc', catalog: 65 }],
-      webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
-    },
-    'SASP Nord': {
-      beneficiaries: [ 'Agent SASP NORD' ],
-      menus: [{ name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 }, { name: 'Ribs + Berry Fizz', catalog: 65 }],
-      webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
-    },
-  },
-};
-
 // ================= UTILS =================
-function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
-
-async function sendWebhook(url, payload) {
-  if (!url) return;
-  try {
-    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  } catch (e) { console.error("Erreur Webhook:", e); }
-}
-
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
@@ -67,8 +41,7 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
-
-    // CIBLAGE DE L'ONGLET "Employés"
+    // Ciblage de l'onglet "Employés"
     const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
@@ -76,26 +49,31 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
 
     const realRow = rowIndex + 2;
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
-
+    
     const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
     let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
 
     await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: targetCell,
-      valueInputOption: 'RAW',
+      spreadsheetId: sheetId, range: targetCell, valueInputOption: 'RAW',
       requestBody: { values: [[currentVal + Number(amountToAdd)]] }
     });
   } catch (e) { console.error("Erreur Sheets:", e); }
 }
 
-// ================= ROUTEUR API =================
+async function sendWebhook(url, payload) {
+  if (!url) return;
+  try {
+    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  } catch (e) { console.error("Erreur Webhook:", e); }
+}
+
+// ================= ROUTEUR POST =================
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    // --- SYNC / INIT ---
+    // --- SYNC / GET META ---
     if (!action || action === 'getMeta' || action === 'syncData') {
       const sheets = await getAuthSheets();
       const resFull = await sheets.spreadsheets.values.get({ 
@@ -111,20 +89,15 @@ export async function POST(request) {
       }));
 
       return NextResponse.json({
-        success: true,
-        version: APP_VERSION,
-        employees: employeesFull.map(e => e.name),
-        employeesFull,
-        prices: PRICE_LIST,
-        vehicles: VEHICLES,
-        partners: PARTNERS,
+        success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name), employeesFull,
+        prices: PRICE_LIST, vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
         currencySymbol: CURRENCY.symbol,
         productsByCategory: {
-          plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-          desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Tourte Myrtille'],
-          boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
-          menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
-          alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
+            plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
+            desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Tourte Myrtille'],
+            boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
+            menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
+            alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
         }
       });
     }
@@ -135,10 +108,9 @@ export async function POST(request) {
       case 'sendFactures':
         const grandTotal = data.items.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
         embed.title = `🍽️ Facture N°${data.invoiceNumber || '???'}`;
-        embed.color = 0xd35400;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true },
+          { name: '💰 Total', value: `**$${grandTotal.toFixed(2)}**`, inline: true },
           { name: '📋 Détails', value: data.items.map(i => `• ${i.desc} x${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
@@ -148,11 +120,10 @@ export async function POST(request) {
       case 'sendProduction':
         const totalProd = data.items.reduce((s, i) => s + Number(i.qty), 0);
         embed.title = '📦 Déclaration de Stock';
-        embed.color = 0xe67e22;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '📊 Total', value: `**${totalProd}** unités`, inline: true },
-          { name: '📝 Détails', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
+          { name: '📝 Produits', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalProd, 'STOCK');
@@ -160,10 +131,9 @@ export async function POST(request) {
 
       case 'sendEntreprise':
         embed.title = '🏭 Commande Entreprise';
-        embed.color = 0xf39c12;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '🏢 Société', value: data.company, inline: true },
+          { name: '🏢 Entreprise', value: data.company, inline: true },
           { name: '📋 Items', value: data.items.map(i => `• ${i.product} x${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
@@ -171,7 +141,6 @@ export async function POST(request) {
 
       case 'sendGarage':
         embed.title = `🚗 Garage - ${data.action}`;
-        embed.color = data.action === 'Entrée' ? 0x2ecc71 : 0xe74c3c;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🚗 Véhicule', value: data.vehicle, inline: true },
@@ -182,34 +151,27 @@ export async function POST(request) {
 
       case 'sendExpense':
         embed.title = `💳 Note de frais — ${data.kind}`;
-        embed.color = 0x3498db;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '💵 Montant', value: formatAmount(data.amount), inline: true },
+          { name: '💵 Montant', value: `$${Number(data.amount).toFixed(2)}`, inline: true },
           { name: '🚗 Véhicule', value: data.vehicle, inline: true }
         ];
         await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
         break;
 
       case 'sendPartnerOrder':
-        const partnerWb = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
         embed.title = `🤝 Partenaire - ${data.company}`;
-        embed.color = 0x10b981;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🔑 Bénéficiaire', value: data.beneficiary, inline: true },
           { name: '🍱 Menus', value: data.items.map(i => `• ${i.menu} x${i.qty}`).join('\n') }
         ];
-        await sendWebhook(partnerWb, { embeds: [embed] });
+        await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
         break;
 
       case 'sendSupport':
         embed.title = `🆘 Support — ${data.subject}`;
-        embed.color = 0xef4444;
-        embed.fields = [
-          { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '📝 Message', value: data.message, inline: false }
-        ];
+        embed.description = data.message;
         await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
 
