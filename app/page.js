@@ -154,12 +154,21 @@ export default function Home() {
   // INIT
   // =========================
   const loadMeta = async () => {
-    const res = await fetch('/api', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ action: 'getMeta' })
-    });
-    return res.json();
+    try {
+        const res = await fetch('/api', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ action: 'getMeta' })
+        });
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("Erreur serveur (HTML reçu au lieu de JSON)");
+        }
+        return res.json();
+    } catch (e) {
+        console.error("Erreur meta:", e);
+        return { success: false, employees: [], products: [], vehicles: [], partners: { companies: {} } };
+    }
   };
 
   useEffect(() => {
@@ -171,22 +180,26 @@ export default function Home() {
         setData(res);
         setLoading(false);
 
-        if(res.vehicles?.length) {
+        if(res?.vehicles?.length) {
           setExpData(p => ({...p, veh: res.vehicles[0]}));
           setGarData(p => ({...p, veh: res.vehicles[0]}));
         }
-        if(res.partners && Object.keys(res.partners.companies).length) {
+        if(res?.partners?.companies && Object.keys(res.partners.companies).length) {
           setParCompany(Object.keys(res.partners.companies)[0]);
         }
       })
-      .catch(err => { console.error(err); alert("Erreur chargement"); });
+      .catch(err => { 
+        console.error(err); 
+        setLoading(false);
+        notify("Erreur", "Chargement des données impossible", "error");
+      });
   }, []);
 
   useEffect(() => {
-    if(data && parCompany) {
+    if(data?.partners?.companies && parCompany) {
       const comp = data.partners.companies[parCompany];
-      if(comp && comp.beneficiaries.length) setParBenef(comp.beneficiaries[0]);
-      if(comp && comp.menus.length) setParItems([{menu: comp.menus[0].name, qty:1}]);
+      if(comp && comp.beneficiaries?.length) setParBenef(comp.beneficiaries[0]);
+      if(comp && comp.menus?.length) setParItems([{menu: comp.menus[0].name, qty:1}]);
     }
   }, [parCompany, data]);
 
@@ -234,7 +247,7 @@ export default function Home() {
     if(existing) {
       setCart(cart.map(x => x.name === prod ? {...x, qty: x.qty + 1} : x));
     } else {
-      setCart([...cart, {name: prod, qty: 1, pu: data.prices[prod] || 0}]);
+      setCart([...cart, {name: prod, qty: 1, pu: data?.prices?.[prod] || 0}]);
     }
     notify("Ajouté", prod, "success");
   };
@@ -269,9 +282,15 @@ export default function Home() {
 
         // Reset forms
         setCart([]); setInvNum('');
-        setStockItems([{product:(data.products[0]), qty:1}]);
-        setEntItems([{product:(data.products[0]), qty:1}]); setEntName('');
-        setParItems([{menu:(data.partners.companies[parCompany]?.menus[0].name), qty:1}]); setParNum('');
+        if(data?.products?.length) {
+            setStockItems([{product:(data.products[0]), qty:1}]);
+            setEntItems([{product:(data.products[0]), qty:1}]);
+        }
+        setEntName('');
+        if(data?.partners?.companies?.[parCompany]?.menus?.length) {
+            setParItems([{menu:(data.partners.companies[parCompany].menus[0].name), qty:1}]);
+        }
+        setParNum('');
         setSupData({sub:'Autre', msg:''});
         setExpData(p => ({...p, amt:''}));
 
@@ -316,7 +335,7 @@ export default function Home() {
   if(loading) return (
     <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1115', color:'white'}}>
       <div style={{textAlign:'center'}}>
-        <img src="https://i.goopics.net/dskmxi.png" style={{height:60, marginBottom:18, borderRadius:12}} />
+        <img src="https://i.goopics.net/dskmxi.png" style={{height:60, marginBottom:18, borderRadius:12}} alt="Logo" />
         <div style={{opacity:0.9, fontWeight:800}}>Hen House</div>
         <div style={{opacity:0.65, marginTop:6}}>Connexion...</div>
         <div style={{marginTop:18, width:220, height:10, borderRadius:20, background:'rgba(255,255,255,0.08)', overflow:'hidden'}}>
@@ -330,7 +349,7 @@ export default function Home() {
     <>
       <style jsx global>{`
         :root {
-          --primary: #8b5cf6; /* violet par défaut */
+          --primary: #8b5cf6;
           --primary-light: rgba(139, 92, 246, 0.16);
           --bg-body: #f8f9fc;
           --bg-panel: #ffffff;
@@ -348,13 +367,12 @@ export default function Home() {
           --text-muted: #94a3b8;
           --border: #2d313a;
           --primary-light: rgba(139, 92, 246, 0.18);
-          color-scheme: dark; /* IMPORTANT: aide le rendu des selects sur certains OS */
+          color-scheme: dark;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; transition: background-color 0.3s ease; }
 
-        /* ✅ FIX SELECT DARK PARTOUT */
         select, option, input, textarea {
           color: var(--text-main);
           background: var(--bg-panel);
@@ -377,14 +395,12 @@ export default function Home() {
         option { background: var(--bg-panel) !important; color: var(--text-main) !important; }
         select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
 
-        /* SHIMMER */
         .shimmer {
           background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.18), rgba(255,255,255,0.02));
           animation: shimmer 1.1s infinite;
         }
         @keyframes shimmer { 0%{transform:translateX(-60%)} 100%{transform:translateX(240%)} }
 
-        /* SIDEBAR */
         .sidebar { width: var(--sidebar-w); height: 96vh; margin: 2vh; background: rgba(24,26,32,0.88); backdrop-filter: blur(14px);
           border-radius: var(--radius); display: flex; flex-direction: column; padding: 22px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
           z-index: 50; border: 1px solid rgba(255,255,255,0.06); }
@@ -397,7 +413,6 @@ export default function Home() {
         .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 10px 26px -10px rgba(139, 92, 246, 0.7); }
         .nav-btn.active svg { stroke-width: 3px; }
 
-        /* ✅ Bas gauche simplifié */
         .me-card { margin-top: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
           border-radius: 18px; padding: 14px; }
         .me-top { display:flex; align-items:center; gap:12px; cursor:pointer; }
@@ -412,7 +427,6 @@ export default function Home() {
         .mini-btn.danger { border-color: rgba(239,68,68,0.5); color: #fecaca; }
         .mini-btn.danger:hover { background: rgba(239,68,68,0.08); }
 
-        /* MAIN */
         .main-content { flex: 1; padding: 2vh 2vh 2vh 0; overflow-y: auto; overflow-x: hidden; position: relative; }
         .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 10px; }
         .page-title { font-size: 1.8rem; font-weight: 900; display:flex; align-items:center; gap:10px; }
@@ -433,7 +447,6 @@ export default function Home() {
           width: 42px; height: 42px; border-radius: 999px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
         .icon-btn:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
 
-        /* DASHBOARD */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
         .dash-card { background: rgba(255,255,255,0.04); border-radius: var(--radius); padding: 26px; border: 1px solid rgba(255,255,255,0.07);
           position: relative; overflow: hidden; cursor: pointer; transition: 0.25s; display:flex; flex-direction:column; justify-content:space-between; height: 190px; }
@@ -442,7 +455,6 @@ export default function Home() {
         .dash-title { font-size: 1.18rem; font-weight: 900; margin-bottom: 6px; }
         .dash-desc { font-size: 0.92rem; color: var(--text-muted); }
 
-        /* CATALOG */
         .search-container { position: relative; margin-bottom: 18px; max-width: 520px; }
         .search-inp { width: 100%; padding: 14px 16px 14px 46px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
           background: rgba(255,255,255,0.04); font-size: 1rem; color: var(--text-main); font-weight: 800; transition: 0.2s; }
@@ -461,7 +473,6 @@ export default function Home() {
         .prod-title { font-weight: 900; font-size: 0.92rem; margin-bottom: 6px; line-height:1.2; min-height: 36px; display:flex; align-items:center; justify-content:center; }
         .prod-price { color: var(--primary); font-weight: 1000; font-size: 1.08rem; }
 
-        /* CART */
         .cart-drawer { position: fixed; top: 0; right: 0; width: 420px; height: 100vh; background: rgba(24,26,32,0.92); backdrop-filter: blur(14px);
           box-shadow: -10px 0 40px rgba(0,0,0,0.35); z-index: 100; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
           display:flex; flex-direction:column; border-left: 1px solid rgba(255,255,255,0.06); }
@@ -487,7 +498,6 @@ export default function Home() {
           border: 1px solid rgba(255,255,255,0.08); }
         .cart-btn-float:hover { transform: scale(1.03); border-color: rgba(139,92,246,0.5); }
 
-        /* FORMS */
         .form-wrap { background: rgba(255,255,255,0.04); padding: 34px; border-radius: 26px; max-width: 680px; margin: 0 auto;
           border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 22px 40px -26px rgba(0,0,0,0.7); }
         .inp-group { margin-bottom: 16px; }
@@ -496,12 +506,10 @@ export default function Home() {
           border-radius: 12px; font-size: 1rem; font-family: inherit; color: var(--text-main); transition: 0.2s; font-weight: 800; }
         .inp-field:focus { border-color: rgba(139,92,246,0.75); box-shadow: 0 0 0 3px var(--primary-light); }
 
-        /* LOGIN */
         #gate { position: fixed; inset: 0; background: var(--bg-body); z-index: 2000; display:flex; align-items:center; justify-content:center; }
         .login-box { text-align:center; width: 420px; padding: 40px; border: 1px solid rgba(255,255,255,0.08); background: rgba(24,26,32,0.85);
           border-radius: 30px; backdrop-filter: blur(14px); box-shadow: 0 24px 40px -26px rgba(0,0,0,0.75); }
 
-        /* TOAST */
         .toast { position: fixed; top: 26px; right: 26px; z-index: 3000; background: rgba(24,26,32,0.9); padding: 14px 18px;
           border-radius: 16px; box-shadow: 0 18px 34px -22px rgba(0,0,0,0.75); border-left: 5px solid var(--primary); min-width: 280px;
           animation: slideIn 0.25s; color: var(--text-main); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px); }
@@ -509,7 +517,6 @@ export default function Home() {
         .t-title { font-weight: 1000; font-size: 0.95rem; margin-bottom: 4px; }
         .t-msg { font-size: 0.85rem; color: var(--text-muted); }
 
-        /* Tables / lists */
         .list-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 22px; padding: 18px; }
         .row { display:flex; justify-content:space-between; align-items:center; padding: 12px 12px; border-radius: 14px; cursor:pointer;
           border: 1px solid rgba(255,255,255,0.0); }
@@ -520,7 +527,7 @@ export default function Home() {
       {view === 'login' ? (
         <div id="gate">
           <div className="login-box">
-            <img src="https://i.goopics.net/dskmxi.png" style={{height:64, marginBottom:18, borderRadius:14}} />
+            <img src="https://i.goopics.net/dskmxi.png" style={{height:64, marginBottom:18, borderRadius:14}} alt="Logo" />
             <h2 style={{marginBottom:10, fontWeight:1000}}>Bienvenue</h2>
             <p style={{color:'var(--text-muted)', marginBottom:22}}>Connectez-vous pour commencer</p>
 
@@ -576,7 +583,6 @@ export default function Home() {
               </button>
             </nav>
 
-            {/* ✅ Bas gauche : juste Nom + Profil + Déconnexion */}
             <div className="me-card">
               <div className="me-top" onClick={()=>setCurrentTab('profile')}>
                 <div className="avatar">{user?.charAt(0) || '?'}</div>
@@ -615,9 +621,7 @@ export default function Home() {
                 {currentTab === 'profile' && <><Icon name="user" size={32} /> Mon profil</>}
               </div>
 
-              {/* ✅ Controls demandés */}
               <div className="top-stats">
-                {/* Haut gauche demandé (dans le header, côté gauche visuel) : dark + son */}
                 <div className="chip" onClick={()=>{beep('click'); toggleTheme();}} title="Mode sombre/clair">
                   {darkMode ? <Icon name="sun" size={18}/> : <Icon name="moon" size={18}/>}
                   <span style={{opacity:0.9}}>{darkMode ? 'Clair' : 'Sombre'}</span>
@@ -635,7 +639,6 @@ export default function Home() {
                   <div className={`toggle ${quickMode ? 'on' : ''}`}><div className="dot"/></div>
                 </div>
 
-                {/* ✅ Placement : top-right à côté du mode rapide */}
                 <button className="icon-btn" onClick={syncData} title="↻ Sync (refresh data)">
                   <Icon name="refresh" size={18} />
                 </button>
@@ -677,20 +680,20 @@ export default function Home() {
 
                 <div className="cat-pills">
                   <div className={`pill ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
-                  {Object.keys(data.productsByCategory).map(c => (
+                  {data?.productsByCategory ? Object.keys(data.productsByCategory).map(c => (
                     <div key={c} className={`pill ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c.replace(/_/g,' ')}</div>
-                  ))}
+                  )) : <div className="mini-stat">Chargement des catégories...</div>}
                 </div>
 
                 <div className="prod-grid" style={quickMode ? {gridTemplateColumns:'repeat(auto-fill, minmax(190px, 1fr))'} : {}}>
-                  {data.products.filter(p => {
-                    const cat = Object.keys(data.productsByCategory).find(k=>data.productsByCategory[k].includes(p));
+                  {data?.products?.filter(p => {
+                    const cat = Object.keys(data?.productsByCategory || {}).find(k=>data.productsByCategory[k].includes(p));
                     return (catFilter==='Tous' || cat===catFilter) && p.toLowerCase().includes(search.toLowerCase());
                   }).map(p => (
                     <div key={p} className="prod-card" onClick={()=>addToCart(p)}>
-                      {IMAGES[p] ? <img src={IMAGES[p]} className="prod-img" /> : <div className="prod-img">{p.charAt(0)}</div>}
+                      {IMAGES[p] ? <img src={IMAGES[p]} className="prod-img" alt={p} /> : <div className="prod-img">{p.charAt(0)}</div>}
                       <div className="prod-title">{p}</div>
-                      <div className="prod-price">${Number(data.prices[p]||0).toFixed(2)}</div>
+                      <div className="prod-price">${Number(data?.prices?.[p]||0).toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
@@ -706,20 +709,17 @@ export default function Home() {
                   <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                     <select className="inp-field" value={item.product} onChange={e=>{const n=[...stockItems];n[i].product=e.target.value;setStockItems(n)}} style={{flex:1}}>
                       <option value="" disabled>Produit...</option>
-                      {data.products.map(p=><option key={p} value={p}>{p}</option>)}
+                      {data?.products?.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
-
-                    {/* ✅ quantité saisissable au clavier */}
                     <input type="number" className="inp-field" style={{width:120}} value={item.qty}
                       onChange={e=>{const n=[...stockItems];n[i].qty=e.target.value;setStockItems(n)}} />
-
                     <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...stockItems];n.splice(i,1);setStockItems(n)}}>
                       <Icon name="x" size={18}/>
                     </button>
                   </div>
                 ))}
 
-                <button className="btn btn-text" onClick={()=>setStockItems([...stockItems, {product:data.products[0], qty:1}])}>+ Ajouter ligne</button>
+                <button className="btn btn-text" onClick={()=>setStockItems([...stockItems, {product:(data?.products?.[0] || ''), qty:1}])}>+ Ajouter ligne</button>
                 <button className="btn btn-primary" style={{marginTop:16}} onClick={()=>sendForm('sendProduction', {items:stockItems})}>Envoyer</button>
               </div>
             )}
@@ -738,7 +738,7 @@ export default function Home() {
                   <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                     <select className="inp-field" value={item.product} onChange={e=>{const n=[...entItems];n[i].product=e.target.value;setEntItems(n)}} style={{flex:1}}>
                       <option value="" disabled>Produit...</option>
-                      {data.products.map(p=><option key={p} value={p}>{p}</option>)}
+                      {data?.products?.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
                     <input type="number" className="inp-field" style={{width:120}} value={item.qty}
                       onChange={e=>{const n=[...entItems];n[i].qty=e.target.value;setEntItems(n)}} />
@@ -748,7 +748,7 @@ export default function Home() {
                   </div>
                 ))}
 
-                <button className="btn btn-text" onClick={()=>setEntItems([...entItems, {product:data.products[0], qty:1}])}>+ Ajouter ligne</button>
+                <button className="btn btn-text" onClick={()=>setEntItems([...entItems, {product:(data?.products?.[0] || ''), qty:1}])}>+ Ajouter ligne</button>
                 <button className="btn btn-primary" style={{marginTop:16}} onClick={handleSendEnterprise}>Valider</button>
               </div>
             )}
@@ -767,13 +767,13 @@ export default function Home() {
                   <div className="inp-group">
                     <label className="inp-label">Société</label>
                     <select className="inp-field" value={parCompany} onChange={e=>setParCompany(e.target.value)}>
-                      {Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}
+                      {data?.partners?.companies ? Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>) : <option>Chargement...</option>}
                     </select>
                   </div>
                   <div className="inp-group">
                     <label className="inp-label">Bénéficiaire</label>
                     <select className="inp-field" value={parBenef} onChange={e=>setParBenef(e.target.value)}>
-                      {parCompany && data.partners.companies[parCompany].beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
+                      {parCompany && data?.partners?.companies?.[parCompany]?.beneficiaries?.map(b=><option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                 </div>
@@ -781,7 +781,7 @@ export default function Home() {
                 {parItems.map((item, i) => (
                   <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                     <select className="inp-field" value={item.menu} onChange={e=>{const n=[...parItems];n[i].menu=e.target.value;setParItems(n)}} style={{flex:1}}>
-                      {parCompany && data.partners.companies[parCompany].menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
+                      {parCompany && data?.partners?.companies?.[parCompany]?.menus?.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
                     </select>
                     <input type="number" className="inp-field" style={{width:120}} value={item.qty}
                       onChange={e=>{const n=[...parItems];n[i].qty=e.target.value;setParItems(n)}} />
@@ -791,7 +791,7 @@ export default function Home() {
                   </div>
                 ))}
 
-                <button className="btn btn-text" onClick={()=>setParItems([...parItems, {menu:data.partners.companies[parCompany].menus[0].name, qty:1}])}>+ Menu</button>
+                <button className="btn btn-text" onClick={()=>setParItems([...parItems, {menu:(data?.partners?.companies?.[parCompany]?.menus?.[0]?.name || ''), qty:1}])}>+ Menu</button>
                 <button className="btn btn-primary" style={{marginTop:16}} onClick={handleSendPartner}>Confirmer</button>
               </div>
             )}
@@ -804,7 +804,7 @@ export default function Home() {
                 <div className="inp-group">
                   <label className="inp-label">Véhicule</label>
                   <select className="inp-field" value={expData.veh} onChange={e=>setExpData({...expData, veh:e.target.value})}>
-                    {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
+                    {data?.vehicles?.map(v=><option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
 
@@ -833,7 +833,7 @@ export default function Home() {
                 <div className="inp-group">
                   <label className="inp-label">Véhicule</label>
                   <select className="inp-field" value={garData.veh} onChange={e=>setGarData({...garData, veh:e.target.value})}>
-                    {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
+                    {data?.vehicles?.map(v=><option key={v} value={v}>{v}</option>)}
                   </select>
                 </div>
 
@@ -879,7 +879,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* ANNuaire */}
+            {/* ANNUAIRE */}
             {currentTab === 'directory' && (
               <div className="list-card" style={{maxWidth:900, margin:'0 auto'}}>
                 <div style={{display:'flex', gap:12, marginBottom:14, flexWrap:'wrap'}}>
@@ -887,12 +887,12 @@ export default function Home() {
                     value={dirSearch} onChange={e=>setDirSearch(e.target.value)} />
                   <select className="inp-field" style={{width:240}} value={dirRole} onChange={e=>setDirRole(e.target.value)}>
                     <option value="Tous">Tous les postes</option>
-                    {[...new Set(employeesFull.map(e=>e.role).filter(Boolean))].map(r => <option key={r} value={r}>{r}</option>)}
+                    {employeesFull?.length ? [...new Set(employeesFull.map(e=>e.role).filter(Boolean))].map(r => <option key={r} value={r}>{r}</option>) : null}
                   </select>
                 </div>
 
                 {employeesFull
-                  .filter(e => (dirRole==='Tous' || e.role===dirRole) && e.name.toLowerCase().includes(dirSearch.toLowerCase()))
+                  ?.filter(e => (dirRole==='Tous' || e.role===dirRole) && e.name.toLowerCase().includes(dirSearch.toLowerCase()))
                   .map(e => (
                     <div key={e.id + e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
                       <div style={{display:'flex', gap:12, alignItems:'center'}}>
@@ -919,13 +919,13 @@ export default function Home() {
                   <div style={{fontWeight:1000, marginBottom:10, display:'flex', alignItems:'center', gap:10}}>
                     <Icon name="trophy" /> Top CA
                   </div>
-                  {topCA.map((e, idx) => (
+                  {topCA?.map((e, idx) => (
                     <div key={e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
                       <div style={{display:'flex', gap:10, alignItems:'center'}}>
                         <div className="badge" style={{width:34, textAlign:'center'}}>{idx+1}</div>
                         <div style={{fontWeight:1000}}>{e.name}</div>
                       </div>
-                      <div style={{fontWeight:1000, color:'var(--primary)'}}>${e.ca.toFixed(2)}</div>
+                      <div style={{fontWeight:1000, color:'var(--primary)'}}>${Number(e.ca || 0).toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
@@ -934,13 +934,13 @@ export default function Home() {
                   <div style={{fontWeight:1000, marginBottom:10, display:'flex', alignItems:'center', gap:10}}>
                     <Icon name="package" /> Top Stock
                   </div>
-                  {topStock.map((e, idx) => (
+                  {topStock?.map((e, idx) => (
                     <div key={e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
                       <div style={{display:'flex', gap:10, alignItems:'center'}}>
                         <div className="badge" style={{width:34, textAlign:'center'}}>{idx+1}</div>
                         <div style={{fontWeight:1000}}>{e.name}</div>
                       </div>
-                      <div style={{fontWeight:1000, color:'var(--primary)'}}>{e.stock}</div>
+                      <div style={{fontWeight:1000, color:'var(--primary)'}}>{e.stock || 0}</div>
                     </div>
                   ))}
                 </div>
@@ -980,15 +980,15 @@ export default function Home() {
                     <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginTop:12}}>
                       <div className="list-card" style={{padding:14}}>
                         <div style={{color:'var(--text-muted)', fontWeight:900}}>CA</div>
-                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${myProfile.ca.toFixed(2)}</div>
+                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(myProfile.ca || 0).toFixed(2)}</div>
                       </div>
                       <div className="list-card" style={{padding:14}}>
                         <div style={{color:'var(--text-muted)', fontWeight:900}}>Stock</div>
-                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>{myProfile.stock}</div>
+                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>{myProfile.stock || 0}</div>
                       </div>
                       <div className="list-card" style={{padding:14}}>
                         <div style={{color:'var(--text-muted)', fontWeight:900}}>Salaire</div>
-                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${myProfile.salary.toFixed(2)}</div>
+                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(myProfile.salary || 0).toFixed(2)}</div>
                       </div>
                     </div>
 
@@ -1035,20 +1035,17 @@ export default function Home() {
                     <div key={i} className="cart-item">
                       <div style={{flex:1}}>
                         <b style={{fontWeight:1000}}>{c.name}</b><br/>
-                        <small style={{color:'var(--text-muted)', fontWeight:900}}>${c.pu.toFixed(2)}</small>
+                        <small style={{color:'var(--text-muted)', fontWeight:900}}>${Number(c.pu || 0).toFixed(2)}</small>
                       </div>
 
                       <div className="qty-ctrl">
                         <button className="qb" onClick={()=>modQty(i,-1)}>-</button>
-
-                        {/* ✅ quantité saisissable au clavier */}
                         <input
                           className="qi-inp"
                           type="number"
                           value={c.qty}
                           onChange={(e)=>setQty(i, e.target.value)}
                         />
-
                         <button className="qb" onClick={()=>modQty(i,1)}>+</button>
                       </div>
 
@@ -1072,7 +1069,7 @@ export default function Home() {
             </>
           )}
 
-          {/* MODAL EMPLOYEE (Annuaire/Performance) */}
+          {/* MODAL EMPLOYEE */}
           {selectedEmployee && (
             <div
               onClick={()=>setSelectedEmployee(null)}
@@ -1108,15 +1105,15 @@ export default function Home() {
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginTop:12}}>
                   <div className="list-card" style={{padding:14}}>
                     <div style={{color:'var(--text-muted)', fontWeight:900}}>CA</div>
-                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${selectedEmployee.ca.toFixed(2)}</div>
+                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(selectedEmployee.ca || 0).toFixed(2)}</div>
                   </div>
                   <div className="list-card" style={{padding:14}}>
                     <div style={{color:'var(--text-muted)', fontWeight:900}}>Stock</div>
-                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>{selectedEmployee.stock}</div>
+                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>{selectedEmployee.stock || 0}</div>
                   </div>
                   <div className="list-card" style={{padding:14}}>
                     <div style={{color:'var(--text-muted)', fontWeight:900}}>Salaire</div>
-                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${selectedEmployee.salary.toFixed(2)}</div>
+                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(selectedEmployee.salary || 0).toFixed(2)}</div>
                   </div>
                 </div>
 
