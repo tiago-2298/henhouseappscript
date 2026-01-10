@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= CONFIGURATION & WEBHOOKS =================
+// ================= CONFIGURATION =================
 const APP_VERSION = '2026.01.10';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
@@ -17,12 +17,20 @@ const WEBHOOKS = {
   support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
 };
 
+// Liste des produits (Sert de secours si la base de données est injoignable)
+const PRODUCTS_CAT = {
+  plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
+  desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
+  boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
+  menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
+  alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
+};
+
 const PRICE_LIST = {
   'Boeuf bourguignon':50,'Saumon Grillé':35,'Quiche aux légumes':30,'Crousti-Douce':50,'Wings épicé':60,'Filet Mignon':50,'Poulet Rôti':60,'Paella Méditerranéenne':50,'Ribbs':50,"Steak 'Potatoes":50,'Rougail Saucisse':50,
   'Brochettes de fruits frais':25,'Mousse au café':25,'Tiramisu Fraise':30,'Los Churros Caramel':35,'Tourte Myrtille':35,
   'Café':15,'Jus de raisin rouge':30,'Cidre Pression':10,'Berry Fizz':30,"Jus d'orange":35,'Jus de raisin blanc':30,'Agua Fresca Pasteque':30,"Vin rouge chaud":25,'Lait de poule':30,'Cappuccino':15,'Bière':20, 'Lutinade':20,
   'Menu Le Nid Végé':70,'Menu Grillé du Nord':80,'Menu Fraîcheur Méditerranéenne':95,'Menu Voyage Sucré-Salé':100,'Menu Flamme d OR':110,'Menu Happy Hen House':110,
-  'Menu Le Nid Végé 5+1':350,'Menu Grillé du Nord 5+1':400,'Menu Fraîcheur Méditerranéenne 5+1':475,'Menu Voyage Sucré-Salé 5+1':500,'Menu Flamme d OR 5+1':550,'Menu Happy Hen House 5+1':550,
   'Cocktail Citron-Myrtille':40,'Verre de Bellini':25,'Verre de Vodka':45,'Verre de Rhum':45,'Verre de Cognac':45,'Verre de Brandy':50,'Verre de Whisky':40,'Verre de Gin':60,'Tequila Citron':50,'Verre Vin Blanc':35,'Verre Vin Rouge':35,'Shot de Tequila':40,'Verre de Champagne':15,'Bouteille de Champagne':100,'Bouteille de Cidre':40,'Gin Fizz Citron':80,'Verre de rosé':25,'Verre de Champomax':30,
   'Livraison NORD':100,'Livraison SUD':150
 };
@@ -42,8 +50,14 @@ const PARTNERS = {
   },
 };
 
-// ================= FONCTIONS UTILES =================
-function formatAmount(n) { return `${CURRENCY.symbol}${(Number(n)||0).toFixed(2)}`; }
+// ================= UTILS =================
+async function getAuthSheets() {
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  if (!privateKey || !clientEmail) throw new Error("Variables d'environnement Google manquantes");
+  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+  return google.sheets({ version: 'v4', auth });
+}
 
 async function sendWebhook(url, payload) {
   if (!url) return;
@@ -52,103 +66,75 @@ async function sendWebhook(url, payload) {
   } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
-async function getAuthSheets() {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  if (!privateKey || !clientEmail) throw new Error("Variables d'environnement Google manquantes");
-
-  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-  return google.sheets({ version: 'v4', auth });
-}
-
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    
-    // CIBLAGE DE L'ONGLET "Employés"
     const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
     if (rowIndex === -1) return;
-
     const realRow = rowIndex + 2;
-    // G = CA, H = Stock
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
-
     const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
     let currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
-
     await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: targetCell,
-      valueInputOption: 'RAW',
+      spreadsheetId: sheetId, range: targetCell, valueInputOption: 'RAW',
       requestBody: { values: [[currentVal + Number(amountToAdd)]] }
     });
   } catch (e) { console.error("Erreur Sheets:", e); }
 }
 
-// ================= ROUTEUR API PRINCIPAL =================
+// ================= ROUTEUR API =================
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    // --- INITIALISATION / SYNC DATA ---
+    // --- SYNC / INIT ---
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const sheets = await getAuthSheets();
-      const sheetId = process.env.GOOGLE_SHEET_ID;
+      let employeesFull = [];
+      try {
+        const sheets = await getAuthSheets();
+        const resFull = await sheets.spreadsheets.values.get({ 
+          spreadsheetId: process.env.GOOGLE_SHEET_ID, 
+          range: "'Employés'!A2:I200", 
+          valueRenderOption: 'UNFORMATTED_VALUE' 
+        });
+        const rows = resFull.data.values || [];
+        employeesFull = rows.filter(r => r[1]).map(r => ({
+          id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
+          phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
+          ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
+        }));
+      } catch (err) {
+        console.error("Crash Sheets Meta:", err.message);
+      }
 
-      // RECUPERATION DONNEES "Employés"
-      const resFull = await sheets.spreadsheets.values.get({ 
-        spreadsheetId: sheetId, 
-        range: "'Employés'!A2:I200", 
-        valueRenderOption: 'UNFORMATTED_VALUE' 
-      });
-
-      const rows = resFull.data.values || [];
-      const employeesFull = rows.filter(r => r[1]).map(r => ({
-        id: String(r[0] ?? ''),
-        name: String(r[1] ?? '').trim(),
-        role: String(r[2] ?? ''),
-        phone: String(r[3] ?? ''),
-        arrival: String(r[4] ?? ''),
-        seniority: Number(r[5] ?? 0),
-        ca: Number(r[6] ?? 0),
-        stock: Number(r[7] ?? 0),
-        salary: Number(r[8] ?? 0),
-      }));
-
+      // ON RENVOIE TOUJOURS LES PRODUITS MÊME SI GOOGLE PLANTE
       return NextResponse.json({
         success: true,
         version: APP_VERSION,
         employees: employeesFull.map(e => e.name),
         employeesFull,
+        products: Object.values(PRODUCTS_CAT).flat(),
+        productsByCategory: PRODUCTS_CAT,
         prices: PRICE_LIST,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
         partners: PARTNERS,
-        currencySymbol: CURRENCY.symbol,
-        productsByCategory: {
-          plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-          desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
-          boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
-          menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
-          alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
-        }
+        currencySymbol: CURRENCY.symbol
       });
     }
 
     let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` } };
 
-    // --- GESTION DES ACTIONS ---
     switch (action) {
       case 'sendFactures':
         const grandTotal = data.items.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
         embed.title = `🍽️ Facture N°${data.invoiceNumber || '???'}`;
-        embed.color = 0xd35400;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '💰 Total', value: `**${formatAmount(grandTotal)}**`, inline: true },
+          { name: '💰 Total', value: `**$${grandTotal.toFixed(2)}**`, inline: true },
           { name: '📋 Détails', value: data.items.map(i => `• ${i.desc} x${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
@@ -170,7 +156,6 @@ export async function POST(request) {
 
       case 'sendEntreprise':
         embed.title = '🏭 Commande Entreprise';
-        embed.color = 0xf39c12;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🏢 Société', value: data.company, inline: true },
@@ -180,9 +165,7 @@ export async function POST(request) {
         break;
 
       case 'sendGarage':
-        const colors = {'Entrée':0x2ecc71,'Sortie':0xe74c3c,'Maintenance':0xf39c12,'Réparation':0x9b59b6};
         embed.title = `🚗 Garage - ${data.action}`;
-        embed.color = colors[data.action] || 0x8e44ad;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🚗 Véhicule', value: data.vehicle, inline: true },
@@ -193,34 +176,27 @@ export async function POST(request) {
 
       case 'sendExpense':
         embed.title = `💳 Note de frais — ${data.kind}`;
-        embed.color = 0x3498db;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '💵 Montant', value: formatAmount(data.amount), inline: true },
+          { name: '💵 Montant', value: `$${Number(data.amount).toFixed(2)}`, inline: true },
           { name: '🚗 Véhicule', value: data.vehicle, inline: true }
         ];
         await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
         break;
 
       case 'sendPartnerOrder':
-        const partnerWb = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
         embed.title = `🤝 Partenaire - ${data.company}`;
-        embed.color = 0x10b981;
         embed.fields = [
           { name: '👤 Employé', value: data.employee, inline: true },
           { name: '🔑 Bénéficiaire', value: data.beneficiary, inline: true },
           { name: '🍱 Menus', value: data.items.map(i => `• ${i.menu} x${i.qty}`).join('\n') }
         ];
-        await sendWebhook(partnerWb, { embeds: [embed] });
+        await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
         break;
 
       case 'sendSupport':
         embed.title = `🆘 Support — ${data.subject}`;
-        embed.color = 0xef4444;
-        embed.fields = [
-          { name: '👤 Employé', value: data.employee, inline: true },
-          { name: '📝 Message', value: data.message, inline: false }
-        ];
+        embed.description = data.message;
         await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
 
@@ -232,7 +208,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error("API ERROR:", err);
-    // GARANTIT UNE RÉPONSE JSON POUR ÉVITER LE CRASH HTML
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
