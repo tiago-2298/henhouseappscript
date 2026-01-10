@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.02';
+const APP_VERSION = '2026.01.10';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const WEBHOOKS = {
@@ -31,23 +31,32 @@ const PRICE_LIST = {
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  if (!privateKey || !clientEmail) throw new Error("Identifiants Google manquants");
+  if (!privateKey || !clientEmail) throw new Error("Variables d'environnement Google manquantes");
 
   const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
   return google.sheets({ version: 'v4', auth });
+}
+
+async function sendWebhook(url, payload) {
+  if (!url) return;
+  try {
+    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
   try {
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    // Ciblage de l'onglet "Employés"
+    
+    // On cherche l'employé dans l'onglet "Employés" (colonne B)
     const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = listRes.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
     if (rowIndex === -1) return;
 
     const realRow = rowIndex + 2;
+    // G = CA, H = Stock
     const targetCell = type === 'CA' ? `'Employés'!G${realRow}` : `'Employés'!H${realRow}`;
     
     const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetCell, valueRenderOption: 'UNFORMATTED_VALUE' });
@@ -58,13 +67,6 @@ async function updateEmployeeStats(employeeName, amountToAdd, type) {
       requestBody: { values: [[currentVal + Number(amountToAdd)]] }
     });
   } catch (e) { console.error("Erreur Sheets:", e); }
-}
-
-async function sendWebhook(url, payload) {
-  if (!url) return;
-  try {
-    await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  } catch (e) { console.error("Erreur Webhook:", e); }
 }
 
 // ================= ROUTEUR POST =================
@@ -94,7 +96,7 @@ export async function POST(request) {
         currencySymbol: CURRENCY.symbol,
         productsByCategory: {
             plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-            desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Tourte Myrtille'],
+            desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
             boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
             menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
             alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
