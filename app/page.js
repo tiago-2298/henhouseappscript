@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- BIBLIOTHÈQUE D'ICÔNES (SVG intégrés) ---
 const Icon = ({ name, size = 20, className = "", style }) => {
@@ -47,6 +48,7 @@ const Icon = ({ name, size = 20, className = "", style }) => {
     volume: <path d="M11 5 6 9H2v6h4l5 4V5Zm7.07 2.93a10 10 0 0 1 0 8.14M15.54 10.46a4 4 0 0 1 0 3.08" />,
     volumeOff: <path d="M11 5 6 9H2v6h4l5 4V5ZM22 9l-6 6M16 9l6 6" />,
     user: <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8" />,
+    fuel: <path d="M3 22V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v17M14 3h.4a2 2 0 0 1 2 2V10M18 5v13a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V8l-3-3" />,
   };
 
   return (
@@ -211,7 +213,7 @@ export default function Home() {
 
   // Sync data (refresh sans reload)
   const syncData = async () => {
-    notify("Sync...", "Récupération des données", "info");
+    notify("🔄 Synchronisation", "Récupération des données en cours...", "info");
     try {
       const res = await fetch('/api', {
         method: 'POST',
@@ -221,12 +223,12 @@ export default function Home() {
       const json = await res.json();
       if (json.success) {
         setData(json);
-        notify("OK", "Données synchronisées", "success");
+        notify("✅ Succès", "Données synchronisées avec succès", "success");
       } else {
-        notify("Erreur", json.message || "Sync impossible", "error");
+        notify("❌ Erreur", json.message || "Impossible de synchroniser", "error");
       }
     } catch (e) {
-      notify("Erreur", e.message, "error");
+      notify("❌ Erreur", e.message, "error");
     }
   };
 
@@ -235,9 +237,7 @@ export default function Home() {
   const login = () => { if(user) { setView('app'); beep('click'); } };
   const logout = () => { setUser(''); setView('login'); setCurrentTab('home'); beep('click'); };
 
-  // =========================
-  // Helpers employees (full)
-  // =========================
+  // Helpers
   const employeesFull = data?.employeesFull || [];
   const myProfile = useMemo(() => employeesFull.find(e => e.name === user) || null, [employeesFull, user]);
 
@@ -249,7 +249,7 @@ export default function Home() {
     } else {
       setCart([...cart, {name: prod, qty: 1, pu: data?.prices?.[prod] || 0}]);
     }
-    notify("Ajouté", prod, "success");
+    notify("🍕 Ajouté", prod, "success");
   };
 
   const modQty = (idx, delta) => {
@@ -268,7 +268,7 @@ export default function Home() {
   };
 
   const sendForm = async (action, payload) => {
-    notify("Envoi...", "Veuillez patienter", "info");
+    notify("📤 Envoi", "Veuillez patienter...", "info");
     try {
       const res = await fetch('/api', {
         method: 'POST',
@@ -277,10 +277,9 @@ export default function Home() {
       });
       const json = await res.json();
       if(json.success) {
-        notify("Succès", "Action validée !", "success");
+        notify("✅ Succès", "Action validée et transmise !", "success");
         if(['sendFactures'].includes(action)) setCurrentTab('home');
 
-        // Reset forms
         setCart([]); setInvNum('');
         if(data?.products?.length) {
             setStockItems([{product:(data.products[0]), qty:1}]);
@@ -293,54 +292,48 @@ export default function Home() {
         setParNum('');
         setSupData({sub:'Autre', msg:''});
         setExpData(p => ({...p, amt:''}));
-
-        // Sync après actions importantes
         syncData();
       } else {
-        notify("Erreur", json.message, "error");
+        notify("❌ Erreur", json.message, "error");
       }
-    } catch(e) { notify("Erreur", e.message, "error"); }
+    } catch(e) { notify("❌ Erreur", e.message, "error"); }
   };
 
   const handleSendInvoice = () => {
-    if(!invNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
-    if(cart.length === 0) return notify("Erreur", "Le panier est vide", "error");
+    if(!invNum.trim()) return notify("⚠️ Erreur", "Numéro de facture obligatoire", "error");
+    if(cart.length === 0) return notify("⚠️ Erreur", "Le panier est vide", "error");
     sendForm('sendFactures', {invoiceNumber:invNum, items:cart.map(x=>({desc:x.name, qty:x.qty}))});
   };
 
   const handleSendEnterprise = () => {
-    if(!entName.trim()) return notify("Erreur", "Le nom de l'entreprise est OBLIGATOIRE", "error");
+    if(!entName.trim()) return notify("⚠️ Erreur", "Nom d'entreprise obligatoire", "error");
     sendForm('sendEntreprise', {company:entName, items:entItems});
   };
 
   const handleSendPartner = () => {
-    if(!parNum.trim()) return notify("Erreur", "Le numéro de facture est OBLIGATOIRE", "error");
+    if(!parNum.trim()) return notify("⚠️ Erreur", "Numéro de facture obligatoire", "error");
     sendForm('sendPartnerOrder', {company:parCompany, beneficiary:parBenef, invoiceNumber:parNum, items:parItems});
   };
 
   const handleSendExpense = () => {
-    if(!expData.amt || expData.amt <= 0) return notify("Erreur", "Le montant est OBLIGATOIRE", "error");
+    if(!expData.amt || expData.amt <= 0) return notify("⚠️ Erreur", "Montant obligatoire", "error");
     sendForm('sendExpense', {vehicle:expData.veh, kind:expData.kind, amount:expData.amt});
   };
 
-  // =========================
-  // Performance
-  // =========================
   const topCA = useMemo(() => [...employeesFull].sort((a,b)=>b.ca-a.ca).slice(0,5), [employeesFull]);
   const topStock = useMemo(() => [...employeesFull].sort((a,b)=>b.stock-a.stock).slice(0,5), [employeesFull]);
 
-  // =========================
-  // Loading
-  // =========================
   if(loading) return (
     <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1115', color:'white'}}>
       <div style={{textAlign:'center'}}>
-        <img src="https://i.goopics.net/dskmxi.png" style={{height:60, marginBottom:18, borderRadius:12}} alt="Logo" />
-        <div style={{opacity:0.9, fontWeight:800}}>Hen House</div>
-        <div style={{opacity:0.65, marginTop:6}}>Connexion...</div>
-        <div style={{marginTop:18, width:220, height:10, borderRadius:20, background:'rgba(255,255,255,0.08)', overflow:'hidden'}}>
-          <div className="shimmer" style={{height:'100%', width:'45%'}} />
-        </div>
+        <motion.img 
+          animate={{ scale: [1, 1.1, 1] }} 
+          transition={{ repeat: Infinity, duration: 1.5 }}
+          src="https://i.goopics.net/dskmxi.png" 
+          style={{height:80, marginBottom:18, borderRadius:20}} alt="Logo" 
+        />
+        <div style={{opacity:0.9, fontWeight:900, fontSize:'1.5rem'}}>Hen House</div>
+        <div style={{opacity:0.65, marginTop:6}}>Initialisation du système...</div>
       </div>
     </div>
   );
@@ -361,187 +354,106 @@ export default function Home() {
         }
 
         [data-theme="dark"] {
-          --bg-body: #0f1115;
-          --bg-panel: #181a20;
+          --bg-body: #0a0b0e;
+          --bg-panel: rgba(24, 26, 32, 0.7);
           --text-main: #f8fafc;
           --text-muted: #94a3b8;
-          --border: #2d313a;
-          --primary-light: rgba(139, 92, 246, 0.18);
+          --border: rgba(255,255,255,0.08);
+          --primary-light: rgba(139, 92, 246, 0.25);
           color-scheme: dark;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; transition: background-color 0.3s ease; }
-
-        select, option, input, textarea {
-          color: var(--text-main);
-          background: var(--bg-panel);
+        
+        body { 
+          font-family: 'Plus Jakarta Sans', sans-serif; 
+          background-color: var(--bg-body);
+          background-image: 
+            radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+          background-attachment: fixed;
+          color: var(--text-main); 
+          height: 100vh; 
+          overflow: hidden; 
+          display: flex; 
+          transition: background-color 0.5s ease; 
         }
-        select {
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding-right: 38px;
-          appearance: none;
-          -webkit-appearance: none;
-          background-image:
-            linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
-            linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
-          background-position:
-            calc(100% - 18px) calc(50% - 3px),
-            calc(100% - 12px) calc(50% - 3px);
-          background-size: 6px 6px, 6px 6px;
-          background-repeat: no-repeat;
+
+        .glass {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
         }
-        option { background: var(--bg-panel) !important; color: var(--text-main) !important; }
-        select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
 
-        .shimmer {
-          background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.18), rgba(255,255,255,0.02));
-          animation: shimmer 1.1s infinite;
+        .sidebar { 
+          width: var(--sidebar-w); 
+          height: 96vh; 
+          margin: 2vh; 
+          background: rgba(15, 17, 21, 0.6); 
+          backdrop-filter: blur(20px);
+          border-radius: var(--radius); 
+          display: flex; 
+          flex-direction: column; 
+          padding: 22px; 
+          box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+          z-index: 50; 
+          border: 1px solid rgba(255,255,255,0.06); 
         }
-        @keyframes shimmer { 0%{transform:translateX(-60%)} 100%{transform:translateX(240%)} }
 
-        .sidebar { width: var(--sidebar-w); height: 96vh; margin: 2vh; background: rgba(24,26,32,0.88); backdrop-filter: blur(14px);
-          border-radius: var(--radius); display: flex; flex-direction: column; padding: 22px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
-          z-index: 50; border: 1px solid rgba(255,255,255,0.06); }
-        .brand { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 1.2rem; margin-bottom: 26px; color: var(--text-main); }
-        .brand img { height: 34px; border-radius: 12px; }
-        .nav-list { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .nav-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; border: none; background: transparent;
-          color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.18s; font-family: inherit; }
-        .nav-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-main); }
-        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 10px 26px -10px rgba(139, 92, 246, 0.7); }
-        .nav-btn.active svg { stroke-width: 3px; }
-
-        .me-card { margin-top: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 18px; padding: 14px; }
-        .me-top { display:flex; align-items:center; gap:12px; cursor:pointer; }
-        .avatar { width: 38px; height: 38px; background: var(--primary); color: white; border-radius: 14px; display:flex; align-items:center; justify-content:center;
-          font-weight: 900; }
-        .me-name { font-weight: 900; line-height: 1.1; }
-        .me-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 3px; }
-        .me-actions { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-        .mini-btn { display:flex; align-items:center; justify-content:center; gap:8px; padding: 10px 12px; border-radius: 14px;
-          border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: var(--text-main); font-weight: 800; cursor:pointer; }
-        .mini-btn:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
-        .mini-btn.danger { border-color: rgba(239,68,68,0.5); color: #fecaca; }
-        .mini-btn.danger:hover { background: rgba(239,68,68,0.08); }
+        .nav-btn { 
+          display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; border: none; background: transparent;
+          color: var(--text-muted); font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-main); transform: translateX(5px); }
+        .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); }
 
         .main-content { flex: 1; padding: 2vh 2vh 2vh 0; overflow-y: auto; overflow-x: hidden; position: relative; }
-        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 10px; }
-        .page-title { font-size: 1.8rem; font-weight: 900; display:flex; align-items:center; gap:10px; }
-        .top-stats { display: flex; gap: 12px; align-items: center; }
-        .mini-stat { background: rgba(255,255,255,0.04); padding: 8px 16px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.07);
-          display:flex; gap:10px; align-items:center; font-weight: 800; font-size: 0.9rem; color: var(--text-muted); }
-        .mini-stat strong { color: var(--text-main); }
+        
+        .prod-card { 
+          background: rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 14px; text-align:center; border: 1px solid rgba(255,255,255,0.05);
+          cursor:pointer; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .prod-card:hover { border-color: var(--primary); background: rgba(139, 92, 246, 0.05); }
 
-        .chip { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-          padding: 10px 14px; border-radius: 999px; display:flex; align-items:center; gap:10px; font-weight: 900; cursor:pointer; }
-        .chip:hover { border-color: rgba(255,255,255,0.22); }
-        .toggle { width: 44px; height: 26px; border-radius: 999px; background: rgba(255,255,255,0.12); position:relative; border: 1px solid rgba(255,255,255,0.08); }
-        .dot { width: 22px; height: 22px; border-radius: 999px; background: white; position:absolute; top:1px; left:1px; transition: 0.18s; }
-        .toggle.on { background: rgba(139,92,246,0.35); }
-        .toggle.on .dot { left: 21px; }
+        /* Vehicle Fuel Coloring */
+        .fuel-safe { color: #2ecc71; }
+        .fuel-warning { color: #f39c12; }
+        .fuel-danger { color: #e74c3c; }
 
-        .icon-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-          width: 42px; height: 42px; border-radius: 999px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-        .icon-btn:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
-
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
-        .dash-card { background: rgba(255,255,255,0.04); border-radius: var(--radius); padding: 26px; border: 1px solid rgba(255,255,255,0.07);
-          position: relative; overflow: hidden; cursor: pointer; transition: 0.25s; display:flex; flex-direction:column; justify-content:space-between; height: 190px; }
-        .dash-card:hover { transform: translateY(-4px); border-color: rgba(139,92,246,0.7); box-shadow: 0 18px 32px -18px rgba(0,0,0,0.5); }
-        .dash-icon { width: 52px; height: 52px; background: rgba(255,255,255,0.04); border-radius: 16px; display:flex; align-items:center; justify-content:center; margin-bottom: 14px; color: var(--primary); }
-        .dash-title { font-size: 1.18rem; font-weight: 900; margin-bottom: 6px; }
-        .dash-desc { font-size: 0.92rem; color: var(--text-muted); }
-
-        .search-container { position: relative; margin-bottom: 18px; max-width: 520px; }
-        .search-inp { width: 100%; padding: 14px 16px 14px 46px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.04); font-size: 1rem; color: var(--text-main); font-weight: 800; transition: 0.2s; }
-        .search-inp:focus { border-color: rgba(139,92,246,0.7); box-shadow: 0 0 0 3px var(--primary-light); }
-        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-        .cat-pills { display:flex; gap: 10px; overflow-x:auto; padding-bottom: 10px; margin-bottom: 16px; }
-        .pill { padding: 8px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 999px; font-weight: 900; cursor:pointer; white-space:nowrap; transition: 0.2s; color: var(--text-muted); }
-        .pill:hover, .pill.active { border-color: rgba(139,92,246,0.75); color: white; background: rgba(139,92,246,0.85); }
-        .prod-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-        .prod-card { background: rgba(255,255,255,0.04); border-radius: 20px; padding: 14px; text-align:center; border: 1px solid rgba(255,255,255,0.07);
-          cursor:pointer; transition: 0.2s; }
-        .prod-card:hover { border-color: rgba(139,92,246,0.7); transform: translateY(-3px); box-shadow: 0 18px 30px -18px rgba(0,0,0,0.55); }
-        .prod-img { width:100%; aspect-ratio: 1; border-radius: 16px; margin-bottom: 12px; object-fit: cover; background: rgba(0,0,0,0.25);
-          display:flex; align-items:center; justify-content:center; font-size: 2rem; color: var(--text-muted); }
-        .prod-title { font-weight: 900; font-size: 0.92rem; margin-bottom: 6px; line-height:1.2; min-height: 36px; display:flex; align-items:center; justify-content:center; }
-        .prod-price { color: var(--primary); font-weight: 1000; font-size: 1.08rem; }
-
-        .cart-drawer { position: fixed; top: 0; right: 0; width: 420px; height: 100vh; background: rgba(24,26,32,0.92); backdrop-filter: blur(14px);
-          box-shadow: -10px 0 40px rgba(0,0,0,0.35); z-index: 100; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-          display:flex; flex-direction:column; border-left: 1px solid rgba(255,255,255,0.06); }
-        .cart-drawer.open { transform: translateX(0); }
-        .cart-head { padding: 22px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.06); }
-        .cart-body { flex: 1; overflow-y:auto; padding: 18px; }
-        .cart-foot { padding: 22px; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.06); }
-        .cart-item { display:flex; align-items:center; gap: 12px; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 16px; margin-bottom: 10px;
-          border: 1px solid rgba(255,255,255,0.06); }
-        .qty-ctrl { display:flex; align-items:center; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 2px; border: 1px solid rgba(255,255,255,0.06); }
-        .qb { width: 34px; height: 34px; border:none; background: transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; color: var(--text-main); font-weight: 1000; }
-        .qi-inp { width: 58px; height: 34px; border:none; background: transparent; text-align:center; font-weight: 1000; color: var(--text-main); }
-        .btn { width:100%; padding: 14px; border:none; border-radius: 16px; font-weight: 1000; font-size: 1rem; cursor:pointer; transition: 0.2s;
-          display:flex; justify-content:center; align-items:center; gap: 10px; }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 16px 30px -18px rgba(139,92,246,0.9); }
-        .btn-primary:hover { transform: translateY(-2px); }
-        .btn-text { background: transparent; border: 1px dashed rgba(255,255,255,0.14); color: var(--text-muted); }
-        .btn-text:hover { border-color: rgba(139,92,246,0.65); color: var(--text-main); }
-
-        .cart-btn-float { position: fixed; bottom: 26px; right: 26px; background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
-          color: var(--text-main); padding: 14px 18px; border-radius: 999px; font-weight: 1000; cursor:pointer;
-          box-shadow: 0 20px 34px -22px rgba(0,0,0,0.7); display:flex; align-items:center; gap: 10px; transition: 0.2s; z-index: 90;
-          border: 1px solid rgba(255,255,255,0.08); }
-        .cart-btn-float:hover { transform: scale(1.03); border-color: rgba(139,92,246,0.5); }
-
-        .form-wrap { background: rgba(255,255,255,0.04); padding: 34px; border-radius: 26px; max-width: 680px; margin: 0 auto;
-          border: 1px solid rgba(255,255,255,0.07); box-shadow: 0 22px 40px -26px rgba(0,0,0,0.7); }
-        .inp-group { margin-bottom: 16px; }
-        .inp-label { display:block; margin-bottom: 8px; font-weight: 900; font-size: 0.9rem; color: var(--text-muted); }
-        .inp-field { width:100%; padding: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
-          border-radius: 12px; font-size: 1rem; font-family: inherit; color: var(--text-main); transition: 0.2s; font-weight: 800; }
-        .inp-field:focus { border-color: rgba(139,92,246,0.75); box-shadow: 0 0 0 3px var(--primary-light); }
-
-        #gate { position: fixed; inset: 0; background: var(--bg-body); z-index: 2000; display:flex; align-items:center; justify-content:center; }
-        .login-box { text-align:center; width: 420px; padding: 40px; border: 1px solid rgba(255,255,255,0.08); background: rgba(24,26,32,0.85);
-          border-radius: 30px; backdrop-filter: blur(14px); box-shadow: 0 24px 40px -26px rgba(0,0,0,0.75); }
-
-        .toast { position: fixed; top: 26px; right: 26px; z-index: 3000; background: rgba(24,26,32,0.9); padding: 14px 18px;
-          border-radius: 16px; box-shadow: 0 18px 34px -22px rgba(0,0,0,0.75); border-left: 5px solid var(--primary); min-width: 280px;
-          animation: slideIn 0.25s; color: var(--text-main); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px); }
-        @keyframes slideIn { from { transform: translateX(12%); opacity: 0; } }
-        .t-title { font-weight: 1000; font-size: 0.95rem; margin-bottom: 4px; }
-        .t-msg { font-size: 0.85rem; color: var(--text-muted); }
-
-        .list-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 22px; padding: 18px; }
-        .row { display:flex; justify-content:space-between; align-items:center; padding: 12px 12px; border-radius: 14px; cursor:pointer;
-          border: 1px solid rgba(255,255,255,0.0); }
-        .row:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.06); }
-        .badge { font-size: 0.78rem; font-weight: 1000; padding: 6px 10px; border-radius: 999px; background: rgba(139,92,246,0.16); border: 1px solid rgba(139,92,246,0.35); color: white; }
+        .toast { 
+          position: fixed; top: 26px; right: 26px; z-index: 3000; padding: 16px 20px;
+          border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
+          color: var(--text-main); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px);
+        }
       `}</style>
 
       {view === 'login' ? (
         <div id="gate">
-          <div className="login-box">
-            <img src="https://i.goopics.net/dskmxi.png" style={{height:64, marginBottom:18, borderRadius:14}} alt="Logo" />
-            <h2 style={{marginBottom:10, fontWeight:1000}}>Bienvenue</h2>
-            <p style={{color:'var(--text-muted)', marginBottom:22}}>Connectez-vous pour commencer</p>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="login-box glass"
+          >
+            <img src="https://i.goopics.net/dskmxi.png" style={{height:80, marginBottom:18, borderRadius:20}} alt="Logo" />
+            <h2 style={{marginBottom:10, fontWeight:1000, fontSize: '1.8rem'}}>Hen House</h2>
+            <p style={{color:'var(--text-muted)', marginBottom:22}}>Système de Gestion Centralisé</p>
 
             <select className="inp-field" value={user} onChange={e => setUser(e.target.value)} style={{marginBottom:16, textAlign:'center'}}>
-              <option value="">Sélectionner un nom...</option>
+              <option value="">Sélectionner votre matricule...</option>
               {data?.employees?.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
 
-            <button className="btn btn-primary" onClick={login} disabled={!user}>
-              Accéder <Icon name="dashboard" size={18} />
-            </button>
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="btn btn-primary" onClick={login} disabled={!user}
+            >
+              Initialiser la session <Icon name="dashboard" size={18} />
+            </motion.button>
 
-            <div style={{marginTop:16, opacity:0.75, fontSize:'0.8rem'}}>v{data?.version}</div>
-          </div>
+            <div style={{marginTop:16, opacity:0.5, fontSize:'0.75rem'}}>Version {data?.version}</div>
+          </motion.div>
         </div>
       ) : (
         <>
@@ -551,56 +463,39 @@ export default function Home() {
             </div>
 
             <nav className="nav-list">
-              <button className={`nav-btn ${currentTab==='home'?'active':''}`} onClick={()=>setCurrentTab('home')}>
-                <Icon name="dashboard" /> Tableau de bord
-              </button>
-              <button className={`nav-btn ${currentTab==='invoices'?'active':''}`} onClick={()=>setCurrentTab('invoices')}>
-                <Icon name="receipt" /> Caisse
-              </button>
-              <button className={`nav-btn ${currentTab==='stock'?'active':''}`} onClick={()=>setCurrentTab('stock')}>
-                <Icon name="package" /> Stock
-              </button>
-              <button className={`nav-btn ${currentTab==='enterprise'?'active':''}`} onClick={()=>setCurrentTab('enterprise')}>
-                <Icon name="building" /> Entreprise
-              </button>
-              <button className={`nav-btn ${currentTab==='partners'?'active':''}`} onClick={()=>setCurrentTab('partners')}>
-                <Icon name="handshake" /> Partenaires
-              </button>
-              <button className={`nav-btn ${currentTab==='expenses'?'active':''}`} onClick={()=>setCurrentTab('expenses')}>
-                <Icon name="creditCard" /> Frais
-              </button>
-              <button className={`nav-btn ${currentTab==='garage'?'active':''}`} onClick={()=>setCurrentTab('garage')}>
-                <Icon name="car" /> Garage
-              </button>
-              <button className={`nav-btn ${currentTab==='directory'?'active':''}`} onClick={()=>setCurrentTab('directory')}>
-                <Icon name="users" /> Annuaire
-              </button>
-              <button className={`nav-btn ${currentTab==='performance'?'active':''}`} onClick={()=>setCurrentTab('performance')}>
-                <Icon name="trophy" /> Performance
-              </button>
-              <button className={`nav-btn ${currentTab==='support'?'active':''}`} onClick={()=>setCurrentTab('support')}>
-                <Icon name="lifeBuoy" /> Support
-              </button>
+              {[
+                {id: 'home', label: 'Dashboard', icon: 'dashboard'},
+                {id: 'invoices', label: 'Caisse', icon: 'receipt'},
+                {id: 'stock', label: 'Stock', icon: 'package'},
+                {id: 'enterprise', label: 'Entreprise', icon: 'building'},
+                {id: 'partners', label: 'Partenaires', icon: 'handshake'},
+                {id: 'expenses', label: 'Frais', icon: 'creditCard'},
+                {id: 'garage', label: 'Garage', icon: 'car'},
+                {id: 'directory', label: 'Annuaire', icon: 'users'},
+                {id: 'performance', label: 'Trophées', icon: 'trophy'},
+                {id: 'support', label: 'Support', icon: 'lifeBuoy'},
+              ].map(item => (
+                <button 
+                  key={item.id}
+                  className={`nav-btn ${currentTab===item.id?'active':''}`} 
+                  onClick={()=>setCurrentTab(item.id)}
+                >
+                  <Icon name={item.icon} /> {item.label}
+                </button>
+              ))}
             </nav>
 
-            <div className="me-card">
+            <div className="me-card glass">
               <div className="me-top" onClick={()=>setCurrentTab('profile')}>
                 <div className="avatar">{user?.charAt(0) || '?'}</div>
                 <div style={{flex:1}}>
                   <div className="me-name">{user}</div>
-                  <div className="me-sub">
-                    {myProfile?.role ? myProfile.role : 'Employé'} {myProfile?.seniority ? `• ${myProfile.seniority} j` : ''}
-                  </div>
+                  <div className="me-sub">{myProfile?.role || 'Employé'}</div>
                 </div>
-                <Icon name="user" size={18} style={{opacity:0.7}} />
               </div>
               <div className="me-actions">
-                <button className="mini-btn" onClick={()=>{beep('click'); setCurrentTab('profile');}}>
-                  <Icon name="user" size={16}/> Profil
-                </button>
-                <button className="mini-btn danger" onClick={logout}>
-                  <Icon name="logout" size={16}/> Quitter
-                </button>
+                <button className="mini-btn" onClick={()=>{beep('click'); setCurrentTab('profile');}}>Profil</button>
+                <button className="mini-btn danger" onClick={logout}>Quitter</button>
               </div>
             </div>
           </aside>
@@ -608,537 +503,380 @@ export default function Home() {
           <main className="main-content">
             <header className="header-bar">
               <div className="page-title">
-                {currentTab === 'home' && <><Icon name="dashboard" size={32} /> Tableau de bord</>}
-                {currentTab === 'invoices' && <><Icon name="receipt" size={32} /> Caisse</>}
-                {currentTab === 'stock' && <><Icon name="package" size={32} /> Stock</>}
-                {currentTab === 'enterprise' && <><Icon name="building" size={32} /> Entreprise</>}
-                {currentTab === 'partners' && <><Icon name="handshake" size={32} /> Partenaires</>}
-                {currentTab === 'garage' && <><Icon name="car" size={32} /> Garage</>}
-                {currentTab === 'expenses' && <><Icon name="creditCard" size={32} /> Frais</>}
-                {currentTab === 'directory' && <><Icon name="users" size={32} /> Annuaire</>}
-                {currentTab === 'performance' && <><Icon name="trophy" size={32} /> Performance</>}
-                {currentTab === 'support' && <><Icon name="lifeBuoy" size={32} /> Support</>}
-                {currentTab === 'profile' && <><Icon name="user" size={32} /> Mon profil</>}
+                {currentTab.toUpperCase()}
               </div>
 
               <div className="top-stats">
-                <div className="chip" onClick={()=>{beep('click'); toggleTheme();}} title="Mode sombre/clair">
+                <motion.div whileHover={{ scale: 1.05 }} className="chip glass" onClick={toggleTheme}>
                   {darkMode ? <Icon name="sun" size={18}/> : <Icon name="moon" size={18}/>}
-                  <span style={{opacity:0.9}}>{darkMode ? 'Clair' : 'Sombre'}</span>
-                </div>
+                </motion.div>
 
-                <div className="chip" onClick={()=>{beep('click'); setSoundOn(!soundOn);}} title="Sons">
+                <motion.div whileHover={{ scale: 1.05 }} className="chip glass" onClick={()=>setSoundOn(!soundOn)}>
                   {soundOn ? <Icon name="volume" size={18}/> : <Icon name="volumeOff" size={18}/>}
-                  <span style={{opacity:0.9}}>{soundOn ? 'Son' : 'Muet'}</span>
-                </div>
+                </motion.div>
 
-                <div className="mini-stat">Session: <strong>${(cart.reduce((a,b)=>a+b.qty*b.pu, 0)).toFixed(2)}</strong></div>
+                <div className="mini-stat glass">Session: <strong>${(cart.reduce((a,b)=>a+b.qty*b.pu, 0)).toFixed(2)}</strong></div>
 
-                <div className="chip" onClick={()=>{beep('click'); setQuickMode(!quickMode);}} title="Mode rapide">
-                  <span style={{opacity:0.9}}>Mode rapide</span>
-                  <div className={`toggle ${quickMode ? 'on' : ''}`}><div className="dot"/></div>
-                </div>
-
-                <button className="icon-btn" onClick={syncData} title="↻ Sync (refresh data)">
-                  <Icon name="refresh" size={18} />
-                </button>
-                <button className="icon-btn" onClick={reloadApp} title="⟳ Reload (refresh complet)">
-                  <Icon name="reload" size={18} />
-                </button>
+                <div className="icon-btn glass" onClick={syncData}><Icon name="refresh" size={18} /></div>
               </div>
             </header>
 
-            {/* HOME */}
-            {currentTab === 'home' && (
-              <div className="dashboard-grid">
-                <div className="dash-card" onClick={()=>setCurrentTab('invoices')}>
-                  <div className="dash-icon"><Icon name="receipt" size={28} /></div>
-                  <div><div className="dash-title">Caisse</div><div className="dash-desc">Nouvelle vente</div></div>
-                </div>
-                <div className="dash-card" onClick={()=>setCurrentTab('stock')}>
-                  <div className="dash-icon"><Icon name="package" size={28} /></div>
-                  <div><div className="dash-title">Stock</div><div className="dash-desc">Production cuisine</div></div>
-                </div>
-                <div className="dash-card" onClick={()=>setCurrentTab('enterprise')}>
-                  <div className="dash-icon"><Icon name="building" size={28} /></div>
-                  <div><div className="dash-title">Entreprise</div><div className="dash-desc">Commandes B2B</div></div>
-                </div>
-                <div className="dash-card" onClick={()=>setCurrentTab('performance')}>
-                  <div className="dash-icon"><Icon name="trophy" size={28} /></div>
-                  <div><div className="dash-title">Performance</div><div className="dash-desc">Top CA / Stock</div></div>
-                </div>
-              </div>
-            )}
-
-            {/* CAISSE */}
-            {currentTab === 'invoices' && (
-              <>
-                <div className="search-container">
-                  <div className="search-icon"><Icon name="search" size={20} /></div>
-                  <input className="search-inp" placeholder="Rechercher..." onChange={e=>setSearch(e.target.value)} />
-                </div>
-
-                <div className="cat-pills">
-                  <div className={`pill ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
-                  {data?.productsByCategory ? Object.keys(data.productsByCategory).map(c => (
-                    <div key={c} className={`pill ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c.replace(/_/g,' ')}</div>
-                  )) : <div className="mini-stat">Chargement des catégories...</div>}
-                </div>
-
-                <div className="prod-grid" style={quickMode ? {gridTemplateColumns:'repeat(auto-fill, minmax(190px, 1fr))'} : {}}>
-                  {data?.products?.filter(p => {
-                    const cat = Object.keys(data?.productsByCategory || {}).find(k=>data.productsByCategory[k].includes(p));
-                    return (catFilter==='Tous' || cat===catFilter) && p.toLowerCase().includes(search.toLowerCase());
-                  }).map(p => (
-                    <div key={p} className="prod-card" onClick={()=>addToCart(p)}>
-                      {IMAGES[p] ? <img src={IMAGES[p]} className="prod-img" alt={p} /> : <div className="prod-img">{p.charAt(0)}</div>}
-                      <div className="prod-title">{p}</div>
-                      <div className="prod-price">${Number(data?.prices?.[p]||0).toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* STOCK */}
-            {currentTab === 'stock' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="package" /> Déclaration Stock</h2>
-
-                {stockItems.map((item, i) => (
-                  <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                    <select className="inp-field" value={item.product} onChange={e=>{const n=[...stockItems];n[i].product=e.target.value;setStockItems(n)}} style={{flex:1}}>
-                      <option value="" disabled>Produit...</option>
-                      {data?.products?.map(p=><option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <input type="number" className="inp-field" style={{width:120}} value={item.qty}
-                      onChange={e=>{const n=[...stockItems];n[i].qty=e.target.value;setStockItems(n)}} />
-                    <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...stockItems];n.splice(i,1);setStockItems(n)}}>
-                      <Icon name="x" size={18}/>
-                    </button>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {/* DASHBOARD */}
+                {currentTab === 'home' && (
+                  <div className="dashboard-grid">
+                    {[
+                      {id: 'invoices', title: 'Caisse', desc: 'Ventes en direct', icon: 'receipt'},
+                      {id: 'stock', title: 'Production', desc: 'Gestion stocks', icon: 'package'},
+                      {id: 'enterprise', title: 'B2B', desc: 'Commandes pro', icon: 'building'},
+                      {id: 'performance', title: 'Stats', desc: 'Performances', icon: 'trophy'}
+                    ].map(card => (
+                      <motion.div 
+                        whileHover={{ y: -5 }}
+                        key={card.id} className="dash-card glass" onClick={()=>setCurrentTab(card.id)}
+                      >
+                        <div className="dash-icon"><Icon name={card.icon} size={28} /></div>
+                        <div><div className="dash-title">{card.title}</div><div className="dash-desc">{card.desc}</div></div>
+                      </motion.div>
+                    ))}
                   </div>
-                ))}
+                )}
 
-                <button className="btn btn-text" onClick={()=>setStockItems([...stockItems, {product:(data?.products?.[0] || ''), qty:1}])}>+ Ajouter ligne</button>
-                <button className="btn btn-primary" style={{marginTop:16}} onClick={()=>sendForm('sendProduction', {items:stockItems})}>Envoyer</button>
-              </div>
-            )}
-
-            {/* ENTREPRISE */}
-            {currentTab === 'enterprise' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="building" /> Commande Pro</h2>
-
-                <div className="inp-group">
-                  <label className="inp-label">Nom Entreprise</label>
-                  <input className="inp-field" value={entName} onChange={e=>setEntName(e.target.value)} />
-                </div>
-
-                {entItems.map((item, i) => (
-                  <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                    <select className="inp-field" value={item.product} onChange={e=>{const n=[...entItems];n[i].product=e.target.value;setEntItems(n)}} style={{flex:1}}>
-                      <option value="" disabled>Produit...</option>
-                      {data?.products?.map(p=><option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <input type="number" className="inp-field" style={{width:120}} value={item.qty}
-                      onChange={e=>{const n=[...entItems];n[i].qty=e.target.value;setEntItems(n)}} />
-                    <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...entItems];n.splice(i,1);setEntItems(n)}}>
-                      <Icon name="x" size={18}/>
-                    </button>
-                  </div>
-                ))}
-
-                <button className="btn btn-text" onClick={()=>setEntItems([...entItems, {product:(data?.products?.[0] || ''), qty:1}])}>+ Ajouter ligne</button>
-                <button className="btn btn-primary" style={{marginTop:16}} onClick={handleSendEnterprise}>Valider</button>
-              </div>
-            )}
-
-            {/* PARTENAIRES */}
-            {currentTab === 'partners' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="handshake" /> Partenaires</h2>
-
-                <div className="inp-group">
-                  <label className="inp-label">N° Facture</label>
-                  <input className="inp-field" value={parNum} onChange={e=>setParNum(e.target.value)} />
-                </div>
-
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
-                  <div className="inp-group">
-                    <label className="inp-label">Société</label>
-                    <select className="inp-field" value={parCompany} onChange={e=>setParCompany(e.target.value)}>
-                      {data?.partners?.companies ? Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>) : <option>Chargement...</option>}
-                    </select>
-                  </div>
-                  <div className="inp-group">
-                    <label className="inp-label">Bénéficiaire</label>
-                    <select className="inp-field" value={parBenef} onChange={e=>setParBenef(e.target.value)}>
-                      {parCompany && data?.partners?.companies?.[parCompany]?.beneficiaries?.map(b=><option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {parItems.map((item, i) => (
-                  <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                    <select className="inp-field" value={item.menu} onChange={e=>{const n=[...parItems];n[i].menu=e.target.value;setParItems(n)}} style={{flex:1}}>
-                      {parCompany && data?.partners?.companies?.[parCompany]?.menus?.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
-                    </select>
-                    <input type="number" className="inp-field" style={{width:120}} value={item.qty}
-                      onChange={e=>{const n=[...parItems];n[i].qty=e.target.value;setParItems(n)}} />
-                    <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...parItems];n.splice(i,1);setParItems(n)}}>
-                      <Icon name="x" size={18}/>
-                    </button>
-                  </div>
-                ))}
-
-                <button className="btn btn-text" onClick={()=>setParItems([...parItems, {menu:(data?.partners?.companies?.[parCompany]?.menus?.[0]?.name || ''), qty:1}])}>+ Menu</button>
-                <button className="btn btn-primary" style={{marginTop:16}} onClick={handleSendPartner}>Confirmer</button>
-              </div>
-            )}
-
-            {/* FRAIS */}
-            {currentTab === 'expenses' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="creditCard" /> Frais</h2>
-
-                <div className="inp-group">
-                  <label className="inp-label">Véhicule</label>
-                  <select className="inp-field" value={expData.veh} onChange={e=>setExpData({...expData, veh:e.target.value})}>
-                    {data?.vehicles?.map(v=><option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
-
-                <div className="inp-group">
-                  <label className="inp-label">Type</label>
-                  <select className="inp-field" value={expData.kind} onChange={e=>setExpData({...expData, kind:e.target.value})}>
-                    <option>Essence</option>
-                    <option>Réparation</option>
-                  </select>
-                </div>
-
-                <div className="inp-group">
-                  <label className="inp-label">Montant ($)</label>
-                  <input type="number" className="inp-field" value={expData.amt} onChange={e=>setExpData({...expData, amt:e.target.value})} />
-                </div>
-
-                <button className="btn btn-primary" onClick={handleSendExpense}>Déclarer</button>
-              </div>
-            )}
-
-            {/* GARAGE */}
-            {currentTab === 'garage' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="car" /> Garage</h2>
-
-                <div className="inp-group">
-                  <label className="inp-label">Véhicule</label>
-                  <select className="inp-field" value={garData.veh} onChange={e=>setGarData({...garData, veh:e.target.value})}>
-                    {data?.vehicles?.map(v=><option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
-
-                <div className="inp-group">
-                  <label className="inp-label">Action</label>
-                  <select className="inp-field" value={garData.action} onChange={e=>setGarData({...garData, action:e.target.value})}>
-                    <option>Entrée</option>
-                    <option>Sortie</option>
-                  </select>
-                </div>
-
-                <div className="inp-group">
-                  <label className="inp-label">Essence (%)</label>
-                  <input type="range" style={{width:'100%'}} value={garData.fuel} onChange={e=>setGarData({...garData, fuel:e.target.value})} />
-                  <div style={{marginTop:6, color:'var(--text-muted)', fontWeight:900}}>{garData.fuel}%</div>
-                </div>
-
-                <button className="btn btn-primary" onClick={()=>sendForm('sendGarage', {vehicle:garData.veh, action:garData.action, fuel:garData.fuel})}>
-                  Mettre à jour
-                </button>
-              </div>
-            )}
-
-            {/* SUPPORT */}
-            {currentTab === 'support' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="lifeBuoy" /> Support</h2>
-
-                <div className="inp-group">
-                  <label className="inp-label">Sujet</label>
-                  <select className="inp-field" value={supData.sub} onChange={e=>setSupData({...supData, sub:e.target.value})}>
-                    <option>Problème Stock</option>
-                    <option>Autre</option>
-                  </select>
-                </div>
-
-                <div className="inp-group">
-                  <label className="inp-label">Message</label>
-                  <textarea className="inp-field" style={{height:110}} value={supData.msg} onChange={e=>setSupData({...supData, msg:e.target.value})}></textarea>
-                </div>
-
-                <button className="btn btn-primary" onClick={()=>sendForm('sendSupport', {subject:supData.sub, message:supData.msg})}>Envoyer</button>
-              </div>
-            )}
-
-            {/* ANNUAIRE */}
-            {currentTab === 'directory' && (
-              <div className="list-card" style={{maxWidth:900, margin:'0 auto'}}>
-                <div style={{display:'flex', gap:12, marginBottom:14, flexWrap:'wrap'}}>
-                  <input className="inp-field" style={{flex:1, minWidth:240}} placeholder="Rechercher un employé..."
-                    value={dirSearch} onChange={e=>setDirSearch(e.target.value)} />
-                  <select className="inp-field" style={{width:240}} value={dirRole} onChange={e=>setDirRole(e.target.value)}>
-                    <option value="Tous">Tous les postes</option>
-                    {employeesFull?.length ? [...new Set(employeesFull.map(e=>e.role).filter(Boolean))].map(r => <option key={r} value={r}>{r}</option>) : null}
-                  </select>
-                </div>
-
-                {employeesFull
-                  ?.filter(e => (dirRole==='Tous' || e.role===dirRole) && e.name.toLowerCase().includes(dirSearch.toLowerCase()))
-                  .map(e => (
-                    <div key={e.id + e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
-                      <div style={{display:'flex', gap:12, alignItems:'center'}}>
-                        <div className="avatar" style={{width:34, height:34, borderRadius:12}}>{e.name.charAt(0)}</div>
-                        <div>
-                          <div style={{fontWeight:1000}}>{e.name}</div>
-                          <div style={{color:'var(--text-muted)', fontSize:'0.85rem'}}>{e.phone || '—'} • {e.arrival || '—'}</div>
-                        </div>
-                      </div>
-                      <div style={{display:'flex', gap:10, alignItems:'center'}}>
-                        <span className="badge">{e.role || '—'}</span>
-                        <span style={{color:'var(--text-muted)', fontWeight:1000}}>{e.seniority}j</span>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            )}
-
-            {/* PERFORMANCE */}
-            {currentTab === 'performance' && (
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, maxWidth:1000, margin:'0 auto'}}>
-                <div className="list-card">
-                  <div style={{fontWeight:1000, marginBottom:10, display:'flex', alignItems:'center', gap:10}}>
-                    <Icon name="trophy" /> Top CA
-                  </div>
-                  {topCA?.map((e, idx) => (
-                    <div key={e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
-                      <div style={{display:'flex', gap:10, alignItems:'center'}}>
-                        <div className="badge" style={{width:34, textAlign:'center'}}>{idx+1}</div>
-                        <div style={{fontWeight:1000}}>{e.name}</div>
-                      </div>
-                      <div style={{fontWeight:1000, color:'var(--primary)'}}>${Number(e.ca || 0).toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="list-card">
-                  <div style={{fontWeight:1000, marginBottom:10, display:'flex', alignItems:'center', gap:10}}>
-                    <Icon name="package" /> Top Stock
-                  </div>
-                  {topStock?.map((e, idx) => (
-                    <div key={e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
-                      <div style={{display:'flex', gap:10, alignItems:'center'}}>
-                        <div className="badge" style={{width:34, textAlign:'center'}}>{idx+1}</div>
-                        <div style={{fontWeight:1000}}>{e.name}</div>
-                      </div>
-                      <div style={{fontWeight:1000, color:'var(--primary)'}}>{e.stock || 0}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* PROFIL */}
-            {currentTab === 'profile' && (
-              <div className="form-wrap">
-                <h2 style={{marginBottom:14, display:'flex', alignItems:'center', gap:10, fontWeight:1000}}>
-                  <Icon name="user" /> {user}
-                </h2>
-
-                {!myProfile ? (
-                  <div style={{color:'var(--text-muted)', fontWeight:900}}>Profil introuvable dans la sheet.</div>
-                ) : (
+                {/* CAISSE */}
+                {currentTab === 'invoices' && (
                   <>
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>Poste</div>
-                        <div style={{fontWeight:1000, marginTop:6}}>{myProfile.role || '—'}</div>
-                      </div>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>Téléphone</div>
-                        <div style={{fontWeight:1000, marginTop:6}}>{myProfile.phone || '—'}</div>
-                      </div>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>Date d’arrivée</div>
-                        <div style={{fontWeight:1000, marginTop:6}}>{myProfile.arrival || '—'}</div>
-                      </div>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>Ancienneté</div>
-                        <div style={{fontWeight:1000, marginTop:6}}>{myProfile.seniority} jours</div>
-                      </div>
+                    <div className="search-container">
+                      <div className="search-icon"><Icon name="search" size={20} /></div>
+                      <input className="search-inp" placeholder="Chercher un délice..." onChange={e=>setSearch(e.target.value)} />
                     </div>
 
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginTop:12}}>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>CA</div>
-                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(myProfile.ca || 0).toFixed(2)}</div>
-                      </div>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>Stock</div>
-                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>{myProfile.stock || 0}</div>
-                      </div>
-                      <div className="list-card" style={{padding:14}}>
-                        <div style={{color:'var(--text-muted)', fontWeight:900}}>Salaire</div>
-                        <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(myProfile.salary || 0).toFixed(2)}</div>
-                      </div>
+                    <div className="cat-pills">
+                      <div className={`pill ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
+                      {data?.productsByCategory && Object.keys(data.productsByCategory).map(c => (
+                        <div key={c} className={`pill ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c.replace(/_/g,' ')}</div>
+                      ))}
                     </div>
 
-                    <div style={{marginTop:14, display:'flex', gap:10}}>
-                      <button className="btn btn-text" onClick={()=>setCurrentTab('directory')}>
-                        <Icon name="users" size={18}/> Annuaire
-                      </button>
-                      <button className="btn btn-primary" onClick={syncData}>
-                        <Icon name="refresh" size={18}/> Sync
-                      </button>
+                    <div className="prod-grid" style={{ gridTemplateColumns: quickMode ? 'repeat(auto-fill, minmax(180px, 1fr))' : 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+                      {data?.products?.filter(p => {
+                        const cat = Object.keys(data?.productsByCategory || {}).find(k=>data.productsByCategory[k].includes(p));
+                        return (catFilter==='Tous' || cat===catFilter) && p.toLowerCase().includes(search.toLowerCase());
+                      }).map(p => (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.05, y: -5 }}
+                          key={p} className="prod-card glass" onClick={()=>addToCart(p)}
+                        >
+                          {IMAGES[p] ? <img src={IMAGES[p]} className="prod-img" alt={p} /> : <div className="prod-img">{p.charAt(0)}</div>}
+                          <div className="prod-title">{p}</div>
+                          <div className="prod-price">${Number(data?.prices?.[p]||0).toFixed(2)}</div>
+                        </motion.div>
+                      ))}
                     </div>
                   </>
                 )}
-              </div>
-            )}
+
+                {/* GARAGE (Amélioration État Visuel) */}
+                {currentTab === 'garage' && (
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:20}}>
+                    {data?.vehicles?.map(v => {
+                      const fuelLevel = v === garData.veh ? garData.fuel : 75; // Simulation
+                      const fuelColor = fuelLevel > 75 ? '#2ecc71' : fuelLevel < 40 ? '#e74c3c' : '#f39c12';
+                      
+                      return (
+                        <motion.div key={v} whileHover={{scale: 1.02}} className="dash-card glass" style={{height:'auto', padding:20}}>
+                          <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:15}}>
+                            <div className="dash-icon" style={{color: fuelColor}}><Icon name="car" size={28}/></div>
+                            <div className="badge glass" style={{borderColor: fuelColor}}>{fuelLevel}%</div>
+                          </div>
+                          <div style={{fontWeight:900, marginBottom:5}}>{v.split(' - ')[0]}</div>
+                          <div style={{fontSize:'0.8rem', opacity:0.6, marginBottom:15}}>Plaque: {v.split(' - ')[1]}</div>
+                          <div style={{height:6, background:'rgba(255,255,255,0.05)', borderRadius:10, overflow:'hidden'}}>
+                            <motion.div initial={{width:0}} animate={{width:`${fuelLevel}%`}} style={{height:'100%', background:fuelColor}} />
+                          </div>
+                          <button className="btn btn-text" style={{marginTop:15, fontSize:'0.8rem'}} onClick={()=>setGarData({...garData, veh: v})}>
+                            Sélectionner
+                          </button>
+                        </motion.div>
+                      );
+                    })}
+                    
+                    {/* Formulaire Garage */}
+                    <div className="form-wrap glass" style={{gridColumn: '1 / -1', marginTop: 20}}>
+                       <div className="inp-group">
+                        <label className="inp-label">Action sur {garData.veh.split(' - ')[0] || '...'}</label>
+                        <select className="inp-field" value={garData.action} onChange={e=>setGarData({...garData, action:e.target.value})}>
+                          <option>Entrée</option><option>Sortie</option>
+                        </select>
+                      </div>
+                      <div className="inp-group">
+                        <label className="inp-label">Niveau Carburant : {garData.fuel}%</label>
+                        <input type="range" style={{width:'100%'}} value={garData.fuel} onChange={e=>setGarData({...garData, fuel:e.target.value})} />
+                      </div>
+                      <button className="btn btn-primary" onClick={()=>sendForm('sendGarage', garData)}>Mettre à jour l'état</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STOCK */}
+                {currentTab === 'stock' && (
+                  <div className="form-wrap glass">
+                    <h2 style={{marginBottom:16, display:'flex', alignItems:'center', gap:10}}><Icon name="package" /> Stock Cuisine</h2>
+                    {stockItems.map((item, i) => (
+                      <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                        <select className="inp-field" value={item.product} onChange={e=>{const n=[...stockItems];n[i].product=e.target.value;setStockItems(n)}} style={{flex:1}}>
+                          <option value="" disabled>Produit...</option>
+                          {data?.products?.map(p=><option key={p} value={p}>{p}</option>)}
+                        </select>
+                        <input type="number" className="inp-field" style={{width:120}} value={item.qty} onChange={e=>{const n=[...stockItems];n[i].qty=e.target.value;setStockItems(n)}} />
+                        <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...stockItems];n.splice(i,1);setStockItems(n)}}><Icon name="x" size={18}/></button>
+                      </div>
+                    ))}
+                    <button className="btn btn-text" onClick={()=>setStockItems([...stockItems, {product:(data?.products?.[0] || ''), qty:1}])}>+ Ajouter</button>
+                    <button className="btn btn-primary" style={{marginTop:16}} onClick={()=>sendForm('sendProduction', {items:stockItems})}>Déclarer la production</button>
+                  </div>
+                )}
+
+                {/* ENTREPRISE */}
+                {currentTab === 'enterprise' && (
+                  <div className="form-wrap glass">
+                    <h2 style={{marginBottom:16}}><Icon name="building" /> Commande Entreprise</h2>
+                    <div className="inp-group">
+                      <label className="inp-label">Nom Entreprise</label>
+                      <input className="inp-field" value={entName} onChange={e=>setEntName(e.target.value)} placeholder="Ex: SASP, Biogood..." />
+                    </div>
+                    {entItems.map((item, i) => (
+                      <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                        <select className="inp-field" value={item.product} onChange={e=>{const n=[...entItems];n[i].product=e.target.value;setEntItems(n)}} style={{flex:1}}>
+                          {data?.products?.map(p=><option key={p} value={p}>{p}</option>)}
+                        </select>
+                        <input type="number" className="inp-field" style={{width:100}} value={item.qty} onChange={e=>{const n=[...entItems];n[i].qty=e.target.value;setEntItems(n)}} />
+                        <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...entItems];n.splice(i,1);setEntItems(n)}}><Icon name="x" size={18}/></button>
+                      </div>
+                    ))}
+                    <button className="btn btn-text" onClick={()=>setEntItems([...entItems, {product:(data?.products?.[0] || ''), qty:1}])}>+ Ligne</button>
+                    <button className="btn btn-primary" style={{marginTop:16}} onClick={handleSendEnterprise}>Valider la commande B2B</button>
+                  </div>
+                )}
+
+                {/* PARTENAIRES */}
+                {currentTab === 'partners' && (
+                  <div className="form-wrap glass">
+                    <h2 style={{marginBottom:16}}><Icon name="handshake" /> Partenaires</h2>
+                    <div className="inp-group">
+                      <label className="inp-label">N° Facture</label>
+                      <input className="inp-field" value={parNum} onChange={e=>setParNum(e.target.value)} />
+                    </div>
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
+                      <div className="inp-group">
+                        <label className="inp-label">Société</label>
+                        <select className="inp-field" value={parCompany} onChange={e=>setParCompany(e.target.value)}>
+                          {data?.partners?.companies && Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="inp-group">
+                        <label className="inp-label">Bénéficiaire</label>
+                        <select className="inp-field" value={parBenef} onChange={e=>setParBenef(e.target.value)}>
+                          {parCompany && data?.partners?.companies?.[parCompany]?.beneficiaries?.map(b=><option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    {parItems.map((item, i) => (
+                      <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                        <select className="inp-field" value={item.menu} onChange={e=>{const n=[...parItems];n[i].menu=e.target.value;setParItems(n)}} style={{flex:1}}>
+                          {parCompany && data?.partners?.companies?.[parCompany]?.menus?.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
+                        </select>
+                        <input type="number" className="inp-field" style={{width:100}} value={item.qty} onChange={e=>{const n=[...parItems];n[i].qty=e.target.value;setParItems(n)}} />
+                        <button className="qb" style={{color:'#ef4444'}} onClick={()=>{const n=[...parItems];n.splice(i,1);setParItems(n)}}><Icon name="x" size={18}/></button>
+                      </div>
+                    ))}
+                    <button className="btn btn-text" onClick={()=>setParItems([...parItems, {menu:(data?.partners?.companies?.[parCompany]?.menus?.[0]?.name || ''), qty:1}])}>+ Menu</button>
+                    <button className="btn btn-primary" style={{marginTop:16}} onClick={handleSendPartner}>Confirmer la livraison</button>
+                  </div>
+                )}
+
+                {/* FRAIS */}
+                {currentTab === 'expenses' && (
+                  <div className="form-wrap glass">
+                    <h2 style={{marginBottom:16}}><Icon name="creditCard" /> Déclaration de Frais</h2>
+                    <div className="inp-group">
+                      <label className="inp-label">Véhicule</label>
+                      <select className="inp-field" value={expData.veh} onChange={e=>setExpData({...expData, veh:e.target.value})}>
+                        {data?.vehicles?.map(v=><option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="inp-group">
+                      <label className="inp-label">Nature du frais</label>
+                      <select className="inp-field" value={expData.kind} onChange={e=>setExpData({...expData, kind:e.target.value})}>
+                        <option>Essence</option><option>Réparation</option><option>Amende</option>
+                      </select>
+                    </div>
+                    <div className="inp-group">
+                      <label className="inp-label">Montant déboursé ($)</label>
+                      <input type="number" className="inp-field" value={expData.amt} onChange={e=>setExpData({...expData, amt:e.target.value})} />
+                    </div>
+                    <button className="btn btn-primary" onClick={handleSendExpense}>Transmettre la note</button>
+                  </div>
+                )}
+
+                {/* SUPPORT */}
+                {currentTab === 'support' && (
+                  <div className="form-wrap glass">
+                    <h2 style={{marginBottom:16}}><Icon name="lifeBuoy" /> Support & Aide</h2>
+                    <div className="inp-group">
+                      <label className="inp-label">Sujet de l'alerte</label>
+                      <select className="inp-field" value={supData.sub} onChange={e=>setSupData({...supData, sub:e.target.value})}>
+                        <option>Problème Stock</option><option>Urgence Client</option><option>Autre</option>
+                      </select>
+                    </div>
+                    <div className="inp-group">
+                      <label className="inp-label">Message</label>
+                      <textarea className="inp-field" style={{height:150}} value={supData.msg} onChange={e=>setSupData({...supData, msg:e.target.value})} placeholder="Décrivez votre problème ici..."></textarea>
+                    </div>
+                    <button className="btn btn-primary" onClick={()=>sendForm('sendSupport', supData)}>Envoyer le message</button>
+                  </div>
+                )}
+
+                {/* DIRECTORY */}
+                {currentTab === 'directory' && (
+                  <div className="list-card glass" style={{maxWidth:900, margin:'0 auto'}}>
+                    <div style={{display:'flex', gap:12, marginBottom:14, flexWrap:'wrap'}}>
+                      <input className="search-inp" style={{flex:1}} placeholder="Rechercher un collègue..." value={dirSearch} onChange={e=>setDirSearch(e.target.value)} />
+                      <select className="inp-field" style={{width:200}} value={dirRole} onChange={e=>setDirRole(e.target.value)}>
+                        <option value="Tous">Tous les rôles</option>
+                        {employeesFull?.length ? [...new Set(employeesFull.map(e=>e.role).filter(Boolean))].map(r => <option key={r} value={r}>{r}</option>) : null}
+                      </select>
+                    </div>
+                    {employeesFull?.filter(e => (dirRole==='Tous' || e.role===dirRole) && e.name.toLowerCase().includes(dirSearch.toLowerCase())).map(e => (
+                      <div key={e.name} className="row" onClick={()=>setSelectedEmployee(e)}>
+                        <div style={{display:'flex', gap:12, alignItems:'center'}}>
+                          <div className="avatar glass" style={{width:40, height:40}}>{e.name.charAt(0)}</div>
+                          <div><div style={{fontWeight:900}}>{e.name}</div><div style={{fontSize:'0.8rem', opacity:0.6}}>{e.phone || 'Pas de numéro'}</div></div>
+                        </div>
+                        <div className="badge glass">{e.role || 'Employé'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* PERFORMANCE */}
+                {currentTab === 'performance' && (
+                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, maxWidth:1000, margin:'0 auto'}}>
+                    <div className="list-card glass">
+                      <div style={{fontWeight:900, marginBottom:15, color: 'var(--primary)'}}>🏆 TOP CHIFFRE D'AFFAIRES</div>
+                      {topCA?.map((e, idx) => (
+                        <div key={e.name} className="row">
+                          <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                            <div className="badge glass" style={{width:30, textAlign:'center'}}>{idx+1}</div>
+                            <div style={{fontWeight:900}}>{e.name}</div>
+                          </div>
+                          <div style={{fontWeight:900}}>${Number(e.ca || 0).toFixed(0)}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="list-card glass">
+                      <div style={{fontWeight:900, marginBottom:15, color: '#f39c12'}}>🥘 TOP PRODUCTION STOCK</div>
+                      {topStock?.map((e, idx) => (
+                        <div key={e.name} className="row">
+                          <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                            <div className="badge glass" style={{width:30, textAlign:'center'}}>{idx+1}</div>
+                            <div style={{fontWeight:900}}>{e.name}</div>
+                          </div>
+                          <div style={{fontWeight:900}}>{e.stock || 0}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* PROFIL */}
+                {currentTab === 'profile' && (
+                  <div className="form-wrap glass">
+                    <h2 style={{marginBottom:20, display:'flex', alignItems:'center', gap:15}}><div className="avatar" style={{width:50, height:50}}>{user.charAt(0)}</div> {user}</h2>
+                    {!myProfile ? <div>Données de profil introuvables.</div> : (
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:15}}>
+                        <div className="mini-stat glass" style={{flexDirection:'column', alignItems:'flex-start', padding:20}}>
+                          <div style={{opacity:0.6, fontSize:'0.8rem'}}>POSTE</div><div style={{fontWeight:900, fontSize:'1.2rem'}}>{myProfile.role}</div>
+                        </div>
+                        <div className="mini-stat glass" style={{flexDirection:'column', alignItems:'flex-start', padding:20}}>
+                          <div style={{opacity:0.6, fontSize:'0.8rem'}}>ANCIENNETÉ</div><div style={{fontWeight:900, fontSize:'1.2rem'}}>{myProfile.seniority} jours</div>
+                        </div>
+                        <div className="mini-stat glass" style={{flexDirection:'column', alignItems:'flex-start', padding:20, gridColumn:'1 / -1'}}>
+                          <div style={{opacity:0.6, fontSize:'0.8rem'}}>CA TOTAL GÉNÉRÉ</div><div style={{fontWeight:900, fontSize:'1.8rem', color:'var(--primary)'}}>${Number(myProfile.ca || 0).toFixed(2)}</div>
+                        </div>
+                        <button className="btn btn-primary" style={{gridColumn:'1 / -1'}} onClick={syncData}>Rafraîchir mes stats</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </main>
 
-          {/* CART DRAWER */}
+          {/* PANIER FLOTTANT */}
           {currentTab === 'invoices' && (
             <>
-              <div className="cart-btn-float" onClick={()=>{beep('click'); setCartOpen(true);}}>
+              <motion.div 
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                className="cart-btn-float glass" onClick={()=>setCartOpen(true)}
+              >
                 <Icon name="cart" size={22} /> <span>${(cart.reduce((a,b)=>a+b.qty*b.pu, 0)).toFixed(2)}</span>
-                <span style={{opacity:0.65, fontWeight:900}}>• {cart.reduce((s,i)=>s+i.qty,0)}</span>
-              </div>
+                <span style={{opacity:0.6}}>• {cart.reduce((s,i)=>s+i.qty,0)}</span>
+              </motion.div>
 
               <aside className={`cart-drawer ${cartOpen ? 'open' : ''}`}>
                 <div className="cart-head">
-                  <h2 style={{display:'flex', alignItems:'center', gap:10, fontWeight:1000}}><Icon name="cart" /> Panier</h2>
-                  <button onClick={()=>{beep('click'); setCartOpen(false);}} style={{background:'none', border:'none', cursor:'pointer', color:'inherit'}}>
-                    <Icon name="x" size={24} />
-                  </button>
+                  <h2 style={{fontWeight:900}}>Panier Client</h2>
+                  <button onClick={()=>setCartOpen(false)} style={{background:'none', border:'none', cursor:'pointer', color:'inherit'}}><Icon name="x" size={24} /></button>
                 </div>
-
-                <div style={{padding:18}}>
-                  <input className="inp-field" placeholder="N° Facture (Obligatoire)"
-                    style={{textAlign:'center', fontWeight:1000}}
-                    value={invNum} onChange={e=>setInvNum(e.target.value)} />
-                </div>
-
+                <div style={{padding:18}}><input className="inp-field glass" placeholder="N° Facture" style={{textAlign:'center', fontWeight:900}} value={invNum} onChange={e=>setInvNum(e.target.value)} /></div>
                 <div className="cart-body">
-                  {cart.length === 0 && <div style={{textAlign:'center', marginTop:50, color:'var(--text-muted)', fontWeight:900}}>Panier vide</div>}
-
+                  {cart.length === 0 && <div style={{textAlign:'center', marginTop:100, opacity:0.3}}>Votre panier est vide</div>}
                   {cart.map((c, i) => (
-                    <div key={i} className="cart-item">
-                      <div style={{flex:1}}>
-                        <b style={{fontWeight:1000}}>{c.name}</b><br/>
-                        <small style={{color:'var(--text-muted)', fontWeight:900}}>${Number(c.pu || 0).toFixed(2)}</small>
-                      </div>
-
-                      <div className="qty-ctrl">
+                    <motion.div initial={{ x: 20 }} animate={{ x: 0 }} key={i} className="cart-item glass">
+                      <div style={{flex:1}}><b style={{fontWeight:900}}>{c.name}</b><br/><small style={{opacity:0.6}}>${c.pu.toFixed(2)} / u</small></div>
+                      <div className="qty-ctrl glass">
                         <button className="qb" onClick={()=>modQty(i,-1)}>-</button>
-                        <input
-                          className="qi-inp"
-                          type="number"
-                          value={c.qty}
-                          onChange={(e)=>setQty(i, e.target.value)}
-                        />
+                        <input className="qi-inp" type="number" value={c.qty} onChange={(e)=>setQty(i, e.target.value)} />
                         <button className="qb" onClick={()=>modQty(i,1)}>+</button>
                       </div>
-
-                      <button className="qb" style={{color:'#ef4444'}} onClick={()=>setQty(i, 0)}>
-                        <Icon name="x" size={16} />
-                      </button>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
-
                 <div className="cart-foot">
-                  <div style={{display:'flex', justifyContent:'space-between', fontSize:'1.25rem', fontWeight:1000, marginBottom:12}}>
-                    <span>Total</span>
-                    <span style={{color:'var(--primary)'}}>${(cart.reduce((a,b)=>a+b.qty*b.pu, 0)).toFixed(2)}</span>
-                  </div>
-                  <button className="btn btn-primary" onClick={handleSendInvoice}>
-                    Valider la vente
-                  </button>
+                  <div style={{display:'flex', justifyContent:'space-between', fontSize:'1.3rem', fontWeight:900, marginBottom:15}}><span>Total</span><span style={{color:'var(--primary)'}}>${(cart.reduce((a,b)=>a+b.qty*b.pu, 0)).toFixed(2)}</span></div>
+                  <button className="btn btn-primary" onClick={handleSendInvoice}>Enregistrer la vente</button>
                 </div>
               </aside>
             </>
           )}
 
-          {/* MODAL EMPLOYEE */}
-          {selectedEmployee && (
-            <div
-              onClick={()=>setSelectedEmployee(null)}
-              style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center', padding:20}}
-            >
-              <div onClick={(e)=>e.stopPropagation()} className="form-wrap" style={{maxWidth:720, width:'100%'}}>
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
-                  <h2 style={{display:'flex', alignItems:'center', gap:10, fontWeight:1000}}>
-                    <Icon name="user" /> {selectedEmployee.name}
-                  </h2>
-                  <button className="icon-btn" onClick={()=>setSelectedEmployee(null)}><Icon name="x" size={18}/></button>
-                </div>
-
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>Poste</div>
-                    <div style={{fontWeight:1000, marginTop:6}}>{selectedEmployee.role || '—'}</div>
-                  </div>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>Téléphone</div>
-                    <div style={{fontWeight:1000, marginTop:6}}>{selectedEmployee.phone || '—'}</div>
-                  </div>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>Date d’arrivée</div>
-                    <div style={{fontWeight:1000, marginTop:6}}>{selectedEmployee.arrival || '—'}</div>
-                  </div>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>Ancienneté</div>
-                    <div style={{fontWeight:1000, marginTop:6}}>{selectedEmployee.seniority} jours</div>
-                  </div>
-                </div>
-
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginTop:12}}>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>CA</div>
-                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(selectedEmployee.ca || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>Stock</div>
-                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>{selectedEmployee.stock || 0}</div>
-                  </div>
-                  <div className="list-card" style={{padding:14}}>
-                    <div style={{color:'var(--text-muted)', fontWeight:900}}>Salaire</div>
-                    <div style={{fontWeight:1000, marginTop:6, color:'var(--primary)'}}>${Number(selectedEmployee.salary || 0).toFixed(2)}</div>
-                  </div>
-                </div>
-
-                <div style={{display:'flex', gap:10, marginTop:14}}>
-                  <button className="btn btn-text" onClick={()=>{
-                    if (!selectedEmployee.phone) return notify("Info", "Pas de numéro", "info");
-                    navigator.clipboard.writeText(selectedEmployee.phone);
-                    notify("Copié", "Numéro copié", "success");
-                  }}>
-                    Copier le numéro
-                  </button>
-                  <button className="btn btn-primary" onClick={syncData}>
-                    <Icon name="refresh" size={18}/> Sync
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {toast && (
-            <div className="toast" style={{borderLeftColor: toast.type==='error'?'#ef4444':(toast.type==='success'?'#10b981':'var(--primary)')}}>
-              <div className="t-title">{toast.title}</div>
-              <div className="t-msg">{toast.msg}</div>
-            </div>
-          )}
+          {/* NOTIFICATIONS (Améliorées) */}
+          <AnimatePresence>
+            {toast && (
+              <motion.div 
+                initial={{ opacity: 0, y: 50, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="toast" 
+                style={{
+                  borderLeft: `6px solid ${toast.type==='error'?'#ef4444':(toast.type==='success'?'#10b981':'#3b82f6')}`,
+                  background: toast.type==='error'?'rgba(239, 68, 68, 0.1)':'rgba(16, 185, 129, 0.1)'
+                }}
+              >
+                <div style={{fontWeight:900}}>{toast.title}</div>
+                <div style={{fontSize:'0.85rem', opacity:0.8}}>{toast.msg}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </>
