@@ -4,8 +4,8 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// ================= CONFIGURATION & WEBHOOKS =================
-const APP_VERSION = '2026.01.12';
+// ================= CONFIGURATION =================
+const APP_VERSION = '2026.01.10';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const WEBHOOKS = {
@@ -17,13 +17,7 @@ const WEBHOOKS = {
   support:    'https://discord.com/api/webhooks/1424558367938183168/ehfzI0mB_aWYXz7raPsQQ8x6KaMRPe7mNzvtdbg73O6fb9DyR7HdFll1gpR7BNnbCDI_',
 };
 
-// Émojis pour le rendu Discord
-const EMOJIS = {
-  vendeur: '👨‍🍳', caisse: '💰', ticket: '🧾', produit: '🍴', 
-  stock: '📦', usine: '🏭', voiture: '🚗', essence: '⛽',
-  money: '💸', alerte: '🚨', succes: '✅', info: 'ℹ️'
-};
-
+// Liste des produits (Sert de secours si la base de données est injoignable)
 const PRODUCTS_CAT = {
   plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
   desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
@@ -44,30 +38,32 @@ const PRICE_LIST = {
 const PARTNERS = {
   companies: {
     'Biogood': {
+      beneficiaries: ['PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago','RH - Jefferson Patt','RE - Gonzales Malya','C - Gilmore Jaden','C - Delgado Madison','C - Mehdi Rousseau'],
+      menus: [{ name: 'Wings + Berry Fizz', catalog: 80 }, { name: 'Ribbs + Agua Fresca Pastèque', catalog: 70 }, { name: 'Saumon + Jus de raisin rouge + Churros Caramel', catalog: 65 }, { name: 'Paella + Jus de raisin blanc', catalog: 65 }],
       webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
     'SASP Nord': {
+      beneficiaries: [ 'Agent SASP NORD' ],
+      menus: [{ name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 }, { name: 'Ribs + Berry Fizz', catalog: 65 }],
       webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
     },
   },
 };
 
 // ================= UTILS =================
-function formatAmount(n) { return `**${(Number(n)||0).toFixed(2)} ${CURRENCY.symbol}**`; }
+async function getAuthSheets() {
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  if (!privateKey || !clientEmail) throw new Error("Variables d'environnement Google manquantes");
+  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+  return google.sheets({ version: 'v4', auth });
+}
 
 async function sendWebhook(url, payload) {
   if (!url) return;
   try {
     await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   } catch (e) { console.error("Erreur Webhook:", e); }
-}
-
-async function getAuthSheets() {
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes");
-  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-  return google.sheets({ version: 'v4', auth });
 }
 
 async function updateEmployeeStats(employeeName, amountToAdd, type) {
@@ -95,42 +91,51 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    // --- SYNC ---
+    // --- SYNC / INIT ---
     if (!action || action === 'getMeta' || action === 'syncData') {
       let employeesFull = [];
       try {
         const sheets = await getAuthSheets();
         const resFull = await sheets.spreadsheets.values.get({ 
-          spreadsheetId: process.env.GOOGLE_SHEET_ID, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
+          spreadsheetId: process.env.GOOGLE_SHEET_ID, 
+          range: "'Employés'!A2:I200", 
+          valueRenderOption: 'UNFORMATTED_VALUE' 
         });
         const rows = resFull.data.values || [];
         employeesFull = rows.filter(r => r[1]).map(r => ({
           id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
-          seniority: Number(r[5] ?? 0), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
+          phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
+          ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
         }));
-      } catch (err) {}
+      } catch (err) {
+        console.error("Crash Sheets Meta:", err.message);
+      }
 
+      // ON RENVOIE TOUJOURS LES PRODUITS MÊME SI GOOGLE PLANTE
       return NextResponse.json({
-        success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name), employeesFull,
-        products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, currencySymbol: CURRENCY.symbol
+        success: true,
+        version: APP_VERSION,
+        employees: employeesFull.map(e => e.name),
+        employeesFull,
+        products: Object.values(PRODUCTS_CAT).flat(),
+        productsByCategory: PRODUCTS_CAT,
+        prices: PRICE_LIST,
+        vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
+        partners: PARTNERS,
+        currencySymbol: CURRENCY.symbol
       });
     }
 
-    let embed = { 
-        timestamp: new Date().toISOString(), 
-        footer: { text: `Hen House Management • v${APP_VERSION}`, icon_url: 'https://i.goopics.net/dskmxi.png' } 
-    };
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` } };
 
     switch (action) {
       case 'sendFactures':
         const grandTotal = data.items.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
-        embed.title = `${EMOJIS.ticket} Facture Client n°${data.invoiceNumber || 'Inconnu'}`;
-        embed.color = 0xF1C40F; // Jaune Or
+        embed.title = `🍽️ Facture N°${data.invoiceNumber || '???'}`;
         embed.fields = [
-          { name: `${EMOJIS.vendeur} Employé`, value: `\`${data.employee}\``, inline: true },
-          { name: `${EMOJIS.caisse} Total Encaissé`, value: formatAmount(grandTotal), inline: true },
-          { name: `${EMOJIS.produit} Détail de la commande`, value: data.items.map(i => `▫️ **${i.qty}x** ${i.desc}`).join('\n') }
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '💰 Total', value: `**$${grandTotal.toFixed(2)}**`, inline: true },
+          { name: '📋 Détails', value: data.items.map(i => `• ${i.desc} x${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, grandTotal, 'CA');
@@ -138,77 +143,71 @@ export async function POST(request) {
 
       case 'sendProduction':
         const totalProd = data.items.reduce((s, i) => s + Number(i.qty), 0);
-        embed.title = `${EMOJIS.stock} Nouvelle Production Cuisine`;
-        embed.color = 0xE67E22; // Orange
+        embed.title = '📦 Déclaration de Stock';
+        embed.color = 0xe67e22;
         embed.fields = [
-          { name: `${EMOJIS.vendeur} Cuisinier`, value: `\`${data.employee}\``, inline: true },
-          { name: `📊 Total`, value: `**${totalProd}** unités`, inline: true },
-          { name: `📝 Inventaire déposé`, value: data.items.map(i => `📦 **${i.qty}** ${i.product}`).join('\n') }
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '📊 Total', value: `**${totalProd}** unités`, inline: true },
+          { name: '📝 Détails', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalProd, 'STOCK');
         break;
 
       case 'sendEntreprise':
-        embed.title = `${EMOJIS.usine} Livraison Entreprise`;
-        embed.color = 0x3498DB; // Bleu
+        embed.title = '🏭 Commande Entreprise';
         embed.fields = [
-          { name: `${EMOJIS.vendeur} Livreur`, value: `\`${data.employee}\``, inline: true },
-          { name: `🏢 Client Pro`, value: `**${data.company}**`, inline: true },
-          { name: `📦 Contenu`, value: data.items.map(i => `🔹 **${i.qty}x** ${i.product}`).join('\n') }
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🏢 Société', value: data.company, inline: true },
+          { name: '📋 Items', value: data.items.map(i => `• ${i.product} x${i.qty}`).join('\n') }
         ];
         await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
         break;
 
       case 'sendGarage':
-        const isEntry = data.action === 'Entrée';
-        embed.title = `${EMOJIS.voiture} Véhicule : ${data.action}`;
-        embed.color = isEntry ? 0x2ECC71 : 0xE74C3C; // Vert ou Rouge
+        embed.title = `🚗 Garage - ${data.action}`;
         embed.fields = [
-          { name: `👤 Employé`, value: `\`${data.employee}\``, inline: true },
-          { name: `🚗 Modèle`, value: `*${data.vehicle}*`, inline: true },
-          { name: `${EMOJIS.essence} Niveau Carburant`, value: `**${data.fuel}%**`, inline: false }
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true },
+          { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
         ];
         await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
         break;
 
       case 'sendExpense':
-        embed.title = `${EMOJIS.money} Note de Frais`;
-        embed.color = 0x9B59B6; // Violet
+        embed.title = `💳 Note de frais — ${data.kind}`;
         embed.fields = [
-          { name: `👤 Employé`, value: `\`${data.employee}\``, inline: true },
-          { name: `💰 Montant`, value: formatAmount(data.amount), inline: true },
-          { name: `ℹ️ Type`, value: `**${data.kind}**`, inline: true },
-          { name: `🚗 Véhicule lié`, value: data.vehicle, inline: false }
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '💵 Montant', value: `$${Number(data.amount).toFixed(2)}`, inline: true },
+          { name: '🚗 Véhicule', value: data.vehicle, inline: true }
         ];
         await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
         break;
 
       case 'sendPartnerOrder':
-        const pWb = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
-        embed.title = `🤝 Commande Partenaire : ${data.company}`;
-        embed.color = 0x1ABC9C; // Turquoise
+        embed.title = `🤝 Partenaire - ${data.company}`;
         embed.fields = [
-          { name: `👤 Traité par`, value: `\`${data.employee}\``, inline: true },
-          { name: `🔑 Bénéficiaire`, value: `**${data.beneficiary}**`, inline: true },
-          { name: `🧾 Menus`, value: data.items.map(i => `✅ **${i.qty}x** ${i.menu}`).join('\n') }
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '🔑 Bénéficiaire', value: data.beneficiary, inline: true },
+          { name: '🍱 Menus', value: data.items.map(i => `• ${i.menu} x${i.qty}`).join('\n') }
         ];
-        await sendWebhook(pWb, { embeds: [embed] });
+        await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
         break;
 
       case 'sendSupport':
-        embed.title = `${EMOJIS.alerte} Nouveau Message Support`;
-        embed.color = 0xC0392B; // Rouge sombre
-        embed.description = `**Message :**\n> ${data.message}`;
-        embed.fields = [{ name: `👤 Expéditeur`, value: `\`${data.employee}\``, inline: true }, { name: `📌 Sujet`, value: data.subject, inline: true }];
+        embed.title = `🆘 Support — ${data.subject}`;
+        embed.description = data.message;
         await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
 
       default:
-        return NextResponse.json({ success: false, message: 'Action inconnue' });
+        return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
     }
+
     return NextResponse.json({ success: true });
+
   } catch (err) {
+    console.error("API ERROR:", err);
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
