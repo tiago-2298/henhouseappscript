@@ -87,7 +87,8 @@ export default function Home() {
         }));
         if(isSync) playSound('success');
       }
-    } finally { setLoading(false); }
+    } catch (e) { notify("Erreur", "Connexion perdue", "error"); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -109,7 +110,7 @@ export default function Home() {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
       const j = await r.json();
       if(j.success) { 
-        notify("Validé", "Données transmises", "success"); 
+        notify("Validé", "Données enregistrées", "success"); 
         if(action === 'sendFactures') setCart([]); 
         loadData(); 
       } else notify("Échec", j.message, "error");
@@ -121,7 +122,7 @@ export default function Home() {
   return (
     <div className="app">
       <style jsx global>{`
-        :root { --p: #8b5cf6; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 18px; }
+        :root { --p: #8b5cf6; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; }
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
@@ -129,33 +130,35 @@ export default function Home() {
         .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
         .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
-        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 0%, #1a1625 0%, #0b0d11 100%); }
-        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        .form-ui { width: 100%; max-width: 580px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(15px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #1a1625 0%, #0b0d11 100%); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
+        .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80%; }
+        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
-        .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; }
-        .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
-        .fuel-fill { height: 100%; transition: 0.5s; }
-        .perf-row { display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 12px; margin-bottom: 8px; border: 1px solid transparent; transition: 0.2s; }
-        .perf-row:hover { border-color: var(--brd); background: rgba(255,255,255,0.04); }
         .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
         .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
         .sk-s { width: 260px; } .sk-m { flex:1; }
-        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
+        .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
+        .fuel-fill { height: 100%; transition: 0.5s; }
+        .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
+        .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        .perf-fill { height: 100%; background: var(--p); }
       `}</style>
 
       {view === 'login' ? (
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
-            <h1 style={{marginBottom:30}}>HEN HOUSE RP</h1>
+            <h1 style={{marginBottom:30}}>BIENVENUE</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Votre nom...</option>
+              <option value="">👤 Qui êtes-vous ?</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>LANCER SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>OUVRIR MA SESSION</button>
           </div>
         </div>
       ) : (
@@ -169,6 +172,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
+            
             <div style={{padding: '10px 0', borderTop: '1px solid var(--brd)'}}>
               <button className="nav-l" style={{color: 'var(--p)'}} onClick={() => loadData(true)}>☁️ Sync Cloud</button>
               <button className="nav-l" onClick={() => window.location.reload()}>🔃 Refresh Page</button>
@@ -178,8 +182,9 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
+              {/* ACCUEIL */}
               {currentTab === 'home' && (
-                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:20}}>
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
                    {MODULES.filter(m => m.id !== 'home').map(m => (
                      <div key={m.id} className="card" style={{height:180, display:'flex', flexDirection:'column', justifyContent:'center', gap:15}} onClick={()=>setCurrentTab(m.id)}>
                         <span style={{fontSize:'3.5rem'}}>{m.e}</span>
@@ -189,6 +194,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* CAISSE */}
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
@@ -217,12 +223,13 @@ export default function Home() {
                 </>
               )}
 
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
+              {/* FORMULAIRES CENTRÉS (STOCK, ENTREPRISE, PARTENAIRES, GARAGE, FRAIS, SUPPORT) */}
+              {['stock', 'enterprise', 'partners', 'garage', 'expenses', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>📦 PRODUCTION CUISINE</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>📦 STOCK CUISINE</h2>
                         {forms.stock.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
@@ -234,25 +241,25 @@ export default function Home() {
                           </div>
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER</button>
+                        <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>DÉCLARER PRODUCTION</button>
                       </>
                     )}
 
                     {currentTab === 'enterprise' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🏢 COMMANDE PRO</h2>
-                        <input className="inp" placeholder="Entreprise cliente" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                        <input className="inp" placeholder="Nom de l'entreprise client" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
                         {forms.enterprise.items.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{
+                            <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{
+                            <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
+                        <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER COMMANDE</button>
                       </>
                     )}
 
@@ -265,32 +272,32 @@ export default function Home() {
                              const c = e.target.value;
                              setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
                           }}>
-                            {Object.keys(data.partners.companies).map(c=><option key={c}>{c}</option>)}
+                            {Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}
                           </select>
                           <select className="inp" style={{flex:1}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>
-                            {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b}>{b}</option>)}
+                            {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h3 style={{fontSize:'0.8rem', color:'var(--p)', marginBottom:10, fontWeight:800}}>SÉLECTION DES MENUS :</h3>
+                        <h4 style={{margin: '10px 0'}}>Menu Partenaire</h4>
                         {forms.partner.items.map((item, i) => (
-                          <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
-                              const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                            }}>
-                              {data.partners.companies[forms.partner.company].menus.map(m=><option key={m.name}>{m.name}</option>)}
-                            </select>
-                            <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
-                              const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                            }} />
-                          </div>
+                           <div key={i} style={{display:'flex', gap:10}}>
+                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
+                                 const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                              }}>
+                                 {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
+                              </select>
+                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
+                                 const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                              }} />
+                           </div>
                         ))}
-                        <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
+                        <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER COMMANDE</button>
                       </>
                     )}
 
                     {currentTab === 'expenses' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>💳 DÉCLARATION FRAIS</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>💳 FRAIS</h2>
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
@@ -304,79 +311,26 @@ export default function Home() {
                         <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
                         <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20}}><span>⛽ Essence</span><span>{forms.garage.fuel}%</span></div>
-                        <div className="fuel-gauge"><div className="fuel-fill" style={{width:`${forms.garage.fuel}%`, background: forms.garage.fuel < 25 ? '#ef4444' : 'var(--p)'}}></div></div>
                         <input type="range" style={{width:'100%', accentColor:'var(--p)', marginTop:15}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
-                        <button className="btn-p" style={{marginTop:35}} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER</button>
+                        <button className="btn-p" style={{marginTop:25}} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER</button>
                       </>
                     )}
 
                     {currentTab === 'support' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT TECHNIQUE</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
                         <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
-                          <option>Problème Stock</option><option>Erreur Facture</option><option>Demande RH</option><option>Autre</option>
+                          <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
-                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Expliquez votre problème ici..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER AU PATRON</button>
                       </>
                     )}
                   </div>
                 </div>
               )}
 
-              {currentTab === 'performance' && (
-                <div style={{maxWidth:1000, margin:'0 auto'}}>
-                  <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25}}>
-                    <div className="form-ui" style={{maxWidth:'100%', padding:30}}>
-                      <h3 style={{marginBottom:20, color:'var(--p)', fontSize:'1.1rem'}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h3>
-                      {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
-                        <div key={i} className="perf-row">
-                          <span style={{width:25, fontWeight:900, opacity:0.3}}>{i+1}</span>
-                          <span style={{flex:1, fontWeight:700}}>{e.name}</span>
-                          <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="form-ui" style={{maxWidth:'100%', padding:30}}>
-                      <h3 style={{marginBottom:20, color:'var(--p)', fontSize:'1.1rem'}}>📦 TOP 10 PRODUCTION</h3>
-                      {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
-                        <div key={i} className="perf-row">
-                          <span style={{width:25, fontWeight:900, opacity:0.3}}>{i+1}</span>
-                          <span style={{flex:1, fontWeight:700}}>{e.name}</span>
-                          <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {currentTab === 'profile' && myProfile && (
-                <div className="center-box">
-                   <div style={{width:130, height:130, borderRadius:50, background:'var(--p)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4.5rem', fontWeight:900, marginBottom:20, boxShadow:'0 10px 40px rgba(139,92,246,0.3)'}}>{user.charAt(0)}</div>
-                   <h1 style={{fontSize:'2rem', fontWeight:900}}>{user}</h1>
-                   <p style={{color:'var(--p)', fontWeight:800, fontSize:'1.1rem', marginBottom:40}}>{myProfile.role}</p>
-                   <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20, width:'100%', maxWidth:800}}>
-                      <div className="form-ui" style={{padding:20, textAlign:'center'}}>
-                         <span style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>VOTRE CA</span>
-                         <div style={{fontSize:'1.8rem', fontWeight:900, marginTop:10}}>${myProfile.ca.toLocaleString()}</div>
-                      </div>
-                      <div className="form-ui" style={{padding:20, textAlign:'center'}}>
-                         <span style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>PRODUCTION</span>
-                         <div style={{fontSize:'1.8rem', fontWeight:900, marginTop:10}}>{myProfile.stock} u.</div>
-                      </div>
-                      <div className="form-ui" style={{padding:20, textAlign:'center'}}>
-                         <span style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>ANCIENNETÉ</span>
-                         <div style={{fontSize:'1.8rem', fontWeight:900, marginTop:10}}>{myProfile.seniority}j</div>
-                      </div>
-                   </div>
-                   <div className="form-ui" style={{marginTop:20, padding:20, maxWidth:800, textAlign:'center'}}>
-                      <span style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>CONTACT & INFOS</span>
-                      <p style={{marginTop:10, fontWeight:700}}>📞 {myProfile.phone}  |  🆔 Employé #{myProfile.id}</p>
-                   </div>
-                </div>
-              )}
-
+              {/* ANNUAIRE */}
               {currentTab === 'directory' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
                   {data.employeesFull.map(e => (
@@ -387,9 +341,68 @@ export default function Home() {
                   ))}
                 </div>
               )}
+
+              {/* PERFORMANCE */}
+              {currentTab === 'performance' && (
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30, maxWidth:1100, margin:'0 auto'}}>
+                  <div className="card" style={{padding:25, textAlign:'left'}}>
+                    <h2 style={{marginBottom:20}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h2>
+                    {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
+                      <div key={i} style={{marginBottom: 15}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
+                        </div>
+                        <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca/data.employeesFull[0].ca)*100+'%'}}></div></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="card" style={{padding:25, textAlign:'left'}}>
+                    <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
+                    {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
+                      <div key={i} style={{marginBottom: 15}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
+                        </div>
+                        <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* MON PROFIL */}
+              {currentTab === 'profile' && myProfile && (
+                <div className="center-box">
+                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
+                      <div style={{textAlign:'center', marginBottom: 30}}>
+                        <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
+                        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
+                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
+                      </div>
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
+                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
+                            <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+                         </div>
+                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 UNITÉS PRODUITES</p>
+                            <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+                         </div>
+                      </div>
+                      <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
+                        <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
+                        <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
+                        <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
+                      </div>
+                   </div>
+                </div>
+              )}
             </div>
           </main>
 
+          {/* PANIER (CAISSE SEULEMENT) */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
@@ -399,9 +412,9 @@ export default function Home() {
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
                     <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); updateCartQty(idx, i.qty-1)}}>-</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); updateCartQty(idx, i.qty+1)}}>+</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
