@@ -28,14 +28,13 @@ const IMAGES = {
 };
 
 const NOTIF_MESSAGES = {
-  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée avec succès !" },
-  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "La production cuisine a été déclarée." },
-  sendEntreprise: { title: "🏢 COMMANDE PRO ENVOYÉE", msg: "Le bon de commande entreprise est parti." },
-  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "La commande partenaire est enregistrée." },
-  sendGarage: { title: "🚗 VÉHICULE ACTUALISÉ", msg: "L'état du véhicule a été mis à jour." },
-  sendExpense: { title: "💳 NOTE DE FRAIS", msg: "Vos frais ont été transmis à la comptabilité." },
-  sendSupport: { title: "🆘 SUPPORT CONTACTÉ", msg: "Votre message a été envoyé au patron." },
-  sync: { title: "☁️ CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
+  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée !" },
+  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "Production envoyée." },
+  sendEntreprise: { title: "🏢 COMMANDE PRO", msg: "Bon de commande transmis." },
+  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "Commande enregistrée." },
+  sendGarage: { title: "🚗 GARAGE", msg: "État véhicule mis à jour." },
+  sendExpense: { title: "💳 FRAIS", msg: "Note de frais envoyée." },
+  sendSupport: { title: "🆘 SUPPORT", msg: "Message envoyé au patron." }
 };
 
 export default function Home() {
@@ -51,7 +50,7 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
 
-  const [forms, setForms] = useState({
+  const initialForms = {
     invoiceNum: '',
     stock: [{ product: '', qty: 1 }],
     enterprise: { name: '', items: [{ product: '', qty: 1 }] },
@@ -59,7 +58,9 @@ export default function Home() {
     expense: { vehicle: '', kind: 'Essence', amount: '' },
     garage: { vehicle: '', action: 'Entrée', fuel: 50 },
     support: { sub: 'Problème Stock', msg: '' }
-  });
+  };
+
+  const [forms, setForms] = useState(initialForms);
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -86,7 +87,7 @@ export default function Home() {
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("SYNCHRONISATION", "Mise à jour Cloud...", "info");
+    if(isSync) notify("CLOUD", "Mise à jour...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
@@ -98,10 +99,8 @@ export default function Home() {
           garage: {...f.garage, vehicle: j.vehicles[0]},
           partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
-        if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
-    } catch (e) { notify("ERREUR CLOUD", "Connexion perdue", "error"); }
-    finally { setLoading(false); }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -118,7 +117,9 @@ export default function Home() {
   };
 
   const send = async (action, payload) => {
-    if(sending) return; playSound('click'); setSending(true);
+    if(sending) return; 
+    playSound('click'); 
+    setSending(true);
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
       const j = await r.json();
@@ -126,24 +127,24 @@ export default function Home() {
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
         
-        // --- RESET AUTOMATIQUE DES CHAMPS ---
+        // RESET SPECIFIQUE DU MODULE APRES ENVOI
         if(action === 'sendFactures') {
-          setCart([]);
-          setForms(prev => ({...prev, invoiceNum: ''}));
+            setCart([]);
+            setForms(prev => ({...prev, invoiceNum: ''}));
         } else if (action === 'sendProduction') {
-          setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]}));
+            setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]}));
         } else if (action === 'sendEntreprise') {
-          setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }}));
+            setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }}));
         } else if (action === 'sendPartnerOrder') {
-          setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
+            setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
         } else if (action === 'sendExpense') {
-          setForms(prev => ({...prev, expense: { ...prev.expense, amount: '' }}));
+            setForms(prev => ({...prev, expense: { ...prev.expense, amount: '' }}));
         } else if (action === 'sendSupport') {
-          setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
+            setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
         }
 
         loadData(); 
-      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
+      } else notify("ÉCHEC", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
@@ -163,7 +164,7 @@ export default function Home() {
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
         .main { flex: 1; overflow-y: auto; padding: 30px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
-        .card { background: var(--panel); border: 1px solid var(--brd); padding: 10px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
         .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
         .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
@@ -172,21 +173,25 @@ export default function Home() {
         .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
+        .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
         .tool-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .icon-tool { background: var(--panel); border: 1px solid var(--brd); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.2s; }
         .icon-tool:hover { border-color: var(--p); color: var(--p); }
         .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
         .fuel-fill { height: 100%; transition: 0.5s; background: var(--p); }
         .toast { position: fixed; top: 20px; right: 20px; padding: 15px 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-left: 6px solid rgba(255,255,255,0.2); font-weight: 800; }
-        .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
+        .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
+        .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
+        .sk-s { width: 260px; } .sk-m { flex:1; }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
       `}</style>
 
       {view === 'login' ? (
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
-            <h1 style={{marginBottom:30}}>HEN HOUSE</h1>
+            <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
               <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
@@ -209,7 +214,7 @@ export default function Home() {
             <div style={{padding: '15px 0', borderTop: '1px solid var(--brd)'}}>
               <div className="tool-bar">
                 <button className="icon-tool" title="Refresh Page" onClick={() => window.location.reload()}>🔃</button>
-                <button className="icon-tool" title="Sync Data" onClick={() => loadData(true)}>☁️</button>
+                <button className="tool-btn icon-tool" title="Sync Data" onClick={() => loadData(true)}>☁️</button>
                 <button className="icon-tool" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
                   {isMuted ? '🔇' : '🔊'}
                 </button>
@@ -264,7 +269,7 @@ export default function Home() {
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
-                    <input className="inp" placeholder="🔍 Rechercher..." style={{flex:1, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
+                    <input className="inp" placeholder="🔍 Rechercher un plat..." style={{flex:1, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
                     <select className="inp" style={{width:180, marginBottom:0}} onChange={e=>setCatFilter(e.target.value)}>
                       <option>Tous</option>
                       {Object.keys(data.productsByCategory).map(c=><option key={c}>{c}</option>)}
@@ -289,8 +294,8 @@ export default function Home() {
                 </>
               )}
 
-              {/* FORMULAIRES */}
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
+              {/* FORMULAIRES CENTRÉS */}
+              {['stock', 'enterprise', 'partners', 'garage', 'expenses', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
@@ -300,21 +305,23 @@ export default function Home() {
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            }}><option value="">Choisir produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
                             }} />
                           </div>
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
+                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>
+                          {sending ? "ENVOI..." : "VALIDER PRODUCTION"}
+                        </button>
                       </>
                     )}
 
                     {currentTab === 'enterprise' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🏢 COMMANDE PRO</h2>
-                        <input className="inp" placeholder="Entreprise cliente" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                        <input className="inp" placeholder="Nom de l'entreprise client" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
                         {forms.enterprise.items.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
@@ -325,7 +332,9 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER COMMANDE</button>
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
+                           {sending ? "ENVOI..." : "ENVOYER LA COMMANDE"}
+                        </button>
                       </>
                     )}
 
@@ -344,7 +353,7 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>MENUS DU PARTENAIRE</h4>
+                        <h4 style={{margin: '10px 0', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>MENUS DU PARTENAIRE</h4>
                         {forms.partner.items.map((item, i) => (
                            <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                               <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
@@ -357,7 +366,9 @@ export default function Home() {
                               }} />
                            </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
+                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>
+                           {sending ? "ENVOI..." : "VALIDER PARTENAIRE"}
+                        </button>
                       </>
                     )}
 
@@ -426,6 +437,34 @@ export default function Home() {
                 </div>
               )}
 
+              {/* PROFIL */}
+              {currentTab === 'profile' && myProfile && (
+                <div className="center-box">
+                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
+                      <div style={{textAlign:'center', marginBottom: 30}}>
+                        <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
+                        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
+                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
+                      </div>
+                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
+                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
+                            <p style={{fontSize: '1.8rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+                         </div>
+                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 UNITÉS PRODUITES</p>
+                            <p style={{fontSize: '1.8rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+                         </div>
+                      </div>
+                      <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
+                        <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
+                        <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
+                        <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
+                      </div>
+                   </div>
+                </div>
+              )}
+
               {/* ANNUAIRE */}
               {currentTab === 'directory' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
@@ -452,7 +491,7 @@ export default function Home() {
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); n[idx].qty++; setCart(n);}}>+</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
@@ -460,7 +499,7 @@ export default function Home() {
               <div style={{padding:25, background:'rgba(0,0,0,0.5)', borderTop:'1px solid var(--brd)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span>TOTAL</span><b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b></div>
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                  {sending ? "ENVOI..." : "VALIDER VENTE"}
+                   {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
                 </button>
               </div>
             </aside>
@@ -468,7 +507,6 @@ export default function Home() {
         </>
       )}
 
-      {/* TOAST NOTIFICATIONS */}
       {toast && (
         <div className="toast" style={{
           background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
