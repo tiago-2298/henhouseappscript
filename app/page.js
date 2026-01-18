@@ -86,21 +86,15 @@ export default function Home() {
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("SYNCHRONISATION", "Mise à jour en cours...", "info");
+    if(isSync) notify("SYNCHRONISATION", "Actualisation Cloud...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
       if(j.success) { 
         setData(j); 
-        const firstComp = Object.keys(j.partners.companies)[0];
-        setForms(f => ({...f, 
-          expense: {...f.expense, vehicle: j.vehicles[0]}, 
-          garage: {...f.garage, vehicle: j.vehicles[0]},
-          partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
-        }));
         if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
-    } catch (e) { notify("ERREUR CLOUD", "Connexion perdue", "error"); }
+    } catch (e) { notify("ERREUR CLOUD", "Connexion interrompue", "error"); }
     finally { setLoading(false); }
   };
 
@@ -126,11 +120,11 @@ export default function Home() {
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
         if(action === 'sendFactures') {
-          setCart([]);
-          setForms(prev => ({...prev, invoiceNum: ''})); // RESET NUMERO FACTURE
+            setCart([]);
+            setForms(prev => ({...prev, invoiceNum: ''}));
         }
         loadData(); 
-      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
+      } else notify("ÉCHEC", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
@@ -144,11 +138,11 @@ export default function Home() {
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 260px; border-right: 1px solid var(--brd); padding: 20px; display: flex; flex-direction: column; background: #000; }
-        .nav-l { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
+        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; }
+        .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
         .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
-        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #1a1625 0%, #0b0d11 100%); }
+        .main { flex: 1; overflow-y: auto; padding: 30px; position: relative; background: radial-gradient(circle at 100% 100%, #1a1625 0%, #0b0d11 100%); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
         .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
         .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -158,15 +152,18 @@ export default function Home() {
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
-        .fuel-gauge { width: 100%; height: 14px; background: #000; border-radius: 10px; overflow: hidden; margin: 15px 0; border: 1px solid var(--brd); }
-        .fuel-fill { height: 100%; transition: 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); background: var(--p); }
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
-        .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
-        .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
-        .sk-s { width: 260px; } .sk-m { flex:1; }
+        .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
         .tool-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .icon-tool { background: var(--panel); border: 1px solid var(--brd); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.2s; }
         .icon-tool:hover { border-color: var(--p); color: var(--p); }
+        .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
+        .fuel-fill { height: 100%; transition: 0.5s; background: var(--p); }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 30px; border-radius: 12px; z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-left: 6px solid rgba(255,255,255,0.2); font-weight: 800; }
+        .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
+        .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
+        .sk-s { width: 260px; } .sk-m { flex:1; }
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
       `}</style>
 
@@ -176,10 +173,10 @@ export default function Home() {
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
             <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Choisir un agent...</option>
+              <option value="">👤 Qui êtes-vous ?</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>LANCER SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>OUVRIR MA SESSION</button>
           </div>
         </div>
       ) : (
@@ -195,16 +192,14 @@ export default function Home() {
             </div>
             
             <div style={{padding: '15px 0', borderTop: '1px solid var(--brd)'}}>
-              {/* BARRE D'ICONES REFRESH / SYNC / MUTE */}
               <div className="tool-bar">
                 <button className="icon-tool" title="Refresh Page" onClick={() => window.location.reload()}>🔃</button>
                 <button className="icon-tool" title="Sync Data" onClick={() => loadData(true)}>☁️</button>
-                <button className="icon-tool" title="Mute/Unmute" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
+                <button className="icon-tool" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
                   {isMuted ? '🔇' : '🔊'}
                 </button>
               </div>
 
-              {/* INFOS AGENT & DECO */}
               <div style={{background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 12, marginBottom: 10}}>
                 <div style={{fontSize: '0.8rem', fontWeight: 800, color: '#fff'}}>{user}</div>
                 <div style={{fontSize: '0.65rem', color: 'var(--p)', textTransform: 'uppercase'}}>{myProfile?.role || 'Agent'}</div>
@@ -215,21 +210,42 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
+              {/* TABLEAU DE BORD STYLISÉ */}
               {currentTab === 'home' && (
                 <div style={{animation: 'slideIn 0.5s ease'}}>
-                  <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
-                  <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
-                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:20}}>
-                     {MODULES.filter(m => m.id !== 'home' && m.id !== 'profile').map(m => (
-                       <div key={m.id} className="card" style={{height:180, display:'flex', flexDirection:'column', justifyContent:'center', gap:15}} onClick={()=>setCurrentTab(m.id)}>
-                          <span style={{fontSize:'3.5rem'}}>{m.e}</span>
-                          <h3 style={{fontSize:'1rem', fontWeight:800}}>{m.l}</h3>
-                       </div>
-                     ))}
-                  </div>
+                   <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
+                   
+                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #1e1b4b 100%)'}}>
+                         <div style={{fontSize: '3.5rem'}}>💰</div>
+                         <div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MON CA TOTAL</div>
+                            <div style={{fontSize: '2.2rem', fontWeight: 900, color: 'var(--p)'}}>${myProfile?.ca.toLocaleString()}</div>
+                         </div>
+                      </div>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #064e3b 100%)'}}>
+                         <div style={{fontSize: '3.5rem'}}>📦</div>
+                         <div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MA PRODUCTION</div>
+                            <div style={{fontSize: '2.2rem', fontWeight: 900}}>{myProfile?.stock.toLocaleString()} <small style={{fontSize: '0.9rem', opacity: 0.5}}>unités</small></div>
+                         </div>
+                      </div>
+                   </div>
+
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem', letterSpacing: 1}}>VOS OUTILS DE TRAVAIL</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:15}}>
+                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
+                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
+                           <span style={{fontSize:'2.8rem'}}>{m.e}</span>
+                           <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                        </div>
+                      ))}
+                   </div>
                 </div>
               )}
 
+              {/* CAISSE */}
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
@@ -258,6 +274,7 @@ export default function Home() {
                 </>
               )}
 
+              {/* AUTRES MODULES */}
               {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -268,14 +285,16 @@ export default function Home() {
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}><option value="">Choisir produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
                             }} />
                           </div>
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>
+                          {sending ? "ENVOI EN COURS..." : "VALIDER PRODUCTION"}
+                        </button>
                       </>
                     )}
 
@@ -288,12 +307,14 @@ export default function Home() {
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
+                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER LA COMMANDE</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
+                           {sending ? "TRAITEMENT..." : "ENVOYER LA COMMANDE"}
+                        </button>
                       </>
                     )}
 
@@ -312,71 +333,61 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '15px 0 10px', fontSize: '0.9rem', color: 'var(--muted)'}}>SÉLECTION DES MENUS :</h4>
+                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>CONTENU DE LA COMMANDE</h4>
                         {forms.partner.items.map((item, i) => (
-                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                              <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
+                           <div key={i} style={{display:'flex', gap:10}}>
+                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
                               }}>
                                  {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
                               </select>
-                              <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
+                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
                               }} />
                            </div>
                         ))}
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER COMMANDE PARTENAIRE</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>
+                           {sending ? "TRAITEMENT..." : "VALIDER PARTENAIRE"}
+                        </button>
                       </>
                     )}
 
                     {currentTab === 'expenses' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>💳 DÉCLARATION DE FRAIS</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>💳 FRAIS</h2>
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
-                        <input className="inp" type="number" placeholder="Montant total ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER LES FRAIS</button>
+                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
                       </>
                     )}
 
                     {currentTab === 'garage' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🚗 GESTION DU GARAGE</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🚗 GARAGE</h2>
                         <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée au garage</option><option>Sortie du garage</option></select>
-                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20}}><span>NIVEAU D'ESSENCE</span><span>{forms.garage.fuel}%</span></div>
-                        <div className="fuel-gauge"><div className="fuel-fill" style={{width:`${forms.garage.fuel}%`, background: forms.garage.fuel < 25 ? '#ef4444' : 'var(--p)'}}></div></div>
-                        <input type="range" style={{width:'100%', accentColor:'var(--p)', marginTop:5}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
-                        <button className="btn-p" style={{marginTop:35}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER L'ÉTAT DU VÉHICULE</button>
+                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
+                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20}}><span>⛽ Essence</span><span>{forms.garage.fuel}%</span></div>
+                        <input type="range" style={{width:'100%', accentColor:'var(--p)', marginTop:15}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                        <button className="btn-p" style={{marginTop:25}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER</button>
                       </>
                     )}
 
                     {currentTab === 'support' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT TECHNIQUE</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
                         <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
                           <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
-                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détaillez votre problème ici..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendSupport', forms.support)}>ENVOYER LA DEMANDE</button>
+                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
                       </>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* ANNUAIRE & PERFORMANCE & PROFIL */}
-              {currentTab === 'directory' && (
-                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
-                  {data.employeesFull.map(e => (
-                    <div key={e.id} className="card" style={{padding:20, textAlign:'left', display:'flex', gap:15, alignItems:'center'}}>
-                      <div style={{width:50, height:50, borderRadius:15, background:'var(--p)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', fontWeight:900}}>{e.name.charAt(0)}</div>
-                      <div style={{flex:1}}><div style={{fontWeight:800}}>{e.name}</div><div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:700}}>{e.role}</div><div style={{fontSize:'0.85rem', marginTop:5, color:'var(--muted)'}}>📞 {e.phone}</div></div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
+              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1100, margin:'0 auto'}}>
                   <div className="card" style={{padding:30, textAlign:'left'}}>
@@ -406,6 +417,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* PROFIL */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
                    <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
@@ -432,9 +444,22 @@ export default function Home() {
                    </div>
                 </div>
               )}
+
+              {/* ANNUAIRE */}
+              {currentTab === 'directory' && (
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
+                  {data.employeesFull.map(e => (
+                    <div key={e.id} className="card" style={{padding:20, textAlign:'left', display:'flex', gap:15, alignItems:'center'}}>
+                      <div style={{width:50, height:50, borderRadius:15, background:'var(--p)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', fontWeight:900}}>{e.name.charAt(0)}</div>
+                      <div style={{flex:1}}><div style={{fontWeight:800}}>{e.name}</div><div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:700}}>{e.role}</div><div style={{fontSize:'0.85rem', marginTop:5, color:'var(--muted)'}}>📞 {e.phone}</div></div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </main>
 
+          {/* PANIER (CAISSE) */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
@@ -442,7 +467,7 @@ export default function Home() {
               <div style={{flex:1, overflowY:'auto', padding:'0 15px'}}>
                 {cart.map((i, idx)=>(
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
-                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu} / u</div></div>
+                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
@@ -454,14 +479,24 @@ export default function Home() {
               <div style={{padding:25, background:'rgba(0,0,0,0.5)', borderTop:'1px solid var(--brd)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span>TOTAL</span><b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b></div>
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                   {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
+                  {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
                 </button>
               </div>
             </aside>
           )}
         </>
       )}
-      {toast && <div className="toast" style={{position:'fixed', top:20, right:20, background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'), padding:'15px 30px', borderRadius:12, zIndex:2000}}><b>{toast.t}</b> : {toast.m}</div>}
+
+      {/* NOTIFS */}
+      {toast && (
+        <div className="toast" style={{
+          background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
+          color: '#fff'
+        }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '4px' }}>{toast.t}</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.9 }}>{toast.m}</div>
+        </div>
+      )}
     </div>
   );
 }
