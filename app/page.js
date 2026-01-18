@@ -17,14 +17,67 @@ const MODULES = [
 ];
 
 const IMAGES = {
-  "Saumon Grillé": "https://files.catbox.moe/05bofq.png", "Crousti-Douce": "https://files.catbox.moe/23lr31.png",
-  "Wings épicé": "https://files.catbox.moe/i17915.png", "Filet Mignon": "https://files.catbox.moe/3dzjbx.png",
-  "Poulet Rôti": "https://files.catbox.moe/8fyin5.png", "Paella Méditerranéenne": "https://files.catbox.moe/88udxk.png",
-  "Ribbs": "https://files.catbox.moe/ej5jok.png", "Steak 'Potatoes": "https://files.catbox.moe/msdthe.png",
-  "Rougail Saucisse": "https://files.catbox.moe/jqzox0.png", "Brochettes de fruits frais": "https://files.catbox.moe/cbmjou.png",
-  "Mousse au café": "https://files.catbox.moe/wzvbw6.png", "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
-  "Tourte Myrtille": "https://files.catbox.moe/oxwlna.png", "Jus d'orange": "https://files.catbox.moe/u29syk.png",
-  "Lait de poule": "https://files.catbox.moe/jxgida.png"
+  // --- PLATS PRINCIPAUX ---
+  "Saumon Grillé": "https://files.catbox.moe/05bofq.png",
+  "Crousti-Douce": "https://files.catbox.moe/23lr31.png",
+  "Wings épicé": "https://files.catbox.moe/i17915.png",
+  "Filet Mignon": "https://files.catbox.moe/3dzjbx.png",
+  "Poulet Rôti": "https://files.catbox.moe/8fyin5.png",
+  "Paella Méditerranéenne": "https://files.catbox.moe/88udxk.png",
+  "Ribbs": "https://files.catbox.moe/ej5jok.png",
+  "Steak 'Potatoes": "https://files.catbox.moe/msdthe.png",
+  "Rougail Saucisse": "https://files.catbox.moe/jqzox0.png",
+  "Boeuf bourguignon": "https://images.unsplash.com/photo-1534939561126-755ec615d39d?w=400",
+  "Quiche aux légumes": "https://images.unsplash.com/photo-1621348123730-80ea970f8087?w=400",
+
+  // --- DESSERTS ---
+  "Brochettes de fruits frais": "https://files.catbox.moe/cbmjou.png",
+  "Mousse au café": "https://files.catbox.moe/wzvbw6.png",
+  "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
+  "Tourte Myrtille": "https://files.catbox.moe/oxwlna.png",
+  "Los Churros Caramel": "https://images.unsplash.com/photo-1571162437205-8853037996ba?w=400",
+
+  // --- BOISSONS ---
+  "Jus d'orange": "https://files.catbox.moe/u29syk.png",
+  "Lait de poule": "https://files.catbox.moe/jxgida.png",
+  "Café": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400",
+  "Cappuccino": "https://images.unsplash.com/photo-1534778101976-62847782c213?w=400",
+  "Bière": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
+  "Lutinade": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400",
+  "Berry Fizz": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400",
+  "Jus de raisin rouge": "https://images.unsplash.com/photo-1508170754725-6e9a5cfbcad1?w=400",
+  "Jus de raisin blanc": "https://images.unsplash.com/photo-1508170754725-6e9a5cfbcad1?w=400",
+  "Agua Fresca Pasteque": "https://images.unsplash.com/photo-1508170754725-6e9a5cfbcad1?w=400",
+  "Vin rouge chaud": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
+  "Cidre Pression": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
+
+  // --- MENUS ---
+  "Menu Le Nid Végé": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
+  "Menu Grillé du Nord": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
+  "Menu Fraîcheur Méditerranéenne": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
+  "Menu Voyage Sucré-Salé": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
+  "Menu Flamme d OR": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
+  "Menu Happy Hen House": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
+
+  // --- ALCOOLS ---
+  "Cocktail Citron-Myrtille": "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?w=400",
+  "Gin Fizz Citron": "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?w=400",
+  "Verre de Bellini": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
+  "Verre de Vodka": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Verre de Rhum": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Verre de Cognac": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Verre de Brandy": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Verre de Whisky": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Verre de Gin": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Tequila Citron": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Shot de Tequila": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
+  "Verre Vin Blanc": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
+  "Verre Vin Rouge": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
+  "Verre de rosé": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
+  "Verre de Champagne": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
+  "Verre de Champomax": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
+  "Bouteille de Cidre": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
+  "Bouteille de Champagne": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
 };
 
 const NOTIF_MESSAGES = {
@@ -506,3 +559,4 @@ export default function Home() {
     </div>
   );
 }
+
