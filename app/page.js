@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect, useMemo } from 'react';
 
 // --- CONFIGURATION ---
@@ -27,12 +28,24 @@ const IMAGES = {
   "Lait de poule": "https://files.catbox.moe/jxgida.png"
 };
 
+// Messages de notifications personnalisés
+const NOTIF_MESSAGES = {
+  sendFactures: { title: "FACTURE TRANSMISE", msg: "La vente a été enregistrée avec succès !" },
+  sendProduction: { title: "STOCK ACTUALISÉ", msg: "La production cuisine a été déclarée." },
+  sendEntreprise: { title: "COMMANDE PRO ENVOYÉE", msg: "Le bon de commande entreprise est parti." },
+  sendPartnerOrder: { title: "PARTENAIRE VALIDÉ", msg: "La commande partenaire est enregistrée." },
+  sendGarage: { title: "VÉHICULE ACTUALISÉ", msg: "L'état du véhicule a été mis à jour." },
+  sendExpense: { title: "NOTE DE FRAIS", msg: "Vos frais ont été transmis à la comptabilité." },
+  sendSupport: { title: "SUPPORT CONTACTÉ", msg: "Votre message a été envoyé au patron." },
+  sync: { title: "CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
+};
+
 export default function Home() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [sending, setSending] = useState(false); // Anti-spam
   const [currentTab, setCurrentTab] = useState('home');
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
@@ -69,11 +82,11 @@ export default function Home() {
 
   const notify = (t, m, s='info') => { 
     setToast({t, m, s}); if(s==='success') playSound('success');
-    setTimeout(() => setToast(null), 4000); 
+    setTimeout(() => setToast(null), 3500); 
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("Sync Cloud", "Mise à jour en cours...", "info");
+    if(isSync) notify("SYNCHRONISATION", "Connexion au cloud...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
@@ -85,9 +98,9 @@ export default function Home() {
           garage: {...f.garage, vehicle: j.vehicles[0]},
           partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
-        if(isSync) playSound('success');
+        if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
-    } catch (e) { notify("Erreur", "Connexion perdue", "error"); }
+    } catch (e) { notify("ERREUR CLOUD", "Connexion perdue au serveur", "error"); }
     finally { setLoading(false); }
   };
 
@@ -107,27 +120,23 @@ export default function Home() {
   const send = async (action, payload) => {
     if(sending) return; 
     playSound('click'); 
-    setSending(true);
+    setSending(true); // Bloque l'anti-spam
 
     try {
-      const r = await fetch('/api', { 
-        method: 'POST', 
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ action, data: {...payload, employee: user} }) 
-      });
+      const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
       const j = await r.json();
       if(j.success) { 
-        const message = action === 'sendFactures' ? "Facture Transmise !" : "Données enregistrées !";
-        notify("C'est envoyé ✅", message, "success"); 
+        const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
+        notify(m.title, m.msg, "success"); 
         if(action === 'sendFactures') setCart([]); 
         loadData(); 
       } else {
-        notify("Erreur", j.message, "error");
+        notify("ÉCHEC ENVOI", j.message || "Erreur inconnue", "error");
       }
     } catch (e) {
-      notify("Erreur", "Une erreur est survenue lors de l'envoi", "error");
+      notify("ERREUR RÉSEAU", "Impossible de joindre l'API", "error");
     } finally { 
-      setSending(false); 
+      setSending(false); // Libère l'anti-spam
     }
   };
 
@@ -151,38 +160,26 @@ export default function Home() {
         .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
         .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
-        .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; position: relative; overflow: hidden; }
-        .btn-p:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; transform: none; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
         .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
         .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
         .sk-s { width: 260px; } .sk-m { flex:1; }
-        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
-        
-        /* Anti-spam overlay */
-        .sending-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 5000; display: flex; align-items: center; justify-content: center; color: white; flex-direction: column; gap: 20px; }
-        .loader { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--p); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Toast styling */
-        .toast { position: fixed; top: 30px; right: 30px; padding: 20px 40px; background: #16a34a; color: white; border-radius: 18px; z-index: 6000; box-shadow: 0 15px 40px rgba(0,0,0,0.7); display: flex; align-items: center; gap: 15px; border-bottom: 4px solid rgba(0,0,0,0.2); animation: toastIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .toast.error { background: #dc2626; }
-        @keyframes toastIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
+        .sync-tools { position: fixed; bottom: 25px; right: 25px; display: flex; gap: 12px; z-index: 1000; }
+        .tool-btn { background: var(--p); color: #fff; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4); font-size: 1.3rem; transition: 0.3s; }
+        .tool-btn:hover { transform: scale(1.1); filter: brightness(1.2); }
         .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
         .fuel-fill { height: 100%; transition: 0.5s; }
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); }
+        
+        .toast { position: fixed; top: 24px; right: 24px; padding: 18px 28px; border-radius: 14px; z-index: 3000; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); min-width: 320px; border-left: 6px solid rgba(255,255,255,0.3); animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       `}</style>
 
-      {/* ANTI-SPAM OVERLAY */}
-      {sending && (
-        <div className="sending-overlay">
-          <div className="loader"></div>
-          <p style={{fontWeight: 900, fontSize: '1.2rem', letterSpacing: '1px'}}>TRANSMISSION EN COURS...</p>
-        </div>
-      )}
+
 
       {view === 'login' ? (
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
@@ -215,21 +212,30 @@ export default function Home() {
             </div>
           </aside>
 
+
+
           <main className="main">
+            <div className="sync-tools">
+              <button className="tool-btn" onClick={()=>window.location.reload()}>🔃</button>
+              <button className="tool-btn" onClick={()=>loadData(true)}>☁️</button>
+            </div>
+
+
+
             <div className="fade-in">
-              {/* ACCUEIL */}
               {currentTab === 'home' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
                    {MODULES.filter(m => m.id !== 'home').map(m => (
-                     <div key={m.id} className="card" style={{height:180, display:'flex', flexDirection:'column', justifyContent:'center', gap:15}} onClick={()=>setCurrentTab(m.id)}>
+                     <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)}>
                         <span style={{fontSize:'3.5rem'}}>{m.e}</span>
-                        <h3 style={{fontSize:'1rem', fontWeight:800}}>{m.l}</h3>
+                        <h3 style={{marginTop:15, fontSize:'1rem', fontWeight:800}}>{m.l}</h3>
                      </div>
                    ))}
                 </div>
               )}
 
-              {/* CAISSE */}
+
+
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
@@ -258,7 +264,8 @@ export default function Home() {
                 </>
               )}
 
-              {/* FORMULAIRES CENTRÉS */}
+
+
               {['stock', 'enterprise', 'partners', 'garage', 'expenses', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -275,12 +282,14 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>
-                          {sending ? "ENVOI..." : "VALIDER PRODUCTION"}
+                        <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ajouter une ligne</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>
+                          {sending ? "ENVOI EN COURS..." : "VALIDER PRODUCTION"}
                         </button>
                       </>
                     )}
+
+
 
                     {currentTab === 'enterprise' && (
                       <>
@@ -291,14 +300,18 @@ export default function Home() {
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
+                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
+                          {sending ? "ENVOI EN COURS..." : "ENVOYER LA COMMANDE"}
+                        </button>
                       </>
                     )}
+
+
 
                     {currentTab === 'partners' && (
                       <>
@@ -315,22 +328,13 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '10px 0'}}>Menu Partenaire</h4>
-                        {forms.partner.items.map((item, i) => (
-                           <div key={i} style={{display:'flex', gap:10}}>
-                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
-                                 const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                              }}>
-                                 {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
-                              </select>
-                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
-                                 const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                              }} />
-                           </div>
-                        ))}
-                        <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER COMMANDE</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>
+                          {sending ? "ENVOI EN COURS..." : "VALIDER PARTENAIRE"}
+                        </button>
                       </>
                     )}
+
+
 
                     {currentTab === 'expenses' && (
                       <>
@@ -338,9 +342,13 @@ export default function Home() {
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
-                        <button className="btn-p" onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendExpense', forms.expense)}>
+                          {sending ? "ENVOI EN COURS..." : "DÉCLARER"}
+                        </button>
                       </>
                     )}
+
+
 
                     {currentTab === 'garage' && (
                       <>
@@ -349,9 +357,13 @@ export default function Home() {
                         <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
                         <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20}}><span>⛽ Essence</span><span>{forms.garage.fuel}%</span></div>
                         <input type="range" style={{width:'100%', accentColor:'var(--p)', marginTop:15}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
-                        <button className="btn-p" style={{marginTop:25}} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER</button>
+                        <button className="btn-p" style={{marginTop:25}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>
+                          {sending ? "MAJ EN COURS..." : "ENREGISTRER"}
+                        </button>
                       </>
                     )}
+
+
 
                     {currentTab === 'support' && (
                       <>
@@ -360,109 +372,176 @@ export default function Home() {
                           <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
                         <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendSupport', forms.support)}>
+                          {sending ? "ENVOI EN COURS..." : "ENVOYER"}
+                        </button>
                       </>
                     )}
+
                   </div>
+
                 </div>
+
               )}
+
+
+
+              {currentTab === 'directory' && (
+
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
+
+                  {data.employeesFull.map(e => (
+
+                    <div key={e.id} className="card" style={{padding:20, textAlign:'left', display:'flex', gap:15, alignItems:'center'}}>
+
+                      <div style={{width:50, height:50, borderRadius:15, background:'var(--p)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', fontWeight:900}}>{e.name.charAt(0)}</div>
+
+                      <div style={{flex:1}}><div style={{fontWeight:800}}>{e.name}</div><div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:700}}>{e.role}</div><div style={{fontSize:'0.85rem', marginTop:5, color:'var(--muted)'}}>📞 {e.phone}</div></div>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+              )}
+
+
 
               {currentTab === 'performance' && (
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1100, margin:'0 auto'}}>
-                  <div className="card" style={{padding:30, textAlign:'left'}}>
-                    <h2 style={{marginBottom:20}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h2>
+
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1000, margin:'0 auto'}}>
+
+                  <div className="card" style={{padding:25}}><h3>🏆 Top 10 CA</h3>
+
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
-                      <div key={i} style={{marginBottom: 15}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
-                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                           <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
-                        </div>
-                        <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca/data.employeesFull[0].ca)*100+'%'}}></div></div>
-                      </div>
+
+                      <div key={i} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid var(--brd)'}}><span>{i+1}. {e.name}</span><b>${e.ca.toLocaleString()}</b></div>
+
                     ))}
+
                   </div>
-                  <div className="card" style={{padding:30, textAlign:'left'}}>
-                    <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
+
+                  <div className="card" style={{padding:25}}><h3>📦 Top 10 Stock</h3>
+
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
-                      <div key={i} style={{marginBottom: 15}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
-                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                           <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
-                        </div>
-                        <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
-                      </div>
+
+                      <div key={i} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid var(--brd)'}}><span>{i+1}. {e.name}</span><b>{e.stock} u.</b></div>
+
                     ))}
+
                   </div>
+
                 </div>
+
               )}
 
-              {/* MON PROFIL */}
+
+
               {currentTab === 'profile' && myProfile && (
-                <div className="center-box">
-                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
-                      <div style={{textAlign:'center', marginBottom: 30}}>
-                        <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
-                        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
-                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
-                      </div>
-                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
-                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
-                            <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
-                         </div>
-                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 UNITÉS PRODUITES</p>
-                            <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
-                         </div>
-                      </div>
-                      <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
-                        <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
-                        <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
-                        <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
-                      </div>
+
+                <div style={{maxWidth:600, margin:'0 auto', textAlign:'center'}}>
+
+                   <div style={{width:120, height:120, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
+
+                   <h1>{user}</h1><p style={{color:'var(--p)', fontWeight:800, marginBottom:30}}>{myProfile.role}</p>
+
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:15}}>
+
+                      <div className="card"><span>💰 CA</span><br/><b>${myProfile.ca.toLocaleString()}</b></div>
+
+                      <div className="card"><span>📦 Stock</span><br/><b>{myProfile.stock} u.</b></div>
+
+                      <div className="card"><span>🎖️ Ancienneté</span><br/><b>{myProfile.seniority}j</b></div>
+
                    </div>
+
                 </div>
+
               )}
+
             </div>
+
           </main>
 
+
+
           {currentTab === 'invoices' && (
+
             <aside className="cart">
+
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
+
               <div style={{padding:15}}><input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.2rem'}} /></div>
+
               <div style={{flex:1, overflowY:'auto', padding:'0 15px'}}>
+
                 {cart.map((i, idx)=>(
+
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
+
                     <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
+
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
+
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
+
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
+
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
+
                     </div>
+
                   </div>
+
                 ))}
+
               </div>
+
               <div style={{padding:25, background:'rgba(0,0,0,0.5)', borderTop:'1px solid var(--brd)'}}>
+
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span>TOTAL</span><b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b></div>
+
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                  {sending ? "ENVOI..." : "VALIDER VENTE"}
+
+                  {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
+
                 </button>
+
               </div>
+
             </aside>
+
           )}
+
         </>
+
       )}
 
-      {/* TOAST NOTIFICATION */}
+
+
+      {/* TOAST NOTIFICATIONS */}
+
       {toast && (
-        <div className={`toast ${toast.s === 'error' ? 'error' : ''}`}>
-          <span style={{fontSize: '1.5rem'}}>{toast.s === 'error' ? '❌' : '✅'}</span>
-          <div>
-            <div style={{fontSize: '1rem', fontWeight: 900}}>{toast.t}</div>
-            <div style={{fontSize: '0.8rem', opacity: 0.8, fontWeight: 600}}>{toast.m}</div>
-          </div>
+
+        <div className="toast" style={{
+
+          background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
+
+          color: '#fff'
+
+        }}>
+
+          <div style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '4px' }}>{toast.t}</div>
+
+          <div style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.9 }}>{toast.m}</div>
+
         </div>
+
       )}
+
     </div>
+
   );
+
 }
