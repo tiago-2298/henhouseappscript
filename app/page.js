@@ -28,14 +28,13 @@ const IMAGES = {
 };
 
 const NOTIF_MESSAGES = {
-  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée avec succès !" },
-  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "La production cuisine a été déclarée." },
-  sendEntreprise: { title: "🏢 COMMANDE PRO ENVOYÉE", msg: "Le bon de commande entreprise est parti." },
-  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "La commande partenaire est enregistrée." },
-  sendGarage: { title: "🚗 VÉHICULE ACTUALISÉ", msg: "L'état du véhicule a été mis à jour." },
-  sendExpense: { title: "💳 NOTE DE FRAIS", msg: "Vos frais ont été transmis à la comptabilité." },
-  sendSupport: { title: "🆘 SUPPORT CONTACTÉ", msg: "Votre message a été envoyé au patron." },
-  sync: { title: "☁️ CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
+  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée !" },
+  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "Production envoyée." },
+  sendEntreprise: { title: "🏢 COMMANDE PRO", msg: "Bon de commande transmis." },
+  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "Commande enregistrée." },
+  sendGarage: { title: "🚗 GARAGE", msg: "État véhicule mis à jour." },
+  sendExpense: { title: "💳 FRAIS", msg: "Note de frais envoyée." },
+  sendSupport: { title: "🆘 SUPPORT", msg: "Message envoyé au patron." }
 };
 
 export default function Home() {
@@ -51,7 +50,7 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
 
-  const [forms, setForms] = useState({
+  const initialForms = {
     invoiceNum: '',
     stock: [{ product: '', qty: 1 }],
     enterprise: { name: '', items: [{ product: '', qty: 1 }] },
@@ -59,7 +58,9 @@ export default function Home() {
     expense: { vehicle: '', kind: 'Essence', amount: '' },
     garage: { vehicle: '', action: 'Entrée', fuel: 50 },
     support: { sub: 'Problème Stock', msg: '' }
-  });
+  };
+
+  const [forms, setForms] = useState(initialForms);
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -86,7 +87,7 @@ export default function Home() {
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("SYNCHRONISATION", "Mise à jour en cours...", "info");
+    if(isSync) notify("CLOUD", "Mise à jour...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
@@ -98,10 +99,8 @@ export default function Home() {
           garage: {...f.garage, vehicle: j.vehicles[0]},
           partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
-        if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
-    } catch (e) { notify("ERREUR CLOUD", "Connexion perdue", "error"); }
-    finally { setLoading(false); }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -118,19 +117,34 @@ export default function Home() {
   };
 
   const send = async (action, payload) => {
-    if(sending) return; playSound('click'); setSending(true);
+    if(sending) return; 
+    playSound('click'); 
+    setSending(true);
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
       const j = await r.json();
       if(j.success) { 
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
+        
+        // RESET SPECIFIQUE DU MODULE APRES ENVOI
         if(action === 'sendFactures') {
-          setCart([]);
-          setForms(prev => ({...prev, invoiceNum: ''}));
+            setCart([]);
+            setForms(prev => ({...prev, invoiceNum: ''}));
+        } else if (action === 'sendProduction') {
+            setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]}));
+        } else if (action === 'sendEntreprise') {
+            setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }}));
+        } else if (action === 'sendPartnerOrder') {
+            setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
+        } else if (action === 'sendExpense') {
+            setForms(prev => ({...prev, expense: { ...prev.expense, amount: '' }}));
+        } else if (action === 'sendSupport') {
+            setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
         }
+
         loadData(); 
-      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
+      } else notify("ÉCHEC", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
@@ -144,19 +158,19 @@ export default function Home() {
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 260px; border-right: 1px solid var(--brd); padding: 20px; display: flex; flex-direction: column; background: #000; }
+        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; }
         .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
         .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
-        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
-        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .main { flex: 1; overflow-y: auto; padding: 30px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
         .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
         .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
+        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
-        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.6; }
+        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
@@ -179,7 +193,7 @@ export default function Home() {
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
             <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Qui êtes-vous ?</option>
+              <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
             <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}} disabled={!user}>OUVRIR MA SESSION</button>
@@ -200,7 +214,7 @@ export default function Home() {
             <div style={{padding: '15px 0', borderTop: '1px solid var(--brd)'}}>
               <div className="tool-bar">
                 <button className="icon-tool" title="Refresh Page" onClick={() => window.location.reload()}>🔃</button>
-                <button className="icon-tool" title="Sync Data" onClick={() => loadData(true)}>☁️</button>
+                <button className="tool-btn icon-tool" title="Sync Data" onClick={() => loadData(true)}>☁️</button>
                 <button className="icon-tool" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
                   {isMuted ? '🔇' : '🔊'}
                 </button>
@@ -216,30 +230,30 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
-              {/* TABLEAU DE BORD STYLISÉ */}
+              {/* TABLEAU DE BORD */}
               {currentTab === 'home' && (
                 <div style={{animation: 'slideIn 0.5s ease'}}>
                    <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
-                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
+                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House.</p>
                    
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MON CA TOTAL</div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800}}>MON CA TOTAL</div>
                             <div style={{fontSize: '2.2rem', fontWeight: 900, color: 'var(--p)'}}>${myProfile?.ca.toLocaleString()}</div>
                          </div>
                       </div>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #1a1a1a 100%)'}}>
                          <div style={{fontSize: '3.5rem'}}>📦</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MA PRODUCTION</div>
-                            <div style={{fontSize: '2.2rem', fontWeight: 900}}>{myProfile?.stock.toLocaleString()} <small style={{fontSize: '0.9rem', opacity: 0.5}}>unités</small></div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800}}>MA PRODUCTION</div>
+                            <div style={{fontSize: '2.2rem', fontWeight: 900}}>{myProfile?.stock.toLocaleString()} u.</div>
                          </div>
                       </div>
                    </div>
 
-                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem', letterSpacing: 1}}>ACCÈS RAPIDE</h3>
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)'}}>ACCÈS RAPIDE</h3>
                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
                       {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
                         <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
@@ -280,7 +294,8 @@ export default function Home() {
                 </>
               )}
 
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
+              {/* FORMULAIRES CENTRÉS */}
+              {['stock', 'enterprise', 'partners', 'garage', 'expenses', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
@@ -298,7 +313,7 @@ export default function Home() {
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
                         <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>
-                          {sending ? "ENVOI EN COURS..." : "VALIDER PRODUCTION"}
+                          {sending ? "ENVOI..." : "VALIDER PRODUCTION"}
                         </button>
                       </>
                     )}
@@ -317,8 +332,8 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(i => !i.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
-                           {sending ? "TRAITEMENT..." : "ENVOYER LA COMMANDE"}
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
+                           {sending ? "ENVOI..." : "ENVOYER LA COMMANDE"}
                         </button>
                       </>
                     )}
@@ -326,7 +341,7 @@ export default function Home() {
                     {currentTab === 'partners' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🤝 PARTENAIRES</h2>
-                        <input className="inp" placeholder="N° Facture (Obligatoire)" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
+                        <input className="inp" placeholder="N° Facture Obligatoire" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
                         <div style={{display:'flex', gap:10}}>
                           <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{
                              const c = e.target.value;
@@ -338,21 +353,21 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>CONTENU</h4>
+                        <h4 style={{margin: '10px 0', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>MENUS DU PARTENAIRE</h4>
                         {forms.partner.items.map((item, i) => (
-                           <div key={i} style={{display:'flex', gap:10}}>
-                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
+                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                              <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
                               }}>
                                  {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
                               </select>
-                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
+                              <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
                               }} />
                            </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.partner.num || !forms.partner.company} onClick={()=>send('sendPartnerOrder', forms.partner)}>
-                           {sending ? "TRAITEMENT..." : "VALIDER PARTENAIRE"}
+                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>
+                           {sending ? "ENVOI..." : "VALIDER PARTENAIRE"}
                         </button>
                       </>
                     )}
@@ -362,8 +377,8 @@ export default function Home() {
                         <h2 style={{marginBottom:25, textAlign:'center'}}>💳 FRAIS</h2>
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
-                        <input className="inp" type="number" placeholder="Montant total ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || forms.expense.amount <= 0} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
+                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        <button className="btn-p" disabled={sending || !forms.expense.amount} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
                       </>
                     )}
 
@@ -384,7 +399,7 @@ export default function Home() {
                         <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
                           <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
-                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
                         <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
                       </>
                     )}
@@ -422,7 +437,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* MON PROFIL */}
+              {/* PROFIL */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
                    <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
@@ -492,7 +507,6 @@ export default function Home() {
         </>
       )}
 
-      {/* NOTIFICATIONS (TOASTS) */}
       {toast && (
         <div className="toast" style={{
           background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
