@@ -28,13 +28,14 @@ const IMAGES = {
 };
 
 const NOTIF_MESSAGES = {
-  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée !" },
-  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "Production envoyée." },
-  sendEntreprise: { title: "🏢 COMMANDE PRO", msg: "Bon de commande transmis." },
-  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "Commande enregistrée." },
-  sendGarage: { title: "🚗 GARAGE", msg: "État véhicule mis à jour." },
-  sendExpense: { title: "💳 FRAIS", msg: "Note de frais envoyée." },
-  sendSupport: { title: "🆘 SUPPORT", msg: "Message envoyé au patron." }
+  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée avec succès !" },
+  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "La production cuisine a été déclarée." },
+  sendEntreprise: { title: "🏢 COMMANDE PRO ENVOYÉE", msg: "Le bon de commande entreprise est parti." },
+  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "La commande partenaire est enregistrée." },
+  sendGarage: { title: "🚗 VÉHICULE ACTUALISÉ", msg: "L'état du véhicule a été mis à jour." },
+  sendExpense: { title: "💳 NOTE DE FRAIS", msg: "Vos frais ont été transmis à la comptabilité." },
+  sendSupport: { title: "🆘 SUPPORT CONTACTÉ", msg: "Votre message a été envoyé au patron." },
+  sync: { title: "☁️ CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
 };
 
 export default function Home() {
@@ -50,7 +51,7 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
 
-  const initialForms = {
+  const [forms, setForms] = useState({
     invoiceNum: '',
     stock: [{ product: '', qty: 1 }],
     enterprise: { name: '', items: [{ product: '', qty: 1 }] },
@@ -58,9 +59,7 @@ export default function Home() {
     expense: { vehicle: '', kind: 'Essence', amount: '' },
     garage: { vehicle: '', action: 'Entrée', fuel: 50 },
     support: { sub: 'Problème Stock', msg: '' }
-  };
-
-  const [forms, setForms] = useState(initialForms);
+  });
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -87,7 +86,7 @@ export default function Home() {
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("CLOUD", "Mise à jour...", "info");
+    if(isSync) notify("SYNCHRONISATION", "Mise à jour en cours...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
@@ -99,8 +98,10 @@ export default function Home() {
           garage: {...f.garage, vehicle: j.vehicles[0]},
           partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
+        if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
-    } finally { setLoading(false); }
+    } catch (e) { notify("ERREUR CLOUD", "Connexion perdue", "error"); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -117,9 +118,7 @@ export default function Home() {
   };
 
   const send = async (action, payload) => {
-    if(sending) return; 
-    playSound('click'); 
-    setSending(true);
+    if(sending) return; playSound('click'); setSending(true);
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
       const j = await r.json();
@@ -127,22 +126,21 @@ export default function Home() {
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
         
-        // RESET SPECIFIQUE DU MODULE APRES ENVOI
+        // --- RESET AUTOMATIQUE DES CHAMPS ---
         if(action === 'sendFactures') {
-            setCart([]);
-            setForms(prev => ({...prev, invoiceNum: ''}));
+          setCart([]);
+          setForms(prev => ({...prev, invoiceNum: ''}));
         } else if (action === 'sendProduction') {
-            setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]}));
+          setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]}));
         } else if (action === 'sendEntreprise') {
-            setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }}));
+          setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }}));
         } else if (action === 'sendPartnerOrder') {
-            setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
+          setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
         } else if (action === 'sendExpense') {
-            setForms(prev => ({...prev, expense: { ...prev.expense, amount: '' }}));
+          setForms(prev => ({...prev, expense: { ...prev.expense, amount: '' }}));
         } else if (action === 'sendSupport') {
-            setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
+          setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
         }
-
         loadData(); 
       } else notify("ÉCHEC", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
@@ -167,7 +165,7 @@ export default function Home() {
         .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
         .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .form-ui { width: 100%; max-width: 580px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
@@ -191,7 +189,7 @@ export default function Home() {
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
-            <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
+            <h1 style={{marginBottom:30}}>HEN HOUSE</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
               <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
@@ -230,11 +228,11 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
-              {/* TABLEAU DE BORD */}
+              {/* TABLEAU DE BORD STYLISÉ */}
               {currentTab === 'home' && (
                 <div style={{animation: 'slideIn 0.5s ease'}}>
                    <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
-                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House.</p>
+                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
                    
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
@@ -253,7 +251,7 @@ export default function Home() {
                       </div>
                    </div>
 
-                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)'}}>ACCÈS RAPIDE</h3>
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
                       {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
                         <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
@@ -269,7 +267,7 @@ export default function Home() {
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
-                    <input className="inp" placeholder="🔍 Rechercher un plat..." style={{flex:1, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
+                    <input className="inp" placeholder="🔍 Rechercher..." style={{flex:1, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
                     <select className="inp" style={{width:180, marginBottom:0}} onChange={e=>setCatFilter(e.target.value)}>
                       <option>Tous</option>
                       {Object.keys(data.productsByCategory).map(c=><option key={c}>{c}</option>)}
@@ -294,8 +292,8 @@ export default function Home() {
                 </>
               )}
 
-              {/* FORMULAIRES CENTRÉS */}
-              {['stock', 'enterprise', 'partners', 'garage', 'expenses', 'support'].includes(currentTab) && (
+              {/* MODULES CENTRÉS & FORMULAIRES */}
+              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'profile', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
@@ -305,23 +303,21 @@ export default function Home() {
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}><option value="">Choisir produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
                             }} />
                           </div>
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>
-                          {sending ? "ENVOI..." : "VALIDER PRODUCTION"}
-                        </button>
+                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
                       </>
                     )}
 
                     {currentTab === 'enterprise' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🏢 COMMANDE PRO</h2>
-                        <input className="inp" placeholder="Nom de l'entreprise client" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                        <input className="inp" placeholder="Entreprise cliente" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
                         {forms.enterprise.items.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
@@ -332,9 +328,7 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
-                           {sending ? "ENVOI..." : "ENVOYER LA COMMANDE"}
-                        </button>
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
                       </>
                     )}
 
@@ -353,22 +347,20 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '10px 0', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>MENUS DU PARTENAIRE</h4>
+                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>MENU DU PARTENAIRE</h4>
                         {forms.partner.items.map((item, i) => (
-                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                              <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
+                           <div key={i} style={{display:'flex', gap:10}}>
+                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
                               }}>
                                  {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
                               </select>
-                              <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
+                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
                               }} />
                            </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>
-                           {sending ? "ENVOI..." : "VALIDER PARTENAIRE"}
-                        </button>
+                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                       </>
                     )}
 
@@ -393,6 +385,29 @@ export default function Home() {
                       </>
                     )}
 
+                    {currentTab === 'profile' && myProfile && (
+                      <div style={{textAlign:'center'}}>
+                        <div style={{width:120, height:120, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
+                        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
+                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800, marginBottom: 30}}>{myProfile.role}</p>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
+                           <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
+                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+                           </div>
+                           <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
+                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+                           </div>
+                        </div>
+                        <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
+                          <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
+                          <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
+                          <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {currentTab === 'support' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
@@ -409,9 +424,9 @@ export default function Home() {
 
               {/* PERFORMANCE */}
               {currentTab === 'performance' && (
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1100, margin:'0 auto'}}>
-                  <div className="card" style={{padding:30, textAlign:'left'}}>
-                    <h2 style={{marginBottom:25, fontSize: '1.2rem'}}>🏆 TOP 10 CA</h2>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30, maxWidth:1100, margin:'0 auto'}}>
+                  <div className="card" style={{padding:25, textAlign:'left'}}>
+                    <h2 style={{marginBottom:20}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
@@ -422,8 +437,8 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <div className="card" style={{padding:30, textAlign:'left'}}>
-                    <h2 style={{marginBottom:25, fontSize: '1.2rem'}}>📦 TOP 10 PRODUCTION</h2>
+                  <div className="card" style={{padding:25, textAlign:'left'}}>
+                    <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
@@ -434,34 +449,6 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* PROFIL */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="center-box">
-                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
-                      <div style={{textAlign:'center', marginBottom: 30}}>
-                        <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
-                        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
-                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
-                      </div>
-                      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
-                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
-                            <p style={{fontSize: '1.8rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
-                         </div>
-                         <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 UNITÉS PRODUITES</p>
-                            <p style={{fontSize: '1.8rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
-                         </div>
-                      </div>
-                      <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
-                        <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
-                        <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
-                        <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
-                      </div>
-                   </div>
                 </div>
               )}
 
@@ -479,7 +466,7 @@ export default function Home() {
             </div>
           </main>
 
-          {/* PANIER (CAISSE) */}
+          {/* PANIER */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
@@ -491,7 +478,7 @@ export default function Home() {
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
@@ -499,7 +486,7 @@ export default function Home() {
               <div style={{padding:25, background:'rgba(0,0,0,0.5)', borderTop:'1px solid var(--brd)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span>TOTAL</span><b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b></div>
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                   {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
+                  {sending ? "ENVOI..." : "VALIDER VENTE"}
                 </button>
               </div>
             </aside>
