@@ -27,27 +27,27 @@ const IMAGES = {
   "Ribbs": "https://files.catbox.moe/ej5jok.png",
   "Steak 'Potatoes": "https://files.catbox.moe/msdthe.png",
   "Rougail Saucisse": "https://files.catbox.moe/jqzox0.png",
-  "Boeuf bourguignon": "https://images.unsplash.com/photo-1534939561126-755ec615d39d?w=400",
-  "Quiche aux légumes": "https://images.unsplash.com/photo-1621348123730-80ea970f8087?w=400",
+  "Boeuf bourguignon": "https://files.catbox.moe/px75e5.png",
+  "Quiche aux légumes": "https://files.catbox.moe/vab09x.png",
 
   // --- DESSERTS ---
   "Brochettes de fruits frais": "https://files.catbox.moe/cbmjou.png",
   "Mousse au café": "https://files.catbox.moe/wzvbw6.png",
   "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
   "Tourte Myrtille": "https://files.catbox.moe/oxwlna.png",
-  "Los Churros Caramel": "https://images.unsplash.com/photo-1571162437205-8853037996ba?w=400",
+  "Los Churros Caramel": "https://files.catbox.moe/pvjuhn.png",
 
   // --- BOISSONS ---
   "Jus d'orange": "https://files.catbox.moe/u29syk.png",
   "Lait de poule": "https://files.catbox.moe/jxgida.png",
-  "Café": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400",
-  "Cappuccino": "https://images.unsplash.com/photo-1534778101976-62847782c213?w=400",
-  "Bière": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
-  "Lutinade": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400",
-  "Berry Fizz": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=400",
-  "Jus de raisin rouge": "https://images.unsplash.com/photo-1508170754725-6e9a5cfbcad1?w=400",
-  "Jus de raisin blanc": "https://images.unsplash.com/photo-1508170754725-6e9a5cfbcad1?w=400",
-  "Agua Fresca Pasteque": "https://images.unsplash.com/photo-1508170754725-6e9a5cfbcad1?w=400",
+  "Café": "https://files.catbox.moe/txb2hd.png",
+  "Cappuccino": "https://files.catbox.moe/txb2hd.png",
+  "Bière": "https://files.catbox.moe/m4exni.png",
+  "Lutinade": "https://files.catbox.moe/oyq84s.png",
+  "Berry Fizz": "https://files.catbox.moe/e0ztl3.png",
+  "Jus de raisin rouge": "https://files.catbox.moe/dysrkb.png",
+  "Jus de raisin blanc": "https://files.catbox.moe/9w8w7k.png",
+  "Agua Fresca Pasteque": "https://files.catbox.moe/rh7jy9.png",
   "Vin rouge chaud": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
   "Cidre Pression": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
 
@@ -559,4 +559,5 @@ export default function Home() {
     </div>
   );
 }
+
 
