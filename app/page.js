@@ -144,19 +144,19 @@ export default function Home() {
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; }
+        .side { width: 260px; border-right: 1px solid var(--brd); padding: 20px; display: flex; flex-direction: column; background: #000; }
         .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
         .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
-        .main { flex: 1; overflow-y: auto; padding: 30px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
+        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
+        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
         .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
         .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
-        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
+        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.6; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
@@ -179,10 +179,10 @@ export default function Home() {
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
             <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Choisir un agent...</option>
+              <option value="">👤 Qui êtes-vous ?</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>OUVRIR MA SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}} disabled={!user}>OUVRIR MA SESSION</button>
           </div>
         </div>
       ) : (
@@ -280,7 +280,6 @@ export default function Home() {
                 </>
               )}
 
-              {/* AUTRES MODULES */}
               {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -291,14 +290,14 @@ export default function Home() {
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            }}><option value="">Choisir produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
                             }} />
                           </div>
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>
+                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>
                           {sending ? "ENVOI EN COURS..." : "VALIDER PRODUCTION"}
                         </button>
                       </>
@@ -318,7 +317,7 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(i => !i.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>
                            {sending ? "TRAITEMENT..." : "ENVOYER LA COMMANDE"}
                         </button>
                       </>
@@ -327,7 +326,7 @@ export default function Home() {
                     {currentTab === 'partners' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🤝 PARTENAIRES</h2>
-                        <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
+                        <input className="inp" placeholder="N° Facture (Obligatoire)" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
                         <div style={{display:'flex', gap:10}}>
                           <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{
                              const c = e.target.value;
@@ -339,7 +338,7 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>CONTENU DE LA COMMANDE</h4>
+                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>CONTENU</h4>
                         {forms.partner.items.map((item, i) => (
                            <div key={i} style={{display:'flex', gap:10}}>
                               <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
@@ -352,7 +351,7 @@ export default function Home() {
                               }} />
                            </div>
                         ))}
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>
+                        <button className="btn-p" disabled={sending || !forms.partner.num || !forms.partner.company} onClick={()=>send('sendPartnerOrder', forms.partner)}>
                            {sending ? "TRAITEMENT..." : "VALIDER PARTENAIRE"}
                         </button>
                       </>
@@ -363,8 +362,8 @@ export default function Home() {
                         <h2 style={{marginBottom:25, textAlign:'center'}}>💳 FRAIS</h2>
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
-                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
+                        <input className="inp" type="number" placeholder="Montant total ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || forms.expense.amount <= 0} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
                       </>
                     )}
 
@@ -386,7 +385,7 @@ export default function Home() {
                           <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
                         <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
                       </>
                     )}
                   </div>
@@ -423,7 +422,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* PROFIL */}
+              {/* MON PROFIL */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
                    <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
@@ -493,7 +492,7 @@ export default function Home() {
         </>
       )}
 
-      {/* TOAST NOTIFICATIONS */}
+      {/* NOTIFICATIONS (TOASTS) */}
       {toast && (
         <div className="toast" style={{
           background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
