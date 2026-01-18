@@ -44,7 +44,7 @@ export default function Home() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [currentTab, setCurrentTab] = useState('home');
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState('');
@@ -62,7 +62,7 @@ export default function Home() {
   });
 
   const playSound = (type) => {
-    if (!soundEnabled) return;
+    if (isMuted) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
@@ -82,11 +82,11 @@ export default function Home() {
 
   const notify = (t, m, s='info') => { 
     setToast({t, m, s}); if(s==='success') playSound('success');
-    setTimeout(() => setToast(null), 3000); 
+    setTimeout(() => setToast(null), 3500); 
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("SYNCHRONISATION", "Mise à jour Cloud...", "info");
+    if(isSync) notify("SYNCHRONISATION", "Mise à jour en cours...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
@@ -123,15 +123,16 @@ export default function Home() {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
       const j = await r.json();
       if(j.success) { 
-        const m = NOTIF_MESSAGES[action] || { title: "VALIDÉ", msg: "Action transmise" };
+        const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
         if(action === 'sendFactures') {
-            setCart([]);
-            setForms(prev => ({...prev, invoiceNum: ''})); // Reset N° Facture
+          setCart([]);
+          setForms(prev => ({...prev, invoiceNum: ''})); // RESET NUMERO FACTURE
         }
         loadData(); 
-      } else notify("ÉCHEC", j.message, "error");
-    } finally { setSending(false); }
+      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
+    } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
+    finally { setSending(false); }
   };
 
   if (loading && !data) return <div className="sk-wrap"><div className="sk sk-s"></div><div className="sk sk-m"></div></div>;
@@ -143,8 +144,8 @@ export default function Home() {
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; }
-        .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
+        .side { width: 260px; border-right: 1px solid var(--brd); padding: 20px; display: flex; flex-direction: column; background: #000; }
+        .nav-l { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
         .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
         .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #1a1625 0%, #0b0d11 100%); }
@@ -155,13 +156,18 @@ export default function Home() {
         .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
-        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; transform: none; }
+        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
-        .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 15px 0; border: 1px solid var(--brd); position: relative; }
-        .fuel-fill { height: 100%; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); background: var(--p); }
+        .fuel-gauge { width: 100%; height: 14px; background: #000; border-radius: 10px; overflow: hidden; margin: 15px 0; border: 1px solid var(--brd); }
+        .fuel-fill { height: 100%; transition: 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); background: var(--p); }
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
-        .toast { position: fixed; top: 24px; right: 24px; padding: 18px 28px; border-radius: 14px; z-index: 3000; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); min-width: 320px; border-left: 6px solid rgba(255,255,255,0.3); animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
+        .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
+        .sk-s { width: 260px; } .sk-m { flex:1; }
+        .tool-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
+        .icon-tool { background: var(--panel); border: 1px solid var(--brd); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .icon-tool:hover { border-color: var(--p); color: var(--p); }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
       `}</style>
 
       {view === 'login' ? (
@@ -188,44 +194,39 @@ export default function Home() {
               ))}
             </div>
             
-            <div style={{padding: '10px 0', borderTop: '1px solid var(--brd)'}}>
-              <button className="nav-l" onClick={() => setSoundEnabled(!soundEnabled)}>
-                {soundEnabled ? '🔊 Son Activé' : '🔇 Son Coupé'}
-              </button>
-              <button className="nav-l" style={{color: 'var(--p)'}} onClick={() => loadData(true)}>☁️ Sync Cloud</button>
-              <button className="nav-l" onClick={() => window.location.reload()}>🔃 Refresh Page</button>
-              
-              <div style={{marginTop: 15, padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', textAlign:'center'}}>
-                <div style={{fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '5px'}}>AGENT CONNECTÉ</div>
-                <div style={{fontSize: '0.85rem', fontWeight: 800, color: 'var(--p)'}}>{user}</div>
-                <button className="nav-l" onClick={() => setView('login')} style={{color:'#ef4444', justifyContent:'center', marginTop: 10, padding: 5}}>🚪 Déconnexion</button>
+            <div style={{padding: '15px 0', borderTop: '1px solid var(--brd)'}}>
+              {/* BARRE D'ICONES REFRESH / SYNC / MUTE */}
+              <div className="tool-bar">
+                <button className="icon-tool" title="Refresh Page" onClick={() => window.location.reload()}>🔃</button>
+                <button className="icon-tool" title="Sync Data" onClick={() => loadData(true)}>☁️</button>
+                <button className="icon-tool" title="Mute/Unmute" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
+                  {isMuted ? '🔇' : '🔊'}
+                </button>
               </div>
+
+              {/* INFOS AGENT & DECO */}
+              <div style={{background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 12, marginBottom: 10}}>
+                <div style={{fontSize: '0.8rem', fontWeight: 800, color: '#fff'}}>{user}</div>
+                <div style={{fontSize: '0.65rem', color: 'var(--p)', textTransform: 'uppercase'}}>{myProfile?.role || 'Agent'}</div>
+              </div>
+              <button className="nav-l" onClick={()=>setView('login')} style={{color:'#ef4444', justifyContent: 'center'}}>🚪 DÉCONNEXION</button>
             </div>
           </aside>
 
           <main className="main">
             <div className="fade-in">
               {currentTab === 'home' && (
-                <div>
-                   <h1 style={{fontSize: '2.2rem', fontWeight: 900, textAlign:'center', marginBottom: 40}}>Bienvenue, {user} !</h1>
-                   <div style={{display:'grid', gridTemplateColumns: '1fr 1fr', gap: 20, maxWidth: 800, margin: '0 auto 40px'}}>
-                      <div className="card" style={{padding: 30}}>
-                         <div style={{fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800}}>VOTRE CHIFFRE D'AFFAIRES</div>
-                         <div style={{fontSize: '2.5rem', fontWeight: 900, color: 'var(--p)'}}>${myProfile?.ca.toLocaleString()}</div>
-                      </div>
-                      <div className="card" style={{padding: 30}}>
-                         <div style={{fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800}}>VOTRE PRODUCTION</div>
-                         <div style={{fontSize: '2.5rem', fontWeight: 900}}>{myProfile?.stock.toLocaleString()} u.</div>
-                      </div>
-                   </div>
-                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:20}}>
-                   {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
-                     <div key={m.id} className="card" style={{height:150, display:'flex', flexDirection:'column', justifyContent:'center', gap:10}} onClick={()=>setCurrentTab(m.id)}>
-                        <span style={{fontSize:'3rem'}}>{m.e}</span>
-                        <h3 style={{fontSize:'0.9rem', fontWeight:800}}>{m.l}</h3>
-                     </div>
-                   ))}
-                   </div>
+                <div style={{animation: 'slideIn 0.5s ease'}}>
+                  <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                  <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:20}}>
+                     {MODULES.filter(m => m.id !== 'home' && m.id !== 'profile').map(m => (
+                       <div key={m.id} className="card" style={{height:180, display:'flex', flexDirection:'column', justifyContent:'center', gap:15}} onClick={()=>setCurrentTab(m.id)}>
+                          <span style={{fontSize:'3.5rem'}}>{m.e}</span>
+                          <h3 style={{fontSize:'1rem', fontWeight:800}}>{m.l}</h3>
+                       </div>
+                     ))}
+                  </div>
                 </div>
               )}
 
@@ -257,7 +258,6 @@ export default function Home() {
                 </>
               )}
 
-              {/* MODULES CENTRÉS */}
               {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -274,7 +274,7 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ajouter une ligne</button>
+                        <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
                         <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
                       </>
                     )}
@@ -282,7 +282,7 @@ export default function Home() {
                     {currentTab === 'enterprise' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🏢 COMMANDE PRO</h2>
-                        <input className="inp" placeholder="Nom de l'entreprise client" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                        <input className="inp" placeholder="Entreprise cliente" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
                         {forms.enterprise.items.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
@@ -312,22 +312,20 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <div style={{marginTop: 15}}>
-                           <h4 style={{marginBottom: 10, fontSize: '0.8rem', color: 'var(--muted)', textAlign:'center'}}>CHOIX DU MENU</h4>
-                           {forms.partner.items.map((item, i) => (
-                             <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                               <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
+                        <h4 style={{margin: '15px 0 10px', fontSize: '0.9rem', color: 'var(--muted)'}}>SÉLECTION DES MENUS :</h4>
+                        {forms.partner.items.map((item, i) => (
+                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                              <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                               }}>
+                              }}>
                                  {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
-                               </select>
-                               <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
+                              </select>
+                              <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                               }} />
-                             </div>
-                           ))}
-                        </div>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
+                              }} />
+                           </div>
+                        ))}
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER COMMANDE PARTENAIRE</button>
                       </>
                     )}
 
@@ -336,54 +334,38 @@ export default function Home() {
                         <h2 style={{marginBottom:25, textAlign:'center'}}>💳 DÉCLARATION DE FRAIS</h2>
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
-                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        <input className="inp" type="number" placeholder="Montant total ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
                         <button className="btn-p" disabled={sending} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER LES FRAIS</button>
                       </>
                     )}
 
                     {currentTab === 'garage' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🚗 ÉTAT DU GARAGE</h2>
-                        <div style={{display:'flex', flexDirection:'column', gap: 5}}>
-                           <label style={{fontSize:'0.7rem', color: 'var(--muted)', fontWeight: 800}}>VÉHICULE</label>
-                           <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>
-                              {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
-                           </select>
-                           
-                           <label style={{fontSize:'0.7rem', color: 'var(--muted)', fontWeight: 800}}>MOUVEMENT</label>
-                           <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}>
-                              <option>Entrée au garage</option>
-                              <option>Sortie du garage</option>
-                           </select>
-
-                           <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20, fontSize: '0.8rem'}}>
-                              <span>NIVEAU D'ESSENCE</span>
-                              <span style={{color: 'var(--p)'}}>{forms.garage.fuel}%</span>
-                           </div>
-                           <div className="fuel-gauge">
-                              <div className="fuel-fill" style={{width:`${forms.garage.fuel}%`, background: forms.garage.fuel < 20 ? '#ef4444' : 'var(--p)'}}></div>
-                           </div>
-                           <input type="range" style={{width:'100%', accentColor:'var(--p)', cursor:'pointer', marginBottom: 20}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
-                        </div>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER LE VÉHICULE</button>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🚗 GESTION DU GARAGE</h2>
+                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée au garage</option><option>Sortie du garage</option></select>
+                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20}}><span>NIVEAU D'ESSENCE</span><span>{forms.garage.fuel}%</span></div>
+                        <div className="fuel-gauge"><div className="fuel-fill" style={{width:`${forms.garage.fuel}%`, background: forms.garage.fuel < 25 ? '#ef4444' : 'var(--p)'}}></div></div>
+                        <input type="range" style={{width:'100%', accentColor:'var(--p)', marginTop:5}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                        <button className="btn-p" style={{marginTop:35}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER L'ÉTAT DU VÉHICULE</button>
                       </>
                     )}
 
                     {currentTab === 'support' && (
                       <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT TECHNIQUE</h2>
                         <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
                           <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
-                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détaillez votre problème ici..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" disabled={sending} onClick={()=>send('sendSupport', forms.support)}>ENVOYER LA DEMANDE</button>
                       </>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* ANNUAIRE */}
+              {/* ANNUAIRE & PERFORMANCE & PROFIL */}
               {currentTab === 'directory' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
                   {data.employeesFull.map(e => (
@@ -395,52 +377,51 @@ export default function Home() {
                 </div>
               )}
 
-              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1000, margin:'0 auto'}}>
-                  <div className="card" style={{padding:25, textAlign:'left'}}>
-                    <h2 style={{fontSize: '1rem', marginBottom: 20}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h2>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1100, margin:'0 auto'}}>
+                  <div className="card" style={{padding:30, textAlign:'left'}}>
+                    <h2 style={{marginBottom:25, fontSize: '1.2rem'}}>🏆 TOP 10 CA</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
-                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.85rem'}}>
-                            <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                            <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
-                         </div>
-                         <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca/data.employeesFull[0].ca)*100+'%'}}></div></div>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
+                        </div>
+                        <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca/data.employeesFull[0].ca)*100+'%'}}></div></div>
                       </div>
                     ))}
                   </div>
-                  <div className="card" style={{padding:25, textAlign:'left'}}>
-                    <h2 style={{fontSize: '1rem', marginBottom: 20}}>📦 TOP 10 PRODUCTION</h2>
+                  <div className="card" style={{padding:30, textAlign:'left'}}>
+                    <h2 style={{marginBottom:25, fontSize: '1.2rem'}}>📦 TOP 10 PRODUCTION</h2>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
-                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.85rem'}}>
-                            <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                            <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
-                         </div>
-                         <div className="perf-bar" style={{background: 'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background: '#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
+                        </div>
+                        <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* MON PROFIL */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
-                   <div className="form-ui" style={{maxWidth: 600, padding: 50, textAlign:'center'}}>
+                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
+                      <div style={{textAlign:'center', marginBottom: 30}}>
                         <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
                         <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
-                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800, marginBottom: 30}}>{myProfile.role}</p>
-                      
+                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
+                      </div>
                       <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
                          <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
                             <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
-                            <p style={{fontSize: '1.6rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+                            <p style={{fontSize: '1.8rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
                          </div>
                          <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
                             <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 UNITÉS PRODUITES</p>
-                            <p style={{fontSize: '1.6rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+                            <p style={{fontSize: '1.8rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
                          </div>
                       </div>
                       <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
@@ -461,7 +442,7 @@ export default function Home() {
               <div style={{flex:1, overflowY:'auto', padding:'0 15px'}}>
                 {cart.map((i, idx)=>(
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
-                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
+                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu} / u</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
