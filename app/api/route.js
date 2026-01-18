@@ -125,16 +125,29 @@ export async function POST(request) {
             });
         }
 
-        let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` }, color: 0x8b5cf6 };
+        // --- DEBUT DES LOGS ---
+        let embed = { 
+            timestamp: new Date().toISOString(), 
+            footer: { text: `Hen House Management v${APP_VERSION} • Système de facturation` }, 
+            color: 0xff9800 
+        };
 
         switch (action) {
             case 'sendFactures':
+                let invoiceDetails = data.items.map(i => {
+                    const priceUnit = PRICE_LIST[i.desc] || 0;
+                    const subTotal = Number(i.qty) * priceUnit;
+                    return `🔸 **x${i.qty}** ${i.desc} \`(${subTotal}${CURRENCY.symbol})\``;
+                }).join('\n');
+
                 const grandTotal = data.items.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
-                embed.title = `🍽️ Facture N°${data.invoiceNumber || '???'}`;
+                
+                embed.title = `📑 Nouvelle Facture Client n°${data.invoiceNumber || '???'}`;
+                embed.color = 0x5865F2; // Bleu flou
                 embed.fields = [
-                    { name: '👤 Employé', value: data.employee, inline: true },
-                    { name: '💰 Total', value: `**$${grandTotal.toFixed(2)}**`, inline: true },
-                    { name: '📋 Détails', value: data.items.map(i => `• ${i.desc} x${i.qty}`).join('\n') }
+                    { name: '👤 Vendeur', value: `\`${data.employee}\``, inline: true },
+                    { name: '💰 Total Encaissé', value: `**${grandTotal}${CURRENCY.symbol}**`, inline: true },
+                    { name: '🧾 Détail des articles', value: invoiceDetails || 'Aucun article' }
                 ];
                 await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
                 await updateEmployeeStats(data.employee, grandTotal, 'CA');
@@ -142,64 +155,71 @@ export async function POST(request) {
 
             case 'sendProduction':
                 const totalProd = data.items.reduce((s, i) => s + Number(i.qty), 0);
-                embed.title = '📦 Déclaration de Stock';
-                embed.color = 0xe67e22;
+                let prodDetails = data.items.map(i => `🍳 **x${i.qty}** ${i.product}`).join('\n');
+
+                embed.title = '📦 Production Cuisine Terminée';
+                embed.color = 0xE67E22; // Orange
                 embed.fields = [
-                    { name: '👤 Employé', value: data.employee, inline: true },
-                    { name: '📊 Total', value: `**${totalProd}** unités`, inline: true },
-                    { name: '📝 Détails', value: data.items.map(i => `• ${i.product} : ${i.qty}`).join('\n') }
+                    { name: '👤 Cuisinier', value: `\`${data.employee}\``, inline: true },
+                    { name: '📊 Quantité totale', value: `**${totalProd}** unités`, inline: true },
+                    { name: '📝 Liste de production', value: prodDetails || 'Aucune donnée' }
                 ];
                 await sendWebhook(WEBHOOKS.stock, { embeds: [embed] });
                 await updateEmployeeStats(data.employee, totalProd, 'STOCK');
                 break;
 
             case 'sendEntreprise':
-                embed.title = '🏭 Commande Entreprise';
+                let entDetails = data.items.map(i => `🏢 **x${i.qty}** ${i.product}`).join('\n');
+                embed.title = '🚚 Livraison Commande Entreprise';
+                embed.color = 0x9B59B6; // Violet
                 embed.fields = [
-                    { name: '👤 Employé', value: data.employee, inline: true },
-                    { name: '🏢 Société', value: data.company, inline: true },
-                    { name: '📋 Items', value: data.items.map(i => `• ${i.product} x${i.qty}`).join('\n') }
+                    { name: '👤 Livreur', value: `\`${data.employee}\``, inline: true },
+                    { name: '🏢 Client', value: `**${data.company}**`, inline: true },
+                    { name: '📋 Contenu du contrat', value: entDetails || 'Aucun détail' }
                 ];
                 await sendWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
                 break;
 
             case 'sendGarage':
-                embed.title = `🚗 Garage - ${data.action}`;
-                embed.color = data.action === 'Sortie' ? 0x2ecc71 : 0xe74c3c;
+                embed.title = data.action === 'Sortie' ? '🔑 Sortie de Véhicule' : '🅿️ Rangement Véhicule';
+                embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
                 embed.fields = [
-                    { name: '👤 Employé', value: data.employee, inline: true },
-                    { name: '🚗 Véhicule', value: data.vehicle, inline: true },
-                    { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
+                    { name: '👤 Employé', value: `\`${data.employee}\``, inline: true },
+                    { name: '🚗 Véhicule', value: `*${data.vehicle}*`, inline: true },
+                    { name: '⛽ Jauge Essence', value: `**${data.fuel}%**`, inline: true }
                 ];
                 await sendWebhook(WEBHOOKS.garage, { embeds: [embed] });
                 break;
 
             case 'sendExpense':
-                embed.title = `💳 Note de frais — ${data.kind}`;
-                embed.color = 0x95a5a6;
+                embed.title = `💳 Note de Frais : ${data.kind}`;
+                embed.color = 0x95A5A6; // Gris
                 embed.fields = [
-                    { name: '👤 Employé', value: data.employee, inline: true },
-                    { name: '💵 Montant', value: `$${Number(data.amount).toFixed(2)}`, inline: true },
-                    { name: '🚗 Véhicule', value: data.vehicle, inline: true }
+                    { name: '👤 Employé', value: `\`${data.employee}\``, inline: true },
+                    { name: '🚗 Véhicule lié', value: data.vehicle, inline: true },
+                    { name: '💵 Montant réclamé', value: `**${Number(data.amount).toFixed(2)}${CURRENCY.symbol}**`, inline: false }
                 ];
                 await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
                 break;
 
             case 'sendPartnerOrder':
-                embed.title = `🤝 Partenaire - ${data.company}`;
+                let partnerDetails = data.items.map(i => `🍱 **x${i.qty}** ${i.menu}`).join('\n');
+                embed.title = `🤝 Contrat Partenaire : ${data.company}`;
+                embed.color = 0xF1C40F; // Jaune
                 embed.fields = [
-                    { name: '👤 Employé', value: data.employee, inline: true },
-                    { name: '🔑 Bénéficiaire', value: data.beneficiary, inline: true },
-                    { name: '🍱 Menus', value: data.items.map(i => `• ${i.menu} x${i.qty}`).join('\n') }
+                    { name: '👤 Responsable', value: `\`${data.employee}\``, inline: true },
+                    { name: '🔑 Bénéficiaire', value: `**${data.beneficiary}**`, inline: true },
+                    { name: '🍱 Détail Menus', value: partnerDetails || 'Aucun menu' }
                 ];
                 const pWebhook = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
                 await sendWebhook(pWebhook, { embeds: [embed] });
                 break;
 
             case 'sendSupport':
-                embed.title = `🆘 Support — ${data.subject}`;
-                embed.description = data.message;
-                embed.fields = [{ name: '👤 Envoyé par', value: data.employee }];
+                embed.title = `🆘 Ticket Support : ${data.subject}`;
+                embed.color = 0xFF0000; // Rouge pur
+                embed.description = `**Message de l'employé :**\n> ${data.message}`;
+                embed.fields = [{ name: '👤 Auteur du ticket', value: `\`${data.employee}\`` }];
                 await sendWebhook(WEBHOOKS.support, { embeds: [embed] });
                 break;
 
