@@ -86,15 +86,21 @@ export default function Home() {
   };
 
   const loadData = async (isSync = false) => {
-    if(isSync) notify("SYNCHRONISATION", "Actualisation Cloud...", "info");
+    if(isSync) notify("SYNCHRONISATION", "Mise à jour en cours...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
       if(j.success) { 
         setData(j); 
+        const firstComp = Object.keys(j.partners.companies)[0];
+        setForms(f => ({...f, 
+          expense: {...f.expense, vehicle: j.vehicles[0]}, 
+          garage: {...f.garage, vehicle: j.vehicles[0]},
+          partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
+        }));
         if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
-    } catch (e) { notify("ERREUR CLOUD", "Connexion interrompue", "error"); }
+    } catch (e) { notify("ERREUR CLOUD", "Connexion perdue", "error"); }
     finally { setLoading(false); }
   };
 
@@ -120,11 +126,11 @@ export default function Home() {
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
         if(action === 'sendFactures') {
-            setCart([]);
-            setForms(prev => ({...prev, invoiceNum: ''}));
+          setCart([]);
+          setForms(prev => ({...prev, invoiceNum: ''}));
         }
         loadData(); 
-      } else notify("ÉCHEC", j.message || "Erreur", "error");
+      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
@@ -134,15 +140,15 @@ export default function Home() {
   return (
     <div className="app">
       <style jsx global>{`
-        :root { --p: #8b5cf6; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; }
+        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; }
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
         .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; }
         .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
-        .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
+        .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
-        .main { flex: 1; overflow-y: auto; padding: 30px; position: relative; background: radial-gradient(circle at 100% 100%, #1a1625 0%, #0b0d11 100%); }
+        .main { flex: 1; overflow-y: auto; padding: 30px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
         .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
         .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -160,7 +166,7 @@ export default function Home() {
         .icon-tool:hover { border-color: var(--p); color: var(--p); }
         .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
         .fuel-fill { height: 100%; transition: 0.5s; background: var(--p); }
-        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 30px; border-radius: 12px; z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-left: 6px solid rgba(255,255,255,0.2); font-weight: 800; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-left: 6px solid rgba(255,255,255,0.2); font-weight: 800; }
         .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
         .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
         .sk-s { width: 260px; } .sk-m { flex:1; }
@@ -173,7 +179,7 @@ export default function Home() {
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
             <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Qui êtes-vous ?</option>
+              <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
             <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>OUVRIR MA SESSION</button>
@@ -217,14 +223,14 @@ export default function Home() {
                    <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
                    
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
-                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #1e1b4b 100%)'}}>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
                          <div>
                             <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MON CA TOTAL</div>
                             <div style={{fontSize: '2.2rem', fontWeight: 900, color: 'var(--p)'}}>${myProfile?.ca.toLocaleString()}</div>
                          </div>
                       </div>
-                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #064e3b 100%)'}}>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #1a1a1a 100%)'}}>
                          <div style={{fontSize: '3.5rem'}}>📦</div>
                          <div>
                             <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MA PRODUCTION</div>
@@ -233,8 +239,8 @@ export default function Home() {
                       </div>
                    </div>
 
-                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem', letterSpacing: 1}}>VOS OUTILS DE TRAVAIL</h3>
-                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:15}}>
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem', letterSpacing: 1}}>ACCÈS RAPIDE</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
                       {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
                         <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
@@ -301,13 +307,13 @@ export default function Home() {
                     {currentTab === 'enterprise' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🏢 COMMANDE PRO</h2>
-                        <input className="inp" placeholder="Entreprise cliente" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                        <input className="inp" placeholder="Nom de l'entreprise client" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
                         {forms.enterprise.items.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{
+                            <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }} />
                           </div>
@@ -479,7 +485,7 @@ export default function Home() {
               <div style={{padding:25, background:'rgba(0,0,0,0.5)', borderTop:'1px solid var(--brd)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span>TOTAL</span><b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b></div>
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                  {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
+                   {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
                 </button>
               </div>
             </aside>
@@ -487,7 +493,7 @@ export default function Home() {
         </>
       )}
 
-      {/* NOTIFS */}
+      {/* TOAST NOTIFICATIONS */}
       {toast && (
         <div className="toast" style={{
           background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
