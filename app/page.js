@@ -80,15 +80,14 @@ export default function Home() {
       if(j.success) { 
         setData(j); 
         const firstComp = Object.keys(j.partners.companies)[0];
-        setForms(f => ({...f, 
-          expense: {...f.expense, vehicle: j.vehicles[0]}, 
-          garage: {...f.garage, vehicle: j.vehicles[0]},
-          partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
+        setForms(prev => ({...prev, 
+          expense: {...prev.expense, vehicle: j.vehicles[0]}, 
+          garage: {...prev.garage, vehicle: j.vehicles[0]},
+          partner: { ...prev.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
         if(isSync) playSound('success');
       }
-    } catch (e) { notify("Erreur", "Connexion perdue", "error"); }
-    finally { setLoading(false); }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -122,43 +121,43 @@ export default function Home() {
   return (
     <div className="app">
       <style jsx global>{`
-        :root { --p: #8b5cf6; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; }
+        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; }
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; }
+        .side { width: 260px; border-right: 1px solid var(--brd); padding: 20px; display: flex; flex-direction: column; background: #000; }
         .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; font-size: 0.85rem; margin-bottom: 2px; }
-        .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); }
+        .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); }
-        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #1a1625 0%, #0b0d11 100%); }
+        .main { flex: 1; overflow-y: auto; padding: 24px; position: relative; background: radial-gradient(circle at 100% 100%, #2a1b0a 0%, #0b0d11 100%); }
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
+        .form-ui { width: 100%; max-width: 580px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
-        .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
-        .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80%; }
-        .form-ui { width: 100%; max-width: 550px; background: rgba(22, 25, 32, 0.6); backdrop-filter: blur(12px); padding: 40px; border-radius: 30px; border: 1px solid var(--brd); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .card { background: var(--panel); border: 1px solid var(--brd); padding: 10px; border-radius: 18px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .card:hover { border-color: var(--p); transform: translateY(-3px); }
         .inp { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; }
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
         .cart { width: 380px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
-        .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
-        .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
-        .sk-s { width: 260px; } .sk-m { flex:1; }
         .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
-        .fuel-fill { height: 100%; transition: 0.5s; }
-        .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
+        .fuel-fill { height: 100%; transition: 0.5s; background: var(--p); }
+        .qty-inp { width: 50px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; }
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); }
+        .sk-wrap { display: flex; height: 100vh; gap: 20px; padding: 20px; }
+        .sk { background: #1a1a1a; border-radius: 20px; animation: pulse 1.5s infinite; }
+        .sk-s { width: 240px; } .sk-m { flex:1; }
       `}</style>
 
       {view === 'login' ? (
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
-            <h1 style={{marginBottom:30}}>BIENVENUE</h1>
+            <h1 style={{marginBottom:30}}>HEN HOUSE</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Qui êtes-vous ?</option>
+              <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>OUVRIR MA SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}}>LANCER SESSION</button>
           </div>
         </div>
       ) : (
@@ -172,7 +171,6 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            
             <div style={{padding: '10px 0', borderTop: '1px solid var(--brd)'}}>
               <button className="nav-l" style={{color: 'var(--p)'}} onClick={() => loadData(true)}>☁️ Sync Cloud</button>
               <button className="nav-l" onClick={() => window.location.reload()}>🔃 Refresh Page</button>
@@ -182,7 +180,7 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
-              {/* ACCUEIL */}
+              {/* TABLEAU DE BORD */}
               {currentTab === 'home' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
                    {MODULES.filter(m => m.id !== 'home').map(m => (
@@ -198,7 +196,7 @@ export default function Home() {
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
-                    <input className="inp" placeholder="🔍 Rechercher un plat..." style={{flex:1, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
+                    <input className="inp" placeholder="🔍 Rechercher..." style={{flex:1, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
                     <select className="inp" style={{width:180, marginBottom:0}} onChange={e=>setCatFilter(e.target.value)}>
                       <option>Tous</option>
                       {Object.keys(data.productsByCategory).map(c=><option key={c}>{c}</option>)}
@@ -223,8 +221,8 @@ export default function Home() {
                 </>
               )}
 
-              {/* FORMULAIRES CENTRÉS (STOCK, ENTREPRISE, PARTENAIRES, GARAGE, FRAIS, SUPPORT) */}
-              {['stock', 'enterprise', 'partners', 'garage', 'expenses', 'support'].includes(currentTab) && (
+              {/* MODULES CENTRÉS */}
+              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
@@ -241,7 +239,7 @@ export default function Home() {
                           </div>
                         ))}
                         <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', margin:'10px 0 20px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
-                        <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>DÉCLARER PRODUCTION</button>
+                        <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
                       </>
                     )}
 
@@ -259,7 +257,7 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER COMMANDE</button>
+                        <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
                       </>
                     )}
 
@@ -278,20 +276,22 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '10px 0'}}>Menu Partenaire</h4>
-                        {forms.partner.items.map((item, i) => (
-                           <div key={i} style={{display:'flex', gap:10}}>
-                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
+                        <div style={{marginTop: 15}}>
+                           <h4 style={{marginBottom: 10, fontSize: '0.8rem', color: 'var(--muted)'}}>Menus disponibles :</h4>
+                           {forms.partner.items.map((item, i) => (
+                             <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                               <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                              }}>
+                               }}>
                                  {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
-                              </select>
-                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
+                               </select>
+                               <input type="number" className="inp" style={{width:80, marginBottom:0}} value={item.qty} onChange={e=>{
                                  const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                              }} />
-                           </div>
-                        ))}
-                        <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER COMMANDE</button>
+                               }} />
+                             </div>
+                           ))}
+                        </div>
+                        <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                       </>
                     )}
 
@@ -323,7 +323,7 @@ export default function Home() {
                           <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
                         </select>
                         <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER AU PATRON</button>
+                        <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
                       </>
                     )}
                   </div>
@@ -344,9 +344,9 @@ export default function Home() {
 
               {/* PERFORMANCE */}
               {currentTab === 'performance' && (
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30, maxWidth:1100, margin:'0 auto'}}>
-                  <div className="card" style={{padding:25, textAlign:'left'}}>
-                    <h2 style={{marginBottom:20}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h2>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:25, maxWidth:1100, margin:'0 auto'}}>
+                  <div className="card" style={{padding:30, textAlign:'left'}}>
+                    <h3 style={{marginBottom:25}}>🏆 TOP 10 CHIFFRE D'AFFAIRES</h3>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
@@ -357,8 +357,8 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <div className="card" style={{padding:25, textAlign:'left'}}>
-                    <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
+                  <div className="card" style={{padding:30, textAlign:'left'}}>
+                    <h3 style={{marginBottom:25}}>📦 TOP 10 PRODUCTION</h3>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
@@ -410,7 +410,7 @@ export default function Home() {
               <div style={{flex:1, overflowY:'auto', padding:'0 15px'}}>
                 {cart.map((i, idx)=>(
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
-                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
+                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu} / u</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
@@ -427,7 +427,7 @@ export default function Home() {
           )}
         </>
       )}
-      {toast && <div className="toast" style={{position:'fixed', top:20, right:20, background: toast.s === 'error' ? '#ef4444' : '#8b5cf6', padding:'15px 30px', borderRadius:12, zIndex:2000}}><b>{toast.t.toUpperCase()}</b> : {toast.m}</div>}
+      {toast && <div className="toast" style={{position:'fixed', top:20, right:20, background: toast.s === 'error' ? '#ef4444' : '#ff9800', padding:'15px 30px', borderRadius:12, zIndex:2000}}><b>{toast.t.toUpperCase()}</b> : {toast.m}</div>}
     </div>
   );
 }
