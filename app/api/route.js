@@ -8,6 +8,15 @@ import { NextResponse } from 'next/server';
 const APP_VERSION = '2026.01.19';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
+// Configuration des catégories pour éviter la page blanche au chargement
+const PRODUCTS_CAT = {
+    plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
+    desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
+    boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
+    menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
+    alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Cidre','Gin Fizz Citron','Bouteille de Champagne','Verre de rosé','Verre de Champomax']
+};
+
 const WEBHOOKS = {
     factures:   'https://discord.com/api/webhooks/1412851967314759710/wkYvFM4ek4ZZHoVw_t5EPL9jUv7_mkqeLJzENHw6MiGjHvwRknAHhxPOET9y-fc1YDiG',
     stock:      'https://discord.com/api/webhooks/1389343371742412880/3OGNAmoMumN5zM2Waj8D2f05gSuilBi0blMMW02KXOGLNbkacJs2Ax6MYO4Menw19dJy',
@@ -84,7 +93,7 @@ export async function POST(request) {
         const body = await request.json().catch(() => ({}));
         const { action, data } = body;
 
-        // --- SYNC / INIT ---
+        // --- SYNC / INIT (C'est ici qu'on renvoie les données pour la Caisse et le Stock) ---
         if (!action || action === 'getMeta' || action === 'syncData') {
             let employeesFull = [];
             try {
@@ -100,13 +109,16 @@ export async function POST(request) {
                     phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
                     ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
                 }));
-            } catch (err) { console.error("Erreur Meta:", err.message); }
+            } catch (err) { console.error("Erreur lecture Sheets:", err.message); }
 
+            // ON RENVOIE TOUT CE DONT LE FRONTEND A BESOIN
             return NextResponse.json({
                 success: true,
                 version: APP_VERSION,
                 employees: employeesFull.map(e => e.name),
                 employeesFull,
+                products: Object.values(PRODUCTS_CAT).flat(), // Liste à plat de tous les noms
+                productsByCategory: PRODUCTS_CAT,           // Objet complet par catégorie
                 prices: PRICE_LIST,
                 vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
                 partners: PARTNERS,
@@ -124,14 +136,17 @@ export async function POST(request) {
         switch (action) {
             case 'sendFactures':
                 const grandTotal = data.items?.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0) || 0;
-                let invoiceLines = data.items?.map(i => `🔸 **x${i.qty}** ${i.desc} \`(${Number(i.qty) * (PRICE_LIST[i.desc] || 0)}${CURRENCY.symbol})\``).join('\n');
+                let invoiceLines = data.items?.map(i => {
+                    const linePrice = Number(i.qty) * (PRICE_LIST[i.desc] || 0);
+                    return `🔸 **x${i.qty}** ${i.desc} \`(${linePrice}${CURRENCY.symbol})\``;
+                }).join('\n');
                 
                 embed.title = `📑 Nouvelle Facture Client n°${data.invoiceNumber || '???'}`;
                 embed.color = 0x5865F2;
                 embed.fields = [
                     { name: '👤 Vendeur', value: `\`${data.employee}\``, inline: true },
                     { name: '💰 Total Encaissé', value: `**${grandTotal}${CURRENCY.symbol}**`, inline: true },
-                    { name: '🧾 Détails', value: invoiceLines || 'Aucun article' }
+                    { name: '🧾 Détail des articles', value: invoiceLines || 'Aucun article' }
                 ];
                 await sendWebhook(WEBHOOKS.factures, { embeds: [embed] });
                 await updateEmployeeStats(data.employee, grandTotal, 'CA');
@@ -174,7 +189,7 @@ export async function POST(request) {
                 break;
 
             case 'sendExpense':
-                embed.title = `💳 Frais : ${data.kind}`;
+                embed.title = `💳 Note de Frais : ${data.kind}`;
                 embed.fields = [
                     { name: '👤 Employé', value: `\`${data.employee}\``, inline: true },
                     { name: '🚗 Véhicule', value: data.vehicle || 'N/A', inline: true },
@@ -191,7 +206,7 @@ export async function POST(request) {
                     { name: '👤 Responsable', value: `\`${data.employee}\``, inline: true },
                     { name: '🔑 Bénéficiaire', value: `**${data.benef || 'Non spécifié'}**`, inline: true },
                     { name: '🧾 N° Facture', value: `\`${data.num || '???'}\``, inline: true },
-                    { name: '🍱 Menus', value: partLines || 'Vide' }
+                    { name: '🍱 Détail Menus', value: partLines || 'Vide' }
                 ];
                 const pWebhook = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
                 await sendWebhook(pWebhook, { embeds: [embed] });
