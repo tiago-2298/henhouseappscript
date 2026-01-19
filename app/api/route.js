@@ -57,7 +57,7 @@ async function sendWebhook(url, payload) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
-        if (!amount || amount <= 0) return;
+        if (!employeeName || !amount || amount <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
         const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
@@ -66,10 +66,11 @@ async function updateEmployeeStats(employeeName, amount, type) {
         if (rowIndex === -1) return;
         const realRow = rowIndex + 2;
         const cell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-        const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'Employés'!${cell}`, valueRenderOption: 'UNFORMATTED_VALUE' });
+        const targetRange = `'Employés'!${cell}`;
+        const cellRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' });
         const currentVal = Number(cellRes.data.values?.[0]?.[0] || 0);
         await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId, range: `'Employés'!${cell}`, valueInputOption: 'RAW',
+            spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
     } catch (e) { console.error("Erreur Sheets:", e); }
@@ -97,10 +98,11 @@ export async function POST(request) {
                     phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
                     ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
                 }));
-            } catch (err) { console.error("Erreur Meta:", err.message); }
+            } catch (err) { console.error("Erreur lecture Sheets:", err.message); }
 
             return NextResponse.json({
                 success: true,
+                version: APP_VERSION,
                 employees: employeesFull.map(e => e.name),
                 employeesFull,
                 prices: PRICE_LIST,
@@ -109,7 +111,8 @@ export async function POST(request) {
             });
         }
 
-        // --- CONFIG EMBED DISCORD ---
+        if (!data) return NextResponse.json({ success: false, message: "Données manquantes" }, { status: 400 });
+
         let embed = { 
             timestamp: new Date().toISOString(), 
             footer: { text: `Hen House Management v${APP_VERSION} • Système Automatisé` }, 
@@ -118,8 +121,8 @@ export async function POST(request) {
 
         switch (action) {
             case 'sendFactures':
-                const grandTotal = data.items.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
-                let invoiceLines = data.items.map(i => {
+                const grandTotal = data.items?.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0) || 0;
+                let invoiceLines = data.items?.map(i => {
                     const linePrice = Number(i.qty) * (PRICE_LIST[i.desc] || 0);
                     return `🔸 **x${i.qty}** ${i.desc} \`(${linePrice}${CURRENCY.symbol})\``;
                 }).join('\n');
@@ -136,8 +139,8 @@ export async function POST(request) {
                 break;
 
             case 'sendProduction':
-                const totalProd = data.items.reduce((s, i) => s + Number(i.qty), 0);
-                let prodLines = data.items.map(i => `🍳 **x${i.qty}** ${i.product}`).join('\n');
+                const totalProd = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
+                let prodLines = data.items?.map(i => `🍳 **x${i.qty}** ${i.product}`).join('\n');
                 embed.title = '📦 Déclaration de Stock Cuisine';
                 embed.fields = [
                     { name: '👤 Cuisinier', value: `\`${data.employee}\``, inline: true },
@@ -149,7 +152,7 @@ export async function POST(request) {
                 break;
 
             case 'sendEntreprise':
-                let entLines = data.items.map(i => `🏢 **x${i.qty}** ${i.product}`).join('\n');
+                let entLines = data.items?.map(i => `🏢 **x${i.qty}** ${i.product}`).join('\n');
                 embed.title = '🚚 Livraison Commande Entreprise';
                 embed.color = 0x9B59B6;
                 embed.fields = [
@@ -175,14 +178,14 @@ export async function POST(request) {
                 embed.title = `💳 Note de Frais : ${data.kind}`;
                 embed.fields = [
                     { name: '👤 Employé', value: `\`${data.employee}\``, inline: true },
-                    { name: '🚗 Véhicule', value: data.vehicle, inline: true },
+                    { name: '🚗 Véhicule', value: data.vehicle || 'N/A', inline: true },
                     { name: '💵 Montant', value: `**${data.amount}${CURRENCY.symbol}**`, inline: false }
                 ];
                 await sendWebhook(WEBHOOKS.expenses, { embeds: [embed] });
                 break;
 
             case 'sendPartnerOrder':
-                let partLines = data.items.map(i => `🍱 **x${i.qty}** ${i.menu}`).join('\n');
+                let partLines = data.items?.map(i => `🍱 **x${i.qty}** ${i.menu}`).join('\n');
                 embed.title = `🤝 Contrat Partenaire : ${data.company}`;
                 embed.color = 0xF1C40F;
                 embed.fields = [
