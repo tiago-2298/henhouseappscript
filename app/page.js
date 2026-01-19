@@ -242,7 +242,7 @@ export default function Home() {
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
             <img src="https://i.goopics.net/dskmxi.png" height="100" style={{marginBottom:30}} />
-            <h1 style={{marginBottom:30}}>AUTHENTIFICATION</h1>
+            <h1 style={{marginBottom:30}}>Mon Espace</h1>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
               <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
@@ -559,4 +559,5 @@ export default function Home() {
     </div>
   );
 }
+
 
