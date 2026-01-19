@@ -438,28 +438,44 @@ export default function Home() {
                       </>
                     )}
 
-                    {currentTab === 'profile' && myProfile && (
-                      <div style={{textAlign:'center'}}>
-                        <div style={{width:120, height:120, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
-                        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
-                        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800, marginBottom: 30}}>{myProfile.role}</p>
-                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 30}}>
-                           <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
-                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
-                           </div>
-                           <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
-                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
-                           </div>
-                        </div>
-                        <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
-                          <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
-                          <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> {myProfile.id}</p>
-                          <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
-                        </div>
-                      </div>
-                    )}
+                   {/* PROFIL */}
+{currentTab === 'profile' && myProfile && (
+  <div className="center-box">
+    <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
+      <div style={{textAlign:'center', marginBottom: 30}}>
+        <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
+        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
+        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
+      </div>
+      
+      {/* GRILLE DES STATISTIQUES */}
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 20}}>
+          <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
+            <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+          </div>
+          <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
+            <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+          </div>
+      </div>
+
+      {/* CARTE SALAIRE (NOUVEAU) */}
+      <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(18,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 20}}>
+          <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
+          <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
+          <p style={{fontSize: '0.7rem', opacity: 0.6, marginTop: 5}}>Basé sur tes ventes et ta production actuelle</p>
+      </div>
+
+      {/* INFOS COMPLÉMENTAIRES */}
+      <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
+        <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
+        <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
+        <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
+      </div>
+    </div>
+  </div>
+)}
 
                     {currentTab === 'support' && (
                       <>
@@ -559,5 +575,6 @@ export default function Home() {
     </div>
   );
 }
+
 
 
