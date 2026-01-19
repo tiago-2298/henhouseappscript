@@ -455,7 +455,7 @@ export default function Home() {
                         </div>
                         <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
                           <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
-                          <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
+                          <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> {myProfile.id}</p>
                           <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
                         </div>
                       </div>
@@ -559,3 +559,4 @@ export default function Home() {
     </div>
   );
 }
+
