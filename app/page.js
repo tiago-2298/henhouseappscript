@@ -140,7 +140,7 @@ export default function Home() {
     reader.readAsDataURL(file);
   };
 
-  // --- GESTION DU CTRL+V (PASTE) ---
+  // --- CTRL+V ---
   useEffect(() => {
     const handlePaste = (event) => {
       if (currentTab !== 'expenses') return;
@@ -149,13 +149,13 @@ export default function Home() {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
           handleFileChange(blob);
-          notify("📸 CAPTURE DÉTECTÉE", "L'image collée a été ajoutée.", "success");
+          notify("📸 CAPTURE DÉTECTÉE", "Image ajoutée.", "success");
         }
       }
     };
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [currentTab, forms]);
+  }, [currentTab]);
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -357,6 +357,15 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
+                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
+                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
+                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
+                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                        </div>
+                      ))}
+                   </div>
                 </div>
               )}
 
@@ -426,7 +435,7 @@ export default function Home() {
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
                            {forms.expense.file ? (
                              <div>
-                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>PREUVE CHARGÉE</div>
+                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>IMAGE CHARGÉE</div>
                                <img src={forms.expense.file} className="dz-preview" />
                                <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V pour coller une autre image</div>
                              </div>
@@ -479,17 +488,6 @@ export default function Home() {
                         </div>
                       </div>
                     )}
-                    
-                    {currentTab === 'support' && (
-                      <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
-                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
-                          <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
-                        </select>
-                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
-                      </>
-                    )}
                   </div>
                 </div>
               )}
@@ -505,6 +503,19 @@ export default function Home() {
                            <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
                         </div>
                         <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca/data.employeesFull[0].ca)*100+'%'}}></div></div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* TOP STOCK RÉINTÉGRÉ ICI */}
+                  <div className="card" style={{padding:25, textAlign:'left'}}>
+                    <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
+                    {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
+                      <div key={i} style={{marginBottom: 15}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
+                        </div>
+                        <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
                       </div>
                     ))}
                   </div>
