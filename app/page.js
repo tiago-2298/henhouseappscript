@@ -155,7 +155,7 @@ export default function Home() {
     };
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [currentTab]);
+  }, [currentTab, forms]);
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -280,7 +280,6 @@ export default function Home() {
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
 
-        /* DROPZONE STYLE */
         .dropzone {
           border: 2px dashed var(--brd);
           border-radius: 15px;
@@ -292,7 +291,6 @@ export default function Home() {
           margin-bottom: 20px;
         }
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .dropzone:hover { border-color: var(--p); }
         .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; margin-top: 10px; }
       `}</style>
 
@@ -339,9 +337,12 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
+              {/* TABLEAU DE BORD */}
               {currentTab === 'home' && (
                 <div style={{animation: 'slideIn 0.5s ease'}}>
                    <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
+                   
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
@@ -358,9 +359,20 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
+
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
+                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
+                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
+                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
+                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                        </div>
+                      ))}
+                   </div>
                 </div>
               )}
 
+              {/* CAISSE */}
               {currentTab === 'invoices' && (
                 <>
                   <div style={{display:'flex', gap:10, marginBottom:25}}>
@@ -372,7 +384,7 @@ export default function Home() {
                   </div>
                   <div className="grid">
                     {data.products.filter(p => (catFilter==='Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p=>(
-                      <div key={p} className="card" onClick={()=>{
+                      <div key={p} className={`card ${cart.some(i=>i.name===p)?'sel':''}`} onClick={()=>{
                         playSound('click'); 
                         const ex = cart.find(x=>x.name===p);
                         if(ex) setCart(cart.map(x=>x.name===p?{...x, qty:x.qty+1}:x));
@@ -389,6 +401,7 @@ export default function Home() {
                 </>
               )}
 
+              {/* MODULES CENTRÉS */}
               {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'profile', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -443,6 +456,19 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
+                        {/* LISTE DES MENUS PARTENAIRES */}
+                        {forms.partner.items.map((item, idx) => (
+                           <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
+                             <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
+                               const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                             }}>
+                               {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
+                             </select>
+                             <input type="number" className="qty-inp" style={{height:45}} value={item.qty} onChange={e=>{
+                               const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                             }} />
+                           </div>
+                        ))}
                         <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                       </>
                     )}
@@ -454,6 +480,7 @@ export default function Home() {
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
                         
+                        {/* DROPZONE INTERACTIVE */}
                         <div 
                            className={`dropzone ${dragActive ? 'active' : ''}`}
                            onDragOver={e => { e.preventDefault(); setDragActive(true); }}
@@ -477,9 +504,7 @@ export default function Home() {
                            )}
                         </div>
 
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>
-                          {sending ? "ENVOI EN COURS..." : "DÉCLARER AVEC PREUVE"}
-                        </button>
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER AVEC PREUVE</button>
                       </>
                     )}
 
@@ -515,6 +540,7 @@ export default function Home() {
                           <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(18,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 20}}>
                               <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
                               <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
+                              <p style={{fontSize: '0.7rem', opacity: 0.6, marginTop: 5}}>Basé sur tes ventes et ta production actuelle</p>
                           </div>
                           <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
                             <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
@@ -539,6 +565,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30, maxWidth:1100, margin:'0 auto'}}>
                   <div className="card" style={{padding:25, textAlign:'left'}}>
@@ -568,6 +595,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* ANNUAIRE */}
               {currentTab === 'directory' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
                   {data.employeesFull.map(e => (
@@ -581,6 +609,7 @@ export default function Home() {
             </div>
           </main>
 
+          {/* PANIER */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
