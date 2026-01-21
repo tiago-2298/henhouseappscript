@@ -108,11 +108,38 @@ export default function Home() {
 
   const [forms, setForms] = useState(initialForms);
 
-  const handleFile = (file) => {
+  // --- FONCTION DE COMPRESSION ---
+  const compressImage = (base64Str) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const MAX_SIZE = 1200; // On limite à 1200px max
+
+        if (width > height) {
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Qualité 70% pour réduire le poids
+      };
+    });
+  };
+
+  const handleFile = async (file) => {
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setForms({ ...forms, expense: { ...forms.expense, file: reader.result } });
+      reader.onloadend = async () => {
+        const compressed = await compressImage(reader.result);
+        setForms({ ...forms, expense: { ...forms.expense, file: compressed } });
         playSound('success');
       };
       reader.readAsDataURL(file);
@@ -202,7 +229,7 @@ export default function Home() {
         }
 
         loadData(); 
-      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
+      } else notify("ÉCHEC ENVOI", j.message || "Erreur serveur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
@@ -244,7 +271,6 @@ export default function Home() {
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
 
-        /* DROPZONE STYLES */
         .drop-zone {
           border: 2px dashed var(--brd);
           border-radius: 15px;
@@ -389,7 +415,6 @@ export default function Home() {
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
                         
-                        {/* STYLE DROPZONE */}
                         <div 
                           className={`drop-zone ${dragActive ? 'active' : ''}`}
                           onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -449,17 +474,6 @@ export default function Home() {
                             </div>
                         </div>
                       </div>
-                    )}
-
-                    {currentTab === 'support' && (
-                      <>
-                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
-                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
-                          <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
-                        </select>
-                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
-                      </>
                     )}
                   </div>
                 </div>
