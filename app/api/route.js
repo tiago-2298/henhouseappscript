@@ -105,7 +105,7 @@ export async function POST(request) {
         const body = await request.json().catch(() => ({}));
         const { action, data } = body;
 
-        if (!action || action === 'getMeta') {
+        if (!action || action === 'getMeta' || action === 'syncData') {
             const sheets = await getAuthSheets();
             const resFull = await sheets.spreadsheets.values.get({ 
                 spreadsheetId: process.env.GOOGLE_SHEET_ID, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
