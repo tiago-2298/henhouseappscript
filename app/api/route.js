@@ -69,23 +69,22 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
             for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
             formData.append('file', blob, 'preuve.jpg');
             formData.append('payload_json', JSON.stringify(payload));
             await fetch(url, { method: 'POST', body: formData });
         } else {
             await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         }
-    } catch (e) { console.error("API error:", e); }
+    } catch (e) { console.error("Webhook error:", e); }
 }
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
-        if (!employeeName || !amount || amount <= 0) return;
+        if (!employeeName || !amount) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
-        const listRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
-        const rows = listRes.data.values || [];
+        const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
+        const rows = res.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
         if (rowIndex === -1) return;
         const realRow = rowIndex + 2;
@@ -96,7 +95,7 @@ async function updateEmployeeStats(employeeName, amount, type) {
             spreadsheetId: sheetId, range: `'Employés'!${cell}`, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
-    } catch (e) { console.error("Sheets error:", e); }
+    } catch (e) {}
 }
 
 export async function POST(request) {
@@ -105,32 +104,22 @@ export async function POST(request) {
         const { action, data } = body;
 
         if (!action || action === 'getMeta' || action === 'syncData') {
-            let employeesFull = [];
-            try {
-                const sheets = await getAuthSheets();
-                const resFull = await sheets.spreadsheets.values.get({ 
-                    spreadsheetId: process.env.GOOGLE_SHEET_ID, 
-                    range: "'Employés'!A2:I200", 
-                    valueRenderOption: 'UNFORMATTED_VALUE' 
-                });
-                const rows = resFull.data.values || [];
-                employeesFull = rows.filter(r => r[1]).map(r => ({
-                    id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
-                    phone: String(r[3] ?? ''), arrival: String(r[4] ?? ''), seniority: Number(r[5] ?? 0),
-                    ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0), salary: Number(r[8] ?? 0),
-                }));
-            } catch (err) {}
-
+            const sheets = await getAuthSheets();
+            const resFull = await sheets.spreadsheets.values.get({ 
+                spreadsheetId: process.env.GOOGLE_SHEET_ID, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
+            });
+            const rows = resFull.data.values || [];
+            const employeesFull = rows.filter(r => r[1]).map(r => ({
+                id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
+                phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
+                salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
+            }));
             return NextResponse.json({
-                success: true,
-                version: APP_VERSION,
-                employees: employeesFull.map(e => e.name),
-                employeesFull,
-                products: Object.values(PRODUCTS_CAT).flat(),
-                productsByCategory: PRODUCTS_CAT,
-                prices: PRICE_LIST,
+                success: true, version: APP_VERSION,
+                employees: employeesFull.map(e => e.name), employeesFull,
+                products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
+                prices: PRICE_LIST, partners: PARTNERS,
                 vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
-                partners: PARTNERS,
             });
         }
 
@@ -138,90 +127,78 @@ export async function POST(request) {
 
         switch (action) {
             case 'sendFactures':
-                const grandTotal = data.items?.reduce((acc, i) => acc + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0) || 0;
-                embed.title = `📑 Nouvelle Facture Client n°${data.invoiceNumber || '???'}`;
-                embed.color = 0x5865F2;
+                const totalFact = data.items?.reduce((a, i) => a + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
+                embed.title = `📑 Vente de ${data.employee}`;
                 embed.fields = [
-                    { name: '👤 Vendeur', value: `\`${data.employee}\``, inline: true },
-                    { name: '💰 Total', value: `**${grandTotal}${CURRENCY.symbol}**`, inline: true },
-                    { name: '🧾 Articles', value: data.items?.map(i => `🔸 **x${i.qty}** ${i.desc}`).join('\n') || 'Aucun article' }
+                    { name: '🧾 Facture n°', value: `\`${data.invoiceNumber}\``, inline: true },
+                    { name: '💰 Total', value: `**${totalFact}${CURRENCY.symbol}**`, inline: true },
+                    { name: '📋 Articles', value: data.items?.map(i => `🔸 x${i.qty} ${i.desc}`).join('\n') }
                 ];
                 await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
-                await updateEmployeeStats(data.employee, grandTotal, 'CA');
+                await updateEmployeeStats(data.employee, totalFact, 'CA');
                 break;
 
             case 'sendProduction':
-                const totalProd = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
-                embed.title = '📦 Production Cuisine';
+                const tProd = data.items?.reduce((s, i) => s + Number(i.qty), 0);
+                embed.title = `📦 Production de ${data.employee}`;
                 embed.fields = [
-                    { name: '👤 Cuisinier', value: `\`${data.employee}\``, inline: true },
-                    { name: '📊 Total', value: `**${totalProd}** unités`, inline: true },
-                    { name: '📝 Liste', value: data.items?.map(i => `🍳 **x${i.qty}** ${i.product}`).join('\n') || 'Vide' }
+                    { name: '📊 Total', value: `**${tProd}** unités`, inline: true },
+                    { name: '🍳 Liste', value: data.items?.map(i => `🍳 x${i.qty} ${i.product}`).join('\n') }
                 ];
                 await sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] });
-                await updateEmployeeStats(data.employee, totalProd, 'STOCK');
+                await updateEmployeeStats(data.employee, tProd, 'STOCK');
                 break;
 
             case 'sendEntreprise':
-                embed.title = '🚚 Livraison Entreprise';
-                embed.color = 0x9B59B6;
+                embed.title = `🚚 Livraison Pro de ${data.employee}`;
                 embed.fields = [
-                    { name: '👤 Livreur', value: `\`${data.employee}\``, inline: true },
-                    { name: '🏢 Client', value: `**${data.company || 'N/A'}**`, inline: true },
-                    { name: '📋 Détails', value: data.items?.map(i => `🏢 **x${i.qty}** ${i.product}`).join('\n') || 'Vide' }
+                    { name: '🏢 Client', value: `**${data.company}**`, inline: true },
+                    { name: '📋 Détails', value: data.items?.map(i => `🏢 x${i.qty} ${i.product}`).join('\n') }
                 ];
                 await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
                 break;
 
-            case 'sendGarage':
-                embed.title = data.action === 'Sortie' ? '🔑 Sortie Véhicule' : '🅿️ Rangement Véhicule';
-                embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
-                embed.fields = [
-                    { name: '👤 Employé', value: `\`${data.employee}\``, inline: true },
-                    { name: '🚗 Véhicule', value: `*${data.vehicle}*`, inline: true },
-                    { name: '⛽ Essence', value: `**${data.fuel}%**`, inline: true }
-                ];
-                await sendDiscordWebhook(WEBHOOKS.garage, { embeds: [embed] });
-                break;
-
             case 'sendExpense':
-                embed.title = `💳 Note de Frais : ${data.kind}`;
+                embed.title = `💳 Frais déclaré par ${data.employee}`;
                 embed.fields = [
-                    { name: '👤 Employé', value: `\`${data.employee}\``, inline: true },
+                    { name: '🛠️ Type', value: data.kind, inline: true },
                     { name: '🚗 Véhicule', value: data.vehicle || 'N/A', inline: true },
-                    { name: '💵 Montant', value: `**${data.amount}${CURRENCY.symbol}**`, inline: false }
+                    { name: '💵 Montant', value: `**${data.amount}${CURRENCY.symbol}**` }
                 ];
                 if (data.file) embed.image = { url: 'attachment://preuve.jpg' };
                 await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file);
                 break;
 
-            case 'sendPartnerOrder':
-                embed.title = `🤝 Contrat Partenaire : ${data.company}`;
-                embed.color = 0xF1C40F;
+            case 'sendGarage':
+                embed.title = data.action === 'Sortie' ? `🔑 Sortie par ${data.employee}` : `🅿️ Entrée par ${data.employee}`;
+                embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
                 embed.fields = [
-                    { name: '👤 Responsable', value: `\`${data.employee}\``, inline: true },
-                    { name: '🔑 Bénéficiaire', value: `**${data.benef}**`, inline: true },
-                    { name: '🧾 N° Facture', value: `\`${data.num}\``, inline: true },
+                    { name: '🚗 Véhicule', value: `**${data.vehicle}**`, inline: true },
+                    { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
+                ];
+                await sendDiscordWebhook(WEBHOOKS.garage, { embeds: [embed] });
+                break;
+
+            case 'sendPartnerOrder':
+                embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
+                embed.fields = [
+                    { name: '🏢 Entreprise', value: data.company, inline: true },
+                    { name: '🔑 Client', value: data.benef, inline: true },
+                    { name: '🧾 Facture', value: `\`${data.num}\`` },
                     { name: '🍱 Détail', value: data.items?.map(i => `🍱 x${i.qty} ${i.menu}`).join('\n') }
                 ];
-                const pWebhook = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
-                await sendDiscordWebhook(pWebhook, { embeds: [embed] });
+                const pW = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
+                await sendDiscordWebhook(pW, { embeds: [embed] });
                 break;
 
             case 'sendSupport':
-                embed.title = `🆘 Ticket Support : ${data.sub}`;
-                embed.color = 0xFF0000;
-                embed.description = `**Message :**\n> ${data.msg}`;
-                embed.fields = [{ name: '👤 Auteur', value: `\`${data.employee}\`` }];
+                embed.title = `🆘 Ticket de ${data.employee}`;
+                embed.fields = [{ name: '📌 Sujet', value: data.sub }];
+                embed.description = `**Message :**\n${data.msg}`;
                 await sendDiscordWebhook(WEBHOOKS.support, { embeds: [embed] });
                 break;
-
-            default:
-                return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
         }
-
         return NextResponse.json({ success: true });
-
     } catch (err) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
