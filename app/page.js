@@ -121,7 +121,7 @@ export default function Home() {
         canvas.height = img.height * scale;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compression à 70%
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
       };
     });
   };
@@ -134,11 +134,28 @@ export default function Home() {
     const reader = new FileReader();
     reader.onloadend = async () => {
         const compressed = await compressImage(reader.result);
-        setForms({ ...forms, expense: { ...forms.expense, file: compressed } });
+        setForms(prev => ({ ...prev, expense: { ...prev.expense, file: compressed } }));
         playSound('success');
     };
     reader.readAsDataURL(file);
   };
+
+  // --- GESTION DU CTRL+V (PASTE) ---
+  useEffect(() => {
+    const handlePaste = (event) => {
+      if (currentTab !== 'expenses') return;
+      const items = event.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          handleFileChange(blob);
+          notify("📸 CAPTURE DÉTECTÉE", "L'image collée a été ajoutée.", "success");
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [currentTab, forms]);
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -263,7 +280,6 @@ export default function Home() {
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
 
-        /* DROPZONE STYLE */
         .dropzone {
           border: 2px dashed var(--brd);
           border-radius: 15px;
@@ -341,16 +357,6 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
-
-                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
-                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
-                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
-                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
-                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
-                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
-                        </div>
-                      ))}
-                   </div>
                 </div>
               )}
 
@@ -420,14 +426,15 @@ export default function Home() {
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
                            {forms.expense.file ? (
                              <div>
-                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>IMAGE CHARGÉE</div>
+                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>PREUVE CHARGÉE</div>
                                <img src={forms.expense.file} className="dz-preview" />
+                               <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V pour coller une autre image</div>
                              </div>
                            ) : (
                              <div>
                                <div style={{fontSize:'2rem'}}>📸</div>
                                <div style={{fontWeight:800, marginTop:10}}>DÉPOSER LA PREUVE ICI</div>
-                               <div style={{fontSize:'0.7rem', opacity:0.6}}>Cliquez ou Glissez l'image</div>
+                               <div style={{fontSize:'0.7rem', opacity:0.6}}>Ctrl+V, Glisser ou Cliquez</div>
                              </div>
                            )}
                         </div>
