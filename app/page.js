@@ -108,44 +108,36 @@ export default function Home() {
 
   const [forms, setForms] = useState(initialForms);
 
-  // --- FONCTION DE COMPRESSION ---
-  const compressImage = (base64Str) => {
+  // --- LOGIQUE COMPRESSION IMAGE ---
+  const compressImage = (base64) => {
     return new Promise((resolve) => {
       const img = new Image();
-      img.src = base64Str;
+      img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const MAX_SIZE = 1200; // On limite à 1200px max
-
-        if (width > height) {
-          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-        } else {
-          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
+        const MAX_WIDTH = 1200;
+        const scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Qualité 70% pour réduire le poids
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compression à 70%
       };
     });
   };
 
-  const handleFile = async (file) => {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+  const handleFileChange = async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+        notify("ERREUR", "Fichier non supporté", "error");
+        return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
         const compressed = await compressImage(reader.result);
         setForms({ ...forms, expense: { ...forms.expense, file: compressed } });
         playSound('success');
-      };
-      reader.readAsDataURL(file);
-    } else {
-      notify("ERREUR", "Veuillez déposer une image valide", "error");
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const playSound = (type) => {
@@ -229,7 +221,7 @@ export default function Home() {
         }
 
         loadData(); 
-      } else notify("ÉCHEC ENVOI", j.message || "Erreur serveur", "error");
+      } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
@@ -271,27 +263,20 @@ export default function Home() {
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
 
-        .drop-zone {
+        /* DROPZONE STYLE */
+        .dropzone {
           border: 2px dashed var(--brd);
           border-radius: 15px;
-          padding: 30px;
+          padding: 25px;
           text-align: center;
           background: rgba(0,0,0,0.2);
           transition: 0.3s;
           cursor: pointer;
-          position: relative;
-          overflow: hidden;
-          margin-bottom: 15px;
+          margin-bottom: 20px;
         }
-        .drop-zone.active { border-color: var(--p); background: rgba(255, 152, 0, 0.05); }
-        .drop-zone:hover { border-color: var(--p); }
-        .preview-img {
-          width: 100%;
-          max-height: 150px;
-          object-fit: contain;
-          border-radius: 10px;
-          margin-top: 10px;
-        }
+        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .dropzone:hover { border-color: var(--p); }
+        .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; margin-top: 10px; }
       `}</style>
 
       {view === 'login' ? (
@@ -356,6 +341,16 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
+
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
+                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
+                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
+                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
+                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                        </div>
+                      ))}
+                   </div>
                 </div>
               )}
 
@@ -416,31 +411,29 @@ export default function Home() {
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
                         
                         <div 
-                          className={`drop-zone ${dragActive ? 'active' : ''}`}
-                          onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                          onDragLeave={() => setDragActive(false)}
-                          onDrop={(e) => { e.preventDefault(); setDragActive(false); handleFile(e.dataTransfer.files[0]); }}
-                          onClick={() => document.getElementById('fileInp').click()}
+                           className={`dropzone ${dragActive ? 'active' : ''}`}
+                           onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+                           onDragLeave={() => setDragActive(false)}
+                           onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }}
+                           onClick={() => document.getElementById('inpFile').click()}
                         >
-                          <input id="fileInp" type="file" hidden accept="image/*" onChange={(e) => handleFile(e.target.files[0])} />
-                          
-                          {forms.expense.file ? (
-                            <div>
-                              <p style={{fontSize:'0.75rem', color:'#10b981', fontWeight:800}}>✅ IMAGE SÉLECTIONNÉE</p>
-                              <img src={forms.expense.file} className="preview-img" />
-                              <p style={{fontSize:'0.65rem', marginTop:10, opacity:0.6}}>Cliquez pour changer</p>
-                            </div>
-                          ) : (
-                            <div>
-                              <span style={{fontSize:'2rem'}}>📸</span>
-                              <p style={{fontSize:'0.8rem', fontWeight:800, marginTop:10}}>GLISSER LA PREUVE ICI</p>
-                              <p style={{fontSize:'0.65rem', opacity:0.6}}>ou cliquez pour parcourir</p>
-                            </div>
-                          )}
+                           <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
+                           {forms.expense.file ? (
+                             <div>
+                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>IMAGE CHARGÉE</div>
+                               <img src={forms.expense.file} className="dz-preview" />
+                             </div>
+                           ) : (
+                             <div>
+                               <div style={{fontSize:'2rem'}}>📸</div>
+                               <div style={{fontWeight:800, marginTop:10}}>DÉPOSER LA PREUVE ICI</div>
+                               <div style={{fontSize:'0.7rem', opacity:0.6}}>Cliquez ou Glissez l'image</div>
+                             </div>
+                           )}
                         </div>
 
                         <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>
-                           {sending ? "ENVOI EN COURS..." : "DÉCLARER AVEC PREUVE"}
+                          {sending ? "ENVOI EN COURS..." : "DÉCLARER AVEC PREUVE"}
                         </button>
                       </>
                     )}
@@ -473,13 +466,27 @@ export default function Home() {
                               <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
                             </div>
                         </div>
+                        <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(18,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 20}}>
+                            <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
+                            <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
+                        </div>
                       </div>
+                    )}
+                    
+                    {currentTab === 'support' && (
+                      <>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
+                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
+                          <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
+                        </select>
+                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                      </>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30, maxWidth:1100, margin:'0 auto'}}>
                   <div className="card" style={{padding:25, textAlign:'left'}}>
@@ -494,22 +501,9 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <div className="card" style={{padding:25, textAlign:'left'}}>
-                    <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
-                    {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
-                      <div key={i} style={{marginBottom: 15}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
-                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                           <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
-                        </div>
-                        <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
 
-              {/* ANNUAIRE */}
               {currentTab === 'directory' && (
                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:15}}>
                   {data.employeesFull.map(e => (
@@ -523,7 +517,6 @@ export default function Home() {
             </div>
           </main>
 
-          {/* PANIER */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
