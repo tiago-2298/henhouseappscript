@@ -77,7 +77,7 @@ const NOTIF_MESSAGES = {
   sendEntreprise: { title: "🏢 COMMANDE PRO ENVOYÉE", msg: "Le bon de commande entreprise est parti." },
   sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "La commande partenaire est enregistrée." },
   sendGarage: { title: "🚗 VÉHICULE ACTUALISÉ", msg: "L'état du véhicule a été mis à jour." },
-  sendExpense: { title: "💳 NOTE DE FRAIS", msg: "Vos frais ont été transmis à la comptabilité." },
+  sendExpense: { title: "💳 NOTE DE FRAIS", msg: "Vos frais et la preuve ont été transmis." },
   sendSupport: { title: "🆘 SUPPORT CONTACTÉ", msg: "Votre message a été envoyé au patron." },
   sync: { title: "☁️ CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
 };
@@ -100,7 +100,7 @@ export default function Home() {
     stock: [{ product: '', qty: 1 }],
     enterprise: { name: '', items: [{ product: '', qty: 1 }] },
     partner: { num: '', company: '', benef: '', items: [{ menu: '', qty: 1 }] },
-    expense: { vehicle: '', kind: 'Essence', amount: '' },
+    expense: { vehicle: '', kind: 'Essence', amount: '', file: null },
     garage: { vehicle: '', action: 'Entrée', fuel: 50 },
     support: { sub: 'Problème Stock', msg: '' }
   };
@@ -172,7 +172,6 @@ export default function Home() {
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
         
-        // --- RESET AUTOMATIQUE DES CHAMPS ---
         if(action === 'sendFactures') {
           setCart([]);
           setForms(prev => ({...prev, invoiceNum: ''}));
@@ -183,7 +182,7 @@ export default function Home() {
         } else if (action === 'sendPartnerOrder') {
           setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
         } else if (action === 'sendExpense') {
-          setForms(prev => ({...prev, expense: { ...prev.expense, amount: '' }}));
+          setForms(prev => ({...prev, expense: { ...prev.expense, amount: '', file: null }}));
         } else if (action === 'sendSupport') {
           setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
         }
@@ -201,8 +200,6 @@ export default function Home() {
       <style jsx global>{`
         :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; }
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        
-        /* SCROLLBAR BEAUTIFUL */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 10px; }
@@ -224,15 +221,11 @@ export default function Home() {
         .btn-p { background: var(--p); color: #fff; border:none; padding: 16px; border-radius: 12px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
         
-        /* PANIER RÉDUIT */
         .cart { width: 320px; border-left: 1px solid var(--brd); background: var(--panel); display: flex; flex-direction: column; }
-        
         .qty-inp { width: 55px; background: #000; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 6px; font-weight: 800; padding: 5px 0; font-size: 1rem; }
         .tool-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .icon-tool { background: var(--panel); border: 1px solid var(--brd); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer; text-align: center; transition: 0.2s; }
         .icon-tool:hover { border-color: var(--p); color: var(--p); }
-        .fuel-gauge { width: 100%; height: 12px; background: #000; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 1px solid var(--brd); }
-        .fuel-fill { height: 100%; transition: 0.5s; background: var(--p); }
         .toast { position: fixed; top: 20px; right: 20px; padding: 15px 30px; border-radius: 12px; z-index: 3000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-left: 6px solid rgba(255,255,255,0.2); font-weight: 800; }
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
@@ -308,8 +301,8 @@ export default function Home() {
                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
                       {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
                         <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
-                           <span style={{fontSize:'2.8rem'}}>{m.e}</span>
-                           <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
+                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
                         </div>
                       ))}
                    </div>
@@ -328,7 +321,7 @@ export default function Home() {
                   </div>
                   <div className="grid">
                     {data.products.filter(p => (catFilter==='Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p=>(
-                      <div key={p} className={`card ${cart.some(i=>i.name===p)?'sel':''}`} onClick={()=>{
+                      <div key={p} className="card" onClick={()=>{
                         playSound('click'); 
                         const ex = cart.find(x=>x.name===p);
                         if(ex) setCart(cart.map(x=>x.name===p?{...x, qty:x.qty+1}:x));
@@ -400,19 +393,6 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        <h4 style={{margin: '15px 0 10px', fontSize: '0.85rem', color: 'var(--muted)', textAlign:'center'}}>MENU DU PARTENAIRE</h4>
-                        {forms.partner.items.map((item, i) => (
-                           <div key={i} style={{display:'flex', gap:10}}>
-                              <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
-                                 const n=[...forms.partner.items]; n[i].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                              }}>
-                                 {data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name} value={m.name}>{m.name}</option>)}
-                              </select>
-                              <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
-                                 const n=[...forms.partner.items]; n[i].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                              }} />
-                           </div>
-                        ))}
                         <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                       </>
                     )}
@@ -423,7 +403,20 @@ export default function Home() {
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
-                        <button className="btn-p" disabled={sending || !forms.expense.amount} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER</button>
+                        
+                        <div style={{marginBottom:15}}>
+                          <label style={{display:'block', fontSize:'0.75rem', fontWeight:800, color:'var(--p)', marginBottom:5}}>📸 PREUVE (IMAGE)</label>
+                          <input type="file" accept="image/*" className="inp" style={{fontSize:'0.8rem'}} onChange={e=>{
+                            const file = e.target.files[0];
+                            if(file){
+                              const reader = new FileReader();
+                              reader.onloadend = () => setForms({...forms, expense:{...forms.expense, file: reader.result}});
+                              reader.readAsDataURL(file);
+                            }
+                          }} />
+                        </div>
+
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER AVEC PREUVE</button>
                       </>
                     )}
 
@@ -438,44 +431,33 @@ export default function Home() {
                       </>
                     )}
 
-                   {/* PROFIL */}
-{currentTab === 'profile' && myProfile && (
-  <div className="center-box">
-    <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
-      <div style={{textAlign:'center', marginBottom: 30}}>
-        <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
-        <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
-        <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
-      </div>
-      
-      {/* GRILLE DES STATISTIQUES */}
-      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 20}}>
-          <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
-            <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
-          </div>
-          <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-            <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
-            <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
-          </div>
-      </div>
-
-      {/* CARTE SALAIRE (NOUVEAU) */}
-      <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(18,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 20}}>
-          <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
-          <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
-          <p style={{fontSize: '0.7rem', opacity: 0.6, marginTop: 5}}>Basé sur tes ventes et ta production actuelle</p>
-      </div>
-
-      {/* INFOS COMPLÉMENTAIRES */}
-      <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
-        <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
-        <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
-        <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
-      </div>
-    </div>
-  </div>
-)}
+                    {currentTab === 'profile' && myProfile && (
+                      <div style={{width:'100%'}}>
+                        <div style={{textAlign:'center', marginBottom: 30}}>
+                          <div style={{width:130, height:130, borderRadius:40, background:'var(--p)', margin:'0 auto 20px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:900}}>{user.charAt(0)}</div>
+                          <h1 style={{fontSize:'2.5rem', fontWeight:900}}>{user}</h1>
+                          <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
+                        </div>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 20}}>
+                            <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
+                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+                            </div>
+                            <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
+                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+                            </div>
+                        </div>
+                        <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(18,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 20}}>
+                            <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
+                            <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
+                        </div>
+                        <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
+                          <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
+                          <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
+                        </div>
+                      </div>
+                    )}
 
                     {currentTab === 'support' && (
                       <>
@@ -545,9 +527,9 @@ export default function Home() {
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
                     <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{playSound('click'); n[idx].qty++; setCart(n);}}>+</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
@@ -564,10 +546,7 @@ export default function Home() {
       )}
 
       {toast && (
-        <div className="toast" style={{
-          background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'),
-          color: '#fff'
-        }}>
+        <div className="toast" style={{ background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'), color: '#fff' }}>
           <div style={{ fontSize: '0.8rem', fontWeight: 900, letterSpacing: '1px', marginBottom: '4px' }}>{toast.t}</div>
           <div style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.9 }}>{toast.m}</div>
         </div>
@@ -575,6 +554,3 @@ export default function Home() {
     </div>
   );
 }
-
-
-
