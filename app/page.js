@@ -115,7 +115,7 @@ export default function Home() {
       img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1000; 
+        const MAX_WIDTH = 1200;
         const scale = MAX_WIDTH / img.width;
         canvas.width = MAX_WIDTH;
         canvas.height = img.height * scale;
@@ -149,7 +149,7 @@ export default function Home() {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
           handleFileChange(blob);
-          notify("📸 CAPTURE DÉTECTÉE", "Image ajoutée.", "success");
+          notify("📸 CAPTURE DÉTECTÉE", "L'image collée a été ajoutée.", "success");
         }
       }
     };
@@ -280,6 +280,7 @@ export default function Home() {
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
 
+        /* DROPZONE STYLE */
         .dropzone {
           border: 2px dashed var(--brd);
           border-radius: 15px;
@@ -291,6 +292,7 @@ export default function Home() {
           margin-bottom: 20px;
         }
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .dropzone:hover { border-color: var(--p); }
         .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; margin-top: 10px; }
       `}</style>
 
@@ -356,15 +358,6 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
-                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
-                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
-                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
-                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
-                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
-                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
-                        </div>
-                      ))}
-                   </div>
                 </div>
               )}
 
@@ -380,6 +373,7 @@ export default function Home() {
                   <div className="grid">
                     {data.products.filter(p => (catFilter==='Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p=>(
                       <div key={p} className="card" onClick={()=>{
+                        playSound('click'); 
                         const ex = cart.find(x=>x.name===p);
                         if(ex) setCart(cart.map(x=>x.name===p?{...x, qty:x.qty+1}:x));
                         else setCart([...cart, {name:p, qty:1, pu:data.prices[p]||0}]);
@@ -430,16 +424,15 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="nav-l" style={{border:'1px dashed var(--brd)', justifyContent:'center', marginBottom:20}} onClick={()=>setForms({...forms, enterprise:{...forms.enterprise, items:[...forms.enterprise.items, {product:'', qty:1}]}})}>+ Ligne</button>
-                        <button className="btn-p" disabled={sending || !forms.enterprise.name} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
                       </>
                     )}
 
                     {currentTab === 'partners' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🤝 PARTENAIRES</h2>
-                        <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
-                        <div style={{display:'flex', gap:10, marginBottom:12}}>
+                        <input className="inp" placeholder="N° Facture Obligatoire" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
+                        <div style={{display:'flex', gap:10}}>
                           <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{
                              const c = e.target.value;
                              setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
@@ -450,18 +443,6 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-                        {forms.partner.items.map((item, idx) => (
-                           <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
-                             <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
-                               const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                             }}>
-                               {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
-                             </select>
-                             <input type="number" className="qty-inp" style={{height:45}} value={item.qty} onChange={e=>{
-                               const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                             }} />
-                           </div>
-                        ))}
                         <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                       </>
                     )}
@@ -469,7 +450,7 @@ export default function Home() {
                     {currentTab === 'expenses' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>💳 FRAIS</h2>
-                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v}>{v}</option>)}</select>
+                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                         <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
                         
@@ -485,7 +466,7 @@ export default function Home() {
                              <div>
                                <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>PREUVE CHARGÉE</div>
                                <img src={forms.expense.file} className="dz-preview" />
-                               <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V ou cliquez pour changer</div>
+                               <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V pour coller une autre image</div>
                              </div>
                            ) : (
                              <div>
@@ -497,7 +478,7 @@ export default function Home() {
                         </div>
 
                         <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>
-                           DÉCLARER AVEC PREUVE
+                          {sending ? "ENVOI EN COURS..." : "DÉCLARER AVEC PREUVE"}
                         </button>
                       </>
                     )}
