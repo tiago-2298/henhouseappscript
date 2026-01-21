@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
+// ================= CONFIGURATION =================
 const APP_VERSION = '2026.01.21';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
@@ -51,6 +52,7 @@ const PARTNERS = {
 async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes");
     const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
     return google.sheets({ version: 'v4', auth });
 }
@@ -66,13 +68,14 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
             for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
             formData.append('file', blob, 'preuve.jpg');
             formData.append('payload_json', JSON.stringify(payload));
             await fetch(url, { method: 'POST', body: formData });
         } else {
             await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         }
-    } catch (e) { console.error("Webhook error:", e); }
+    } catch (e) { console.error("Webhook Error:", e); }
 }
 
 async function updateEmployeeStats(employeeName, amount, type) {
@@ -86,10 +89,11 @@ async function updateEmployeeStats(employeeName, amount, type) {
         if (rowIndex === -1) return;
         const realRow = rowIndex + 2;
         const cell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-        const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'Employés'!${cell}` });
+        const targetRange = `'Employés'!${cell}`;
+        const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetRange });
         const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
         await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId, range: `'Employés'!${cell}`, valueInputOption: 'RAW',
+            spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
     } catch (e) {}
@@ -100,7 +104,7 @@ export async function POST(request) {
         const body = await request.json();
         const { action, data } = body;
 
-        if (!action || action === 'getMeta') {
+        if (!action || action === 'getMeta' || action === 'syncData') {
             const sheets = await getAuthSheets();
             const resFull = await sheets.spreadsheets.values.get({ 
                 spreadsheetId: process.env.GOOGLE_SHEET_ID, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
@@ -147,16 +151,6 @@ export async function POST(request) {
                 await updateEmployeeStats(data.employee, tProd, 'STOCK');
                 break;
 
-            case 'sendEntreprise':
-                embed.title = '🚚 Livraison Entreprise';
-                embed.fields = [
-                    { name: '👤 Livreur', value: data.employee, inline: true },
-                    { name: '🏢 Client', value: data.company, inline: true },
-                    { name: '📋 Détails', value: data.items?.map(i => `🏢 x${i.qty} ${i.product}`).join('\n') }
-                ];
-                await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
-                break;
-
             case 'sendExpense':
                 embed.title = `💳 Note de Frais : ${data.kind}`;
                 embed.fields = [
@@ -181,7 +175,7 @@ export async function POST(request) {
                 embed.title = `🤝 Contrat Partenaire : ${data.company}`;
                 embed.fields = [
                     { name: '👤 Agent', value: data.employee, inline: true },
-                    { name: '🔑 Bénéficiaire', value: data.benef, inline: true },
+                    { name: '🔑 Client', value: data.benef, inline: true },
                     { name: '🧾 Facture', value: data.num },
                     { name: '🍱 Menus', value: data.items?.map(i => `🍱 x${i.qty} ${i.menu}`).join('\n') }
                 ];
