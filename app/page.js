@@ -108,7 +108,7 @@ export default function Home() {
 
   const [forms, setForms] = useState(initialForms);
 
-  // --- LOGIQUE COMPRESSION IMAGE ---
+  // --- LOGIQUE COMPRESSION IMAGE (Pour éviter Erreur 413) ---
   const compressImage = (base64) => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -128,7 +128,7 @@ export default function Home() {
 
   const handleFileChange = async (file) => {
     if (!file || !file.type.startsWith('image/')) {
-        notify("ERREUR", "Fichier non supporté", "error");
+        notify("ERREUR", "Veuillez fournir une image", "error");
         return;
     }
     const reader = new FileReader();
@@ -140,7 +140,7 @@ export default function Home() {
     reader.readAsDataURL(file);
   };
 
-  // --- CTRL+V ---
+  // --- SUPPORT CTRL+V ---
   useEffect(() => {
     const handlePaste = (event) => {
       if (currentTab !== 'expenses') return;
@@ -149,7 +149,7 @@ export default function Home() {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
           handleFileChange(blob);
-          notify("📸 CAPTURE DÉTECTÉE", "Image ajoutée.", "success");
+          notify("📸 IMAGE COLLÉE", "La preuve a été ajoutée", "success");
         }
       }
     };
@@ -280,6 +280,7 @@ export default function Home() {
         .perf-bar { height: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s ease-out; }
 
+        /* DROPZONE STYLE */
         .dropzone {
           border: 2px dashed var(--brd);
           border-radius: 15px;
@@ -341,6 +342,8 @@ export default function Home() {
               {currentTab === 'home' && (
                 <div style={{animation: 'slideIn 0.5s ease'}}>
                    <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
+                   
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
@@ -357,6 +360,7 @@ export default function Home() {
                          </div>
                       </div>
                    </div>
+
                    <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
                       {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
@@ -435,7 +439,7 @@ export default function Home() {
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
                            {forms.expense.file ? (
                              <div>
-                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>IMAGE CHARGÉE</div>
+                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>PREUVE CHARGÉE</div>
                                <img src={forms.expense.file} className="dz-preview" />
                                <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V pour coller une autre image</div>
                              </div>
@@ -486,7 +490,23 @@ export default function Home() {
                             <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
                             <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
                         </div>
+                        <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
+                          <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
+                          <p style={{marginBottom: 10}}>🆔 <b>ID Employé :</b> #00{myProfile.id}</p>
+                          <p>📞 <b>Numéro :</b> {myProfile.phone}</p>
+                        </div>
                       </div>
+                    )}
+                    
+                    {currentTab === 'support' && (
+                      <>
+                        <h2 style={{marginBottom:25, textAlign:'center'}}>🆘 SUPPORT</h2>
+                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
+                          <option>Problème Stock</option><option>Erreur Facture</option><option>Autre</option>
+                        </select>
+                        <textarea className="inp" style={{height:180, resize:'none'}} placeholder="Détails..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -506,7 +526,6 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  {/* TOP STOCK RÉINTÉGRÉ ICI */}
                   <div className="card" style={{padding:25, textAlign:'left'}}>
                     <h2 style={{marginBottom:20}}>📦 TOP 10 PRODUCTION STOCK</h2>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
