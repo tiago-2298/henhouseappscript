@@ -80,22 +80,35 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
-        if (!employeeName || !amount) return;
+        if (!employeeName || !amount || Number(amount) <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
-        const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
-        const rows = res.data.values || [];
-        const rowIndex = rows.findIndex(r => r[0] && r[0].trim() === employeeName.trim());
+
+        // 1. Récupérer les noms pour trouver la ligne
+        const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
+        const rows = resList.data.values || [];
+        const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
+        
         if (rowIndex === -1) return;
+
         const realRow = rowIndex + 2;
-        const cell = type === 'CA' ? `G${realRow}` : `H${realRow}`;
-        const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'Employés'!${cell}` });
+        const col = type === 'CA' ? 'G' : 'H';
+        const targetRange = `'Employés'!${col}${realRow}`;
+
+        // 2. Récupérer la valeur actuelle
+        const currentValRes = await sheets.spreadsheets.values.get({ 
+            spreadsheetId: sheetId, 
+            range: targetRange, 
+            valueRenderOption: 'UNFORMATTED_VALUE' 
+        });
         const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
+
+        // 3. Update avec l'addition
         await sheets.spreadsheets.values.update({
-            spreadsheetId: sheetId, range: `'Employés'!${cell}`, valueInputOption: 'RAW',
+            spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
-    } catch (e) {}
+    } catch (e) { console.error("Update Stats Error:", e); }
 }
 
 export async function POST(request) {
