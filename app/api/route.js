@@ -50,18 +50,18 @@ const WEBHOOKS = {
 
 const PRICE_LIST = {
     // Plats
-    'Lasagne aux légumes': 40, 'Saumon grillé': 35, 'Crousti-Douce': 65, 
+    'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65, 
     'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45, 
     'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65, 
     'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
     
     // Desserts
     'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30, 
-    'Profiteroles au chocolat': 30, 'Los Churros Caramel': 35,
+    'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
     
     // Boissons
     'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30, 
-    "Jus d'orange": 35, 'Nectar Exotique': 40, 'Kombucha Citron': 40,
+    "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
     
     // Menus
     'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110, 
@@ -263,4 +263,5 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
+
 
