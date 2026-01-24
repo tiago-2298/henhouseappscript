@@ -9,11 +9,34 @@ const APP_VERSION = '2026.01.21';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
-    plats_principaux: ['Boeuf bourguignon','Saumon Grillé','Quiche aux légumes','Crousti-Douce','Wings épicé','Filet Mignon','Poulet Rôti','Paella Méditerranéenne','Ribbs',"Steak 'Potatoes",'Rougail Saucisse'],
-    desserts: ['Brochettes de fruits frais','Mousse au café','Tiramisu Fraise','Los Churros Caramel','Tourte Myrtille'],
-    boissons: ['Café','Jus de raisin rouge','Cidre Pression','Berry Fizz',"Jus d'orange",'Jus de raisin blanc','Agua Fresca Pasteque','Vin rouge chaud',"Lait de poule",'Cappuccino','Bière','Lutinade'],
-    menus: ['Menu Le Nid Végé','Menu Grillé du Nord','Menu Fraîcheur Méditerranéenne',"Menu Flamme d OR",'Menu Voyage Sucré-Salé','Menu Happy Hen House'],
-    alcools: ['Cocktail Citron-Myrtille','Verre de Bellini','Verre de Vodka','Verre de Rhum','Verre de Cognac','Verre de Brandy','Verre de Whisky','Verre de Gin','Tequila Citron','Verre Vin Blanc','Verre Vin Rouge','Shot de Tequila','Verre de Champagne','Bouteille de Champagne','Bouteille de Cidre','Gin Fizz Citron','Verre de rosé','Verre de Champomax']
+    plats_principaux: [
+        'Lasagne aux légumes', 'Saumon grillé', 'Crousti-Douce', 
+        'Paella Méditerranéenne', "Steak 'Potatoes", 'Ribs', 
+        'Filet Mignon', 'Poulet Rôti', 'Wings Epicé', 
+        'Effiloché de Mouton', 'Burger Gourmet au Foie Gras'
+    ],
+    desserts: [
+        'Mousse au café', 'Tiramisu Fraise', 'Carpaccio Fruit Exotique', 
+        'Profiteroles au chocolat', 'Los Churros Caramel'
+    ],
+    boissons: [
+        'Café', 'Jus de raisin Rouge', 'Berry Fizz', 
+        "Jus d'orange", 'Nectar Exotique', 'Kombucha Citron'
+    ],
+    menus: [
+        'LA SIGNATURE VÉGÉTALE', 'LE PRESTIGE DE LA MER', 'LE RED WINGS', 
+        "LE SOLEIL D'OR", 'LE SIGNATURE "75"', "L'HÉRITAGE DU BERGER", 
+        'LA CROISIÈRE GOURMANDE'
+    ],
+    alcools: [
+        'Verre de Cidre en Pression', 'Verre de Champagne', 'Verre de rosé', 
+        'Verre de Champomax', 'Verre de Bellini', 'Verre Vin Rouge', 
+        'Verre Vin Blanc', 'Verre de Cognac', 'Verre de Brandy', 
+        'Verre de Whisky', 'Shot de Tequila', 'Cocktail Citron-Myrtille', 
+        'Verre de Vodka', 'Verre de Rhum', 'Verre de Tequila Citron', 
+        'Verre de Gin', 'Verre de Gin Fizz Citron', 'Bouteille de Cidre', 
+        'Bouteille de Champagne'
+    ]
 };
 
 const WEBHOOKS = {
@@ -26,12 +49,36 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
-    'Boeuf bourguignon':50,'Saumon Grillé':35,'Quiche aux légumes':30,'Crousti-Douce':50,'Wings épicé':60,'Filet Mignon':50,'Poulet Rôti':60,'Paella Méditerranéenne':50,'Ribbs':50,"Steak 'Potatoes":50,'Rougail Saucisse':50,
-    'Brochettes de fruits frais':25,'Mousse au café':25,'Tiramisu Fraise':30,'Los Churros Caramel':35,'Tourte Myrtille':35,
-    'Café':15,'Jus de raisin rouge':30,'Cidre Pression':10,'Berry Fizz':30,"Jus d'orange":35,'Jus de raisin blanc':30,'Agua Fresca Pasteque':30,"Vin rouge chaud":25,'Lait de poule':30,'Cappuccino':15,'Bière':20, 'Lutinade':20,
-    'Menu Le Nid Végé':70,'Menu Grillé du Nord':80,'Menu Fraîcheur Méditerranéenne':95,'Menu Voyage Sucré-Salé':100,'Menu Flamme d OR':110,'Menu Happy Hen House':110,
-    'Cocktail Citron-Myrtille':40,'Verre de Bellini':25,'Verre de Vodka':45,'Verre de Rhum':45,'Verre de Cognac':45,'Verre de Brandy':50,'Verre de Whisky':40,'Verre de Gin':60,'Tequila Citron':50,'Verre Vin Blanc':35,'Verre Vin Rouge':35,'Shot de Tequila':40,'Verre de Champagne':15,'Bouteille de Champagne':100,'Bouteille de Cidre':40,'Gin Fizz Citron':80,'Verre de rosé':25,'Verre de Champomax':30,
-    'Livraison NORD':100,'Livraison SUD':150
+    // Plats
+    'Lasagne aux légumes': 40, 'Saumon grillé': 35, 'Crousti-Douce': 65, 
+    'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45, 
+    'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65, 
+    'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
+    
+    // Desserts
+    'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30, 
+    'Profiteroles au chocolat': 30, 'Los Churros Caramel': 35,
+    
+    // Boissons
+    'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30, 
+    "Jus d'orange": 35, 'Nectar Exotique': 40, 'Kombucha Citron': 40,
+    
+    // Menus
+    'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110, 
+    "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120, 
+    'LA CROISIÈRE GOURMANDE': 120,
+    
+    // Alcools
+    'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20, 
+    'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25, 
+    'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40, 
+    'Verre de Whisky': 40, 'Shot de Tequila': 40, 'Cocktail Citron-Myrtille': 40, 
+    'Verre de Vodka': 45, 'Verre de Rhum': 45, 'Verre de Tequila Citron': 50, 
+    'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50, 
+    'Bouteille de Champagne': 125,
+    
+    // Service
+    'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
 const PARTNERS = {
@@ -216,3 +263,4 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
+
