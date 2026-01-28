@@ -8,6 +8,10 @@ import { NextResponse } from 'next/server';
 const APP_VERSION = '2026.01.21';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
+// ⬇️ IMPORTANT : on arrête de couper à 15s
+const SHEETS_TIMEOUT_MS = 60000; // 60s
+const CACHE_TTL_MS = 30000;      // cache 30s (énorme amélioration sur Vercel)
+
 const PRODUCTS_CAT = {
   plats_principaux: [
     'Lasagne aux légumes', 'Saumon grillé', 'Crousti-Douce',
@@ -104,12 +108,30 @@ const PARTNERS = {
   },
 };
 
+// ================= CACHE (mémoire Vercel) =================
+// Sur Vercel, le cache tient pendant la vie du même runtime (ça réduit énormément les appels Sheets)
+globalThis.__HENHOUSE_CACHE__ = globalThis.__HENHOUSE_CACHE__ || { ts: 0, meta: null };
+
 // ================= UTILS =================
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
   if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
-  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+
+  const auth = new google.auth.JWT(
+    clientEmail,
+    null,
+    privateKey,
+    ['https://www.googleapis.com/auth/spreadsheets']
+  );
+
+  // Important : options globales (timeout gaxios)
+  google.options({
+    timeout: SHEETS_TIMEOUT_MS,
+    // pas besoin de retry long si ça bloque
+    retry: false,
+  });
+
   return google.sheets({ version: 'v4', auth });
 }
 
@@ -135,7 +157,6 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
         return;
       }
 
-      // ✅ Node-safe decode (remplace atob)
       const buffer = Buffer.from(base64Part, 'base64');
       const blob = new Blob([buffer], { type: 'image/jpeg' });
 
@@ -166,9 +187,10 @@ async function updateEmployeeStats(employeeName, amount, type) {
     const resList = await withTimeout(
       sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: "'Employés'!B2:B200"
+        range: "'Employés'!B2:B80",
+        valueRenderOption: 'UNFORMATTED_VALUE'
       }),
-      12000,
+      25000,
       "Sheets get employees list"
     );
 
@@ -186,7 +208,7 @@ async function updateEmployeeStats(employeeName, amount, type) {
         range: targetRange,
         valueRenderOption: 'UNFORMATTED_VALUE'
       }),
-      12000,
+      25000,
       "Sheets get current stat"
     );
 
@@ -199,7 +221,7 @@ async function updateEmployeeStats(employeeName, amount, type) {
         valueInputOption: 'RAW',
         requestBody: { values: [[currentVal + Number(amount)]] }
       }),
-      12000,
+      25000,
       "Sheets update stat"
     );
   } catch (e) {
@@ -207,69 +229,79 @@ async function updateEmployeeStats(employeeName, amount, type) {
   }
 }
 
+async function buildMetaFromSheets() {
+  const sheets = await getAuthSheets();
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+  if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
+
+  // ✅ BatchGet + plage réduite (80 lignes max)
+  const res = await withTimeout(
+    sheets.spreadsheets.values.batchGet({
+      spreadsheetId: sheetId,
+      ranges: [
+        "'Employés'!A2:D80", // id, nom, poste, tel
+        "'Employés'!F2:I80"  // ancienneté, CA, stock, salaire
+      ],
+      valueRenderOption: 'UNFORMATTED_VALUE'
+    }),
+    SHEETS_TIMEOUT_MS,
+    "Sheets get employeesFull"
+  );
+
+  const vr = res.data.valueRanges || [];
+  const abcd = vr[0]?.values || [];
+  const fghi = vr[1]?.values || [];
+
+  const employeesFull = [];
+  for (let i = 0; i < abcd.length; i++) {
+    const r1 = abcd[i] || [];
+    const r2 = fghi[i] || [];
+
+    if (!r1[1]) continue;
+
+    employeesFull.push({
+      id: String(r1[0] ?? ''),
+      name: String(r1[1] ?? '').trim(),
+      role: String(r1[2] ?? ''),
+      phone: String(r1[3] ?? ''),
+      seniority: Number(r2[0] ?? 0),
+      ca: Number(r2[1] ?? 0),
+      stock: Number(r2[2] ?? 0),
+      salary: Number(r2[3] ?? 0),
+    });
+  }
+
+  return {
+    success: true,
+    version: APP_VERSION,
+    employees: employeesFull.map(e => e.name),
+    employeesFull,
+    products: Object.values(PRODUCTS_CAT).flat(),
+    productsByCategory: PRODUCTS_CAT,
+    prices: PRICE_LIST,
+    partners: PARTNERS,
+    vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
+  };
+}
+
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    // ✅ GET META (optimisé: batchGet + plage réduite)
+    // ✅ GET META avec cache
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const sheets = await getAuthSheets();
-      const sheetId = process.env.GOOGLE_SHEET_ID;
-      if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
+      const now = Date.now();
+      const cache = globalThis.__HENHOUSE_CACHE__;
 
-      // On split en 2 ranges (ça évite le gros bloc A:I + recalcul trop lourd)
-      // A->D = data fixe (id, nom, poste, tel)
-      // F->I = stats/calculs (ancienneté, CA, stock, salaire)
-      // ⚠️ Range réduit à 80 lignes (tu as 25 employés)
-      const res = await withTimeout(
-        sheets.spreadsheets.values.batchGet({
-          spreadsheetId: sheetId,
-          ranges: [
-            "'Employés'!A2:D80",
-            "'Employés'!F2:I80"
-          ],
-          valueRenderOption: 'UNFORMATTED_VALUE'
-        }),
-        15000,
-        "Sheets get employeesFull"
-      );
-
-      const vr = res.data.valueRanges || [];
-      const abcd = vr[0]?.values || [];
-      const fghi = vr[1]?.values || [];
-
-      const employeesFull = [];
-
-      for (let i = 0; i < abcd.length; i++) {
-        const r1 = abcd[i] || [];
-        const r2 = fghi[i] || [];
-
-        if (!r1[1]) continue;
-
-        employeesFull.push({
-          id: String(r1[0] ?? ''),
-          name: String(r1[1] ?? '').trim(),
-          role: String(r1[2] ?? ''),
-          phone: String(r1[3] ?? ''),
-          seniority: Number(r2[0] ?? 0),
-          ca: Number(r2[1] ?? 0),
-          stock: Number(r2[2] ?? 0),
-          salary: Number(r2[3] ?? 0),
-        });
+      if (cache?.meta && (now - cache.ts) < CACHE_TTL_MS) {
+        return NextResponse.json(cache.meta);
       }
 
-      return NextResponse.json({
-        success: true,
-        version: APP_VERSION,
-        employees: employeesFull.map(e => e.name),
-        employeesFull,
-        products: Object.values(PRODUCTS_CAT).flat(),
-        productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST,
-        partners: PARTNERS,
-        vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
-      });
+      const meta = await buildMetaFromSheets();
+      globalThis.__HENHOUSE_CACHE__ = { ts: now, meta };
+
+      return NextResponse.json(meta);
     }
 
     let embed = {
@@ -289,6 +321,8 @@ export async function POST(request) {
         ];
         await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalFact, 'CA');
+        // ✅ invalide cache pour forcer refresh prochain loadData
+        globalThis.__HENHOUSE_CACHE__ = { ts: 0, meta: null };
         break;
       }
 
@@ -301,6 +335,7 @@ export async function POST(request) {
         ];
         await sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, tProd, 'STOCK');
+        globalThis.__HENHOUSE_CACHE__ = { ts: 0, meta: null };
         break;
       }
 
