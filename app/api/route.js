@@ -104,12 +104,38 @@ const PARTNERS = {
   },
 };
 
+// ================= DIAG + CACHE =================
+let _cache = { ts: 0, payload: null };
+const CACHE_MS = 60_000;
+
+// Timeout helper (évite de rester bloqué 300s)
+async function withTimeout(promise, ms, label = 'timeout') {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(label), ms);
+  try {
+    // googleapis n'accepte pas toujours signal partout, mais on garde la protection côté JS
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} after ${ms}ms`)), ms))
+    ]);
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 // ================= UTILS =================
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
-  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+  if (!privateKey || !clientEmail) {
+    throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
+  }
+  const auth = new google.auth.JWT(
+    clientEmail,
+    null,
+    privateKey,
+    ['https://www.googleapis.com/auth/spreadsheets']
+  );
   return google.sheets({ version: 'v4', auth });
 }
 
@@ -119,6 +145,8 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   try {
     if (fileBase64) {
       const base64Part = (fileBase64.includes(',')) ? fileBase64.split(',')[1] : fileBase64;
+
+      // si pas de base64 correct, on envoie juste le payload sans fichier
       if (!base64Part) {
         await fetch(url, {
           method: 'POST',
@@ -128,7 +156,7 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
         return;
       }
 
-      // ✅ Node-safe decode (remplace atob)
+      // ✅ Node-safe decode
       const buffer = Buffer.from(base64Part, 'base64');
       const blob = new Blob([buffer], { type: 'image/jpeg' });
 
@@ -152,14 +180,25 @@ async function updateEmployeeStats(employeeName, amount, type) {
   try {
     if (!employeeName || !amount || Number(amount) <= 0) return;
 
+    console.log("[updateEmployeeStats] start", { employeeName, amount, type });
+
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
     if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
 
-    const resList = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "'Employés'!B2:B200"
-    });
+    console.log("[updateEmployeeStats] BEFORE list B2:B200");
+
+    const resList = await withTimeout(
+      sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: "'Employés'!B2:B200"
+      }),
+      12_000,
+      "Sheets list employees"
+    );
+
+    console.log("[updateEmployeeStats] AFTER list");
+
     const rows = resList.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
     if (rowIndex === -1) return;
@@ -168,40 +207,84 @@ async function updateEmployeeStats(employeeName, amount, type) {
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
 
-    const currentValRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: targetRange,
-      valueRenderOption: 'UNFORMATTED_VALUE'
-    });
+    console.log("[updateEmployeeStats] BEFORE get current", { targetRange });
+
+    const currentValRes = await withTimeout(
+      sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: targetRange,
+        valueRenderOption: 'UNFORMATTED_VALUE'
+      }),
+      12_000,
+      "Sheets get current value"
+    );
+
+    console.log("[updateEmployeeStats] AFTER get current");
+
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
 
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: targetRange,
-      valueInputOption: 'RAW',
-      requestBody: { values: [[currentVal + Number(amount)]] }
-    });
+    console.log("[updateEmployeeStats] BEFORE update", { next: currentVal + Number(amount) });
+
+    await withTimeout(
+      sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: targetRange,
+        valueInputOption: 'RAW',
+        requestBody: { values: [[currentVal + Number(amount)]] }
+      }),
+      12_000,
+      "Sheets update value"
+    );
+
+    console.log("[updateEmployeeStats] AFTER update");
   } catch (e) {
     console.error("Update Stats Error:", e);
   }
 }
 
 export async function POST(request) {
+  const startedAt = Date.now();
+
   try {
+    console.log("========== API START ==========");
+    console.log("ENV CHECK", {
+      hasSheetId: !!process.env.GOOGLE_SHEET_ID,
+      hasEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
+      hasKey: !!process.env.GOOGLE_PRIVATE_KEY,
+    });
+
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
+    console.log("REQUEST", { action });
+
     // GET META
     if (!action || action === 'getMeta' || action === 'syncData') {
+      // ✅ cache pour éviter spam + timeouts
+      if (Date.now() - _cache.ts < CACHE_MS && _cache.payload) {
+        console.log("CACHE HIT getMeta");
+        return NextResponse.json(_cache.payload);
+      }
+
+      console.log("CACHE MISS getMeta - building data");
+
       const sheets = await getAuthSheets();
       const sheetId = process.env.GOOGLE_SHEET_ID;
       if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
 
-      const resFull = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: "'Employés'!A2:I200",
-        valueRenderOption: 'UNFORMATTED_VALUE'
-      });
+      console.log("BEFORE SHEETS GET A2:I200");
+
+      const resFull = await withTimeout(
+        sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: "'Employés'!A2:I200",
+          valueRenderOption: 'UNFORMATTED_VALUE'
+        }),
+        15_000,
+        "Sheets get employeesFull"
+      );
+
+      console.log("AFTER SHEETS GET A2:I200");
 
       const rows = resFull.data.values || [];
       const employeesFull = rows.filter(r => r[1]).map(r => ({
@@ -215,7 +298,7 @@ export async function POST(request) {
         seniority: Number(r[5] ?? 0)
       }));
 
-      return NextResponse.json({
+      const payload = {
         success: true,
         version: APP_VERSION,
         employees: employeesFull.map(e => e.name),
@@ -225,7 +308,13 @@ export async function POST(request) {
         prices: PRICE_LIST,
         partners: PARTNERS,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
-      });
+      };
+
+      _cache = { ts: Date.now(), payload };
+
+      console.log("GET META OK", { employees: employeesFull.length, ms: Date.now() - startedAt });
+
+      return NextResponse.json(payload);
     }
 
     let embed = {
@@ -313,11 +402,18 @@ export async function POST(request) {
         await sendDiscordWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
       }
+
+      default:
+        console.log("UNKNOWN ACTION", action);
     }
 
+    console.log("API OK", { action, ms: Date.now() - startedAt });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("API ERROR:", err);
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: err.message },
+      { status: 500 }
+    );
   }
 }
