@@ -186,22 +186,26 @@ export default function Home() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // ✅✅✅ CORRECTIF ICI : loadData plus robuste (évite page blanche si Sheets lag)
   const loadData = async (isSync = false) => {
     if(isSync) notify("SYNCHRONISATION", "Mise à jour en cours...", "info");
     try {
       const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action: 'getMeta' }) });
       const j = await r.json();
+
       if(j.success) {
         setData(j);
+
         const firstComp = Object.keys(j.partners.companies)[0];
         setForms(f => ({...f,
           expense: {...f.expense, vehicle: j.vehicles[0]},
           garage: {...f.garage, vehicle: j.vehicles[0]},
           partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
+
         if(isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       } else {
-        notify("ERREUR CLOUD", j.message || "Réponse invalide", "error");
+        notify("ERREUR CLOUD", j.message || "Connexion perdue", "error");
       }
     } catch (e) {
       notify("ERREUR CLOUD", "Connexion perdue", "error");
@@ -252,34 +256,7 @@ export default function Home() {
     finally { setSending(false); }
   };
 
-  // ✅ Loader visible (anti page blanche)
-  if (loading && !data) {
-    return (
-      <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1115', color:'#fff', fontWeight:900}}>
-        Chargement...
-      </div>
-    );
-  }
-
-  // ✅ écran erreur si data ne charge pas (API down / env manquantes)
-  if (!data) {
-    return (
-      <div style={{minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1115', color:'#fff', padding:20}}>
-        <div style={{maxWidth:520, width:'100%', background:'#181a20', border:'1px solid #2d333f', borderRadius:16, padding:24}}>
-          <div style={{fontWeight:900, fontSize:22, marginBottom:8}}>Erreur de chargement</div>
-          <div style={{opacity:0.8, marginBottom:16}}>
-            Impossible de récupérer les données (API / Google Sheets / variables).
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            style={{width:'100%', padding:14, borderRadius:12, border:'none', cursor:'pointer', fontWeight:900, background:'#ff9800', color:'#fff'}}
-          >
-            Réessayer
-          </button>
-        </div>
-      </div>
-    );
-  }
+  if (loading && !data) return <div className="sk-wrap"><div className="sk sk-s"></div><div className="sk sk-m"></div></div>;
 
   return (
     <div className="app">
@@ -339,15 +316,7 @@ export default function Home() {
               <option value="">👤 Choisir un agent...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-
-            {/* ✅ Désactivé si data pas prêt */}
-            <button
-              className="btn-p"
-              onClick={()=>{playSound('success'); setView('app');}}
-              disabled={!user || !data}
-            >
-              OUVRIR MA SESSION
-            </button>
+            <button className="btn-p" onClick={()=>{playSound('success'); setView('app');}} disabled={!user}>OUVRIR MA SESSION</button>
           </div>
         </div>
       ) : (
@@ -384,35 +353,35 @@ export default function Home() {
               {/* TABLEAU DE BORD */}
               {currentTab === 'home' && (
                 <div style={{animation: 'slideIn 0.5s ease'}}>
-                  <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
-                  <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
+                   <h1 style={{fontSize: '2.5rem', fontWeight: 900, marginBottom: 10}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                   <p style={{color: 'var(--muted)', fontSize: '1.1rem', marginBottom: 40}}>Bienvenue sur le portail Hen House. Gérez vos ventes et productions.</p>
 
-                  <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
-                    <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
-                      <div style={{fontSize: '3.5rem'}}>💰</div>
-                      <div>
-                        <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MON CA TOTAL</div>
-                        <div style={{fontSize: '2.2rem', fontWeight: 900, color: 'var(--p)'}}>${myProfile?.ca.toLocaleString()}</div>
+                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 40}}>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #2a1b0a 100%)'}}>
+                         <div style={{fontSize: '3.5rem'}}>💰</div>
+                         <div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MON CA TOTAL</div>
+                            <div style={{fontSize: '2.2rem', fontWeight: 900, color: 'var(--p)'}}>${myProfile?.ca.toLocaleString()}</div>
+                         </div>
                       </div>
-                    </div>
-                    <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #1a1a1a 100%)'}}>
-                      <div style={{fontSize: '3.5rem'}}>📦</div>
-                      <div>
-                        <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MA PRODUCTION</div>
-                        <div style={{fontSize: '2.2rem', fontWeight: 900}}>{myProfile?.stock.toLocaleString()} u.</div>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, var(--panel) 0%, #1a1a1a 100%)'}}>
+                         <div style={{fontSize: '3.5rem'}}>📦</div>
+                         <div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1}}>MA PRODUCTION</div>
+                            <div style={{fontSize: '2.2rem', fontWeight: 900}}>{myProfile?.stock.toLocaleString()} u.</div>
+                         </div>
                       </div>
-                    </div>
-                  </div>
+                   </div>
 
-                  <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
-                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
-                    {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
-                      <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
-                        <span style={{fontSize:'2.8rem'}}>{m.e}</span>
-                        <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
-                      </div>
-                    ))}
-                  </div>
+                   <h3 style={{marginBottom: 20, fontWeight: 800, color: 'var(--muted)', fontSize: '0.9rem'}}>ACCÈS RAPIDE</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:15}}>
+                      {MODULES.filter(m => !['home', 'profile'].includes(m.id)).map(m => (
+                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25}}>
+                            <span style={{fontSize:'2.8rem'}}>{m.e}</span>
+                            <div style={{marginTop:15, fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                        </div>
+                      ))}
+                   </div>
                 </div>
               )}
 
@@ -456,10 +425,7 @@ export default function Home() {
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}>
-                              <option value="">Produit...</option>
-                              {data.products.map(p=><option key={p} value={p}>{p}</option>)}
-                            </select>
+                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
                             }} />
@@ -478,10 +444,7 @@ export default function Home() {
                           <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
-                            }}>
-                              <option value="">Produit...</option>
-                              {data.products.map(p=><option key={p} value={p}>{p}</option>)}
-                            </select>
+                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:100, marginBottom:0}} value={item.qty} onChange={e=>{
                               const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
                             }} />
@@ -497,8 +460,8 @@ export default function Home() {
                         <input className="inp" placeholder="N° Facture Obligatoire" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
                         <div style={{display:'flex', gap:10}}>
                           <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{
-                            const c = e.target.value;
-                            setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
+                             const c = e.target.value;
+                             setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
                           }}>
                             {Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}
                           </select>
@@ -506,19 +469,18 @@ export default function Home() {
                             {data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
-
                         {/* LISTE DES MENUS PARTENAIRES */}
                         {forms.partner.items.map((item, idx) => (
-                          <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
-                              const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                            }}>
-                              {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
-                            </select>
-                            <input type="number" className="qty-inp" style={{height:45}} value={item.qty} onChange={e=>{
-                              const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                            }} />
-                          </div>
+                           <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
+                             <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
+                               const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                             }}>
+                               {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
+                             </select>
+                             <input type="number" className="qty-inp" style={{height:45}} value={item.qty} onChange={e=>{
+                               const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                             }} />
+                           </div>
                         ))}
                         <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                       </>
@@ -527,36 +489,32 @@ export default function Home() {
                     {currentTab === 'expenses' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>💳 FRAIS</h2>
-                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
-                          {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
-                        </select>
-                        <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}>
-                          <option>Essence</option><option>Réparation</option>
-                        </select>
+                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                        <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
 
                         {/* DROPZONE INTERACTIVE */}
                         <div
-                          className={`dropzone ${dragActive ? 'active' : ''}`}
-                          onDragOver={e => { e.preventDefault(); setDragActive(true); }}
-                          onDragLeave={() => setDragActive(false)}
-                          onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }}
-                          onClick={() => document.getElementById('inpFile').click()}
+                           className={`dropzone ${dragActive ? 'active' : ''}`}
+                           onDragOver={e => { e.preventDefault(); setDragActive(true); }}
+                           onDragLeave={() => setDragActive(false)}
+                           onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }}
+                           onClick={() => document.getElementById('inpFile').click()}
                         >
-                          <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
-                          {forms.expense.file ? (
-                            <div>
-                              <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>PREUVE CHARGÉE</div>
-                              <img src={forms.expense.file} className="dz-preview" />
-                              <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V pour coller une autre image</div>
-                            </div>
-                          ) : (
-                            <div>
-                              <div style={{fontSize:'2rem'}}>📸</div>
-                              <div style={{fontWeight:800, marginTop:10}}>DÉPOSER LA PREUVE ICI</div>
-                              <div style={{fontSize:'0.7rem', opacity:0.6}}>Ctrl+V, Glisser ou Cliquez</div>
-                            </div>
-                          )}
+                           <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
+                           {forms.expense.file ? (
+                             <div>
+                               <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.7rem'}}>PREUVE CHARGÉE</div>
+                               <img src={forms.expense.file} className="dz-preview" />
+                               <div style={{fontSize:'0.6rem', marginTop:5, opacity:0.5}}>Ctrl+V pour coller une autre image</div>
+                             </div>
+                           ) : (
+                             <div>
+                               <div style={{fontSize:'2rem'}}>📸</div>
+                               <div style={{fontWeight:800, marginTop:10}}>DÉPOSER LA PREUVE ICI</div>
+                               <div style={{fontSize:'0.7rem', opacity:0.6}}>Ctrl+V, Glisser ou Cliquez</div>
+                             </div>
+                           )}
                         </div>
 
                         <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>DÉCLARER AVEC PREUVE</button>
@@ -566,12 +524,8 @@ export default function Home() {
                     {currentTab === 'garage' && (
                       <>
                         <h2 style={{marginBottom:25, textAlign:'center'}}>🚗 GARAGE</h2>
-                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>
-                          {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
-                        </select>
-                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}>
-                          <option>Entrée</option><option>Sortie</option>
-                        </select>
+                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
                         <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginTop:20}}><span>⛽ Essence</span><span>{forms.garage.fuel}%</span></div>
                         <input type="range" style={{width:'100%', accentColor:'var(--p)', marginTop:15}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
                         <button className="btn-p" style={{marginTop:25}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ENREGISTRER</button>
@@ -587,19 +541,19 @@ export default function Home() {
                             <p style={{color:'var(--p)', fontSize:'1.2rem', fontWeight:800}}>{myProfile.role}</p>
                           </div>
                           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 20}}>
-                            <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
-                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
-                            </div>
-                            <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
-                              <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
-                              <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
-                            </div>
+                              <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                                <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>💰 CHIFFRE D'AFFAIRES</p>
+                                <p style={{fontSize: '1.5rem', fontWeight: 900}}>${myProfile.ca.toLocaleString()}</p>
+                              </div>
+                              <div className="card" style={{background: 'rgba(0,0,0,0.3)'}}>
+                                <p style={{fontSize:'0.8rem', color:'var(--muted)'}}>📦 PRODUCTION</p>
+                                <p style={{fontSize: '1.5rem', fontWeight: 900}}>{myProfile.stock.toLocaleString()} u.</p>
+                              </div>
                           </div>
                           <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(18,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 20}}>
-                            <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
-                            <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
-                            <p style={{fontSize: '0.7rem', opacity: 0.6, marginTop: 5}}>Basé sur tes ventes et ta production actuelle</p>
+                              <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 800}}>💵 SALAIRE ACTUEL ESTIMÉ</p>
+                              <p style={{fontSize: '2rem', fontWeight: 900}}>${myProfile.salary?.toLocaleString() || 0}</p>
+                              <p style={{fontSize: '0.7rem', opacity: 0.6, marginTop: 5}}>Basé sur tes ventes et ta production actuelle</p>
                           </div>
                           <div className="card" style={{textAlign: 'left', background: 'rgba(255,255,255,0.02)'}}>
                             <p style={{marginBottom: 10}}>📅 <b>Ancienneté :</b> {myProfile.seniority} jours</p>
@@ -632,8 +586,8 @@ export default function Home() {
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
-                          <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                          <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>${e.ca.toLocaleString()}</b>
                         </div>
                         <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca/data.employeesFull[0].ca)*100+'%'}}></div></div>
                       </div>
@@ -644,8 +598,8 @@ export default function Home() {
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 15}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.9rem'}}>
-                          <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
-                          <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
+                           <span>{i < 3 ? ['🥇','🥈','🥉'][i] : (i+1)+'.'} <b>{e.name}</b></span>
+                           <b style={{color:'var(--p)'}}>{e.stock.toLocaleString()} u.</b>
                         </div>
                         <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)'}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock/data.employeesFull[0].stock)*100+'%'}}></div></div>
                       </div>
@@ -660,11 +614,7 @@ export default function Home() {
                   {data.employeesFull.map(e => (
                     <div key={e.id} className="card" style={{padding:20, textAlign:'left', display:'flex', gap:15, alignItems:'center'}}>
                       <div style={{width:50, height:50, borderRadius:15, background:'var(--p)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', fontWeight:900}}>{e.name.charAt(0)}</div>
-                      <div style={{flex:1}}>
-                        <div style={{fontWeight:800}}>{e.name}</div>
-                        <div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:700}}>{e.role}</div>
-                        <div style={{fontSize:'0.85rem', marginTop:5, color:'var(--muted)'}}>📞 {e.phone}</div>
-                      </div>
+                      <div style={{flex:1}}><div style={{fontWeight:800}}>{e.name}</div><div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:700}}>{e.role}</div><div style={{fontSize:'0.85rem', marginTop:5, color:'var(--muted)'}}>📞 {e.phone}</div></div>
                     </div>
                   ))}
                 </div>
@@ -676,16 +626,11 @@ export default function Home() {
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:24, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 PANIER</h2></div>
-              <div style={{padding:15}}>
-                <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.2rem'}} />
-              </div>
+              <div style={{padding:15}}><input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.2rem'}} /></div>
               <div style={{flex:1, overflowY:'auto', padding:'0 15px'}}>
                 {cart.map((i, idx)=>(
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
-                    <div style={{flex:1}}>
-                      <div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div>
-                      <div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div>
-                    </div>
+                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem'}}>{i.name}</div><div style={{color:'var(--muted)', fontSize:'0.75rem'}}>${i.pu}</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
@@ -695,10 +640,7 @@ export default function Home() {
                 ))}
               </div>
               <div style={{padding:25, background:'rgba(0,0,0,0.5)', borderTop:'1px solid var(--brd)'}}>
-                <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}>
-                  <span>TOTAL</span>
-                  <b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b>
-                </div>
+                <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span>TOTAL</span><b style={{fontSize:'2.2rem', color:'var(--p)', fontWeight:900}}>${total.toLocaleString()}</b></div>
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
                   {sending ? "ENVOI..." : "VALIDER VENTE"}
                 </button>
@@ -717,5 +659,3 @@ export default function Home() {
     </div>
   );
 }
-
-
