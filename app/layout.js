@@ -1,6 +1,6 @@
 export const metadata = {
   title: "Hen House",
-  description: "Portail Hen House",
+  description: "Hen House Management",
 };
 
 export default function RootLayout({ children }) {
