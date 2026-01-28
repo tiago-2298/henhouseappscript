@@ -49,26 +49,21 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
-  // Plats
   'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65,
   'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45,
   'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65,
   'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
 
-  // Desserts
   'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30,
   'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
 
-  // Boissons
   'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
   "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
 
-  // Menus
   'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
   "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120,
   'LA CROISIÈRE GOURMANDE': 120,
 
-  // Alcools
   'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20,
   'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25,
   'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40,
@@ -77,7 +72,6 @@ const PRICE_LIST = {
   'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50,
   'Bouteille de Champagne': 125,
 
-  // Service
   'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
@@ -104,38 +98,60 @@ const PARTNERS = {
   },
 };
 
-// ================= DIAG + CACHE =================
-let _cache = { ts: 0, payload: null };
-const CACHE_MS = 60_000;
+// ================= TIMEOUT / RETRY =================
+const SHEETS_TIMEOUT_MS = 60000; // 60s (Vercel autorise plus, ton ancien code coupait à 15s)
 
-// Timeout helper (évite de rester bloqué 300s)
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 async function withTimeout(promise, ms, label = 'timeout') {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(label), ms);
+  let t;
+  const timeoutPromise = new Promise((_, reject) => {
+    t = setTimeout(() => reject(new Error(`${label} after ${ms}ms`)), ms);
+  });
   try {
-    // googleapis n'accepte pas toujours signal partout, mais on garde la protection côté JS
-    return await Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} after ${ms}ms`)), ms))
-    ]);
+    return await Promise.race([promise, timeoutPromise]);
   } finally {
     clearTimeout(t);
   }
+}
+
+async function retry(fn, attempts = 2) {
+  let lastErr;
+  for (let i = 0; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      // backoff: 500ms, 1200ms, ...
+      await sleep(500 + i * 700);
+    }
+  }
+  throw lastErr;
 }
 
 // ================= UTILS =================
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+
   if (!privateKey || !clientEmail) {
     throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
   }
+  if (!sheetId) {
+    throw new Error("Variable manquante: GOOGLE_SHEET_ID");
+  }
+
   const auth = new google.auth.JWT(
     clientEmail,
     null,
     privateKey,
     ['https://www.googleapis.com/auth/spreadsheets']
   );
+
+  // force l’auth avant l’appel Sheets (évite certains “hang”)
+  await withTimeout(auth.authorize(), 15000, 'Auth authorize');
+
   return google.sheets({ version: 'v4', auth });
 }
 
@@ -145,18 +161,12 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   try {
     if (fileBase64) {
       const base64Part = (fileBase64.includes(',')) ? fileBase64.split(',')[1] : fileBase64;
-
-      // si pas de base64 correct, on envoie juste le payload sans fichier
       if (!base64Part) {
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         return;
       }
 
-      // ✅ Node-safe decode
+      // Node-safe base64 decode
       const buffer = Buffer.from(base64Part, 'base64');
       const blob = new Blob([buffer], { type: 'image/jpeg' });
 
@@ -165,11 +175,7 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
       formData.append('payload_json', JSON.stringify(payload));
       await fetch(url, { method: 'POST', body: formData });
     } else {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     }
   } catch (e) {
     console.error("Webhook error:", e);
@@ -180,24 +186,17 @@ async function updateEmployeeStats(employeeName, amount, type) {
   try {
     if (!employeeName || !amount || Number(amount) <= 0) return;
 
-    console.log("[updateEmployeeStats] start", { employeeName, amount, type });
-
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
 
-    console.log("[updateEmployeeStats] BEFORE list B2:B200");
-
-    const resList = await withTimeout(
-      sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: "'Employés'!B2:B200"
-      }),
-      12_000,
+    const resList = await retry(() => withTimeout(
+      sheets.spreadsheets.values.get(
+        { spreadsheetId: sheetId, range: "'Employés'!B2:B200" },
+        { timeout: SHEETS_TIMEOUT_MS }
+      ),
+      SHEETS_TIMEOUT_MS,
       "Sheets list employees"
-    );
-
-    console.log("[updateEmployeeStats] AFTER list");
+    ));
 
     const rows = resList.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
@@ -207,84 +206,48 @@ async function updateEmployeeStats(employeeName, amount, type) {
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
 
-    console.log("[updateEmployeeStats] BEFORE get current", { targetRange });
-
-    const currentValRes = await withTimeout(
-      sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: targetRange,
-        valueRenderOption: 'UNFORMATTED_VALUE'
-      }),
-      12_000,
-      "Sheets get current value"
-    );
-
-    console.log("[updateEmployeeStats] AFTER get current");
+    const currentValRes = await retry(() => withTimeout(
+      sheets.spreadsheets.values.get(
+        { spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' },
+        { timeout: SHEETS_TIMEOUT_MS }
+      ),
+      SHEETS_TIMEOUT_MS,
+      "Sheets get currentVal"
+    ));
 
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
 
-    console.log("[updateEmployeeStats] BEFORE update", { next: currentVal + Number(amount) });
-
-    await withTimeout(
-      sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: targetRange,
-        valueInputOption: 'RAW',
-        requestBody: { values: [[currentVal + Number(amount)]] }
-      }),
-      12_000,
-      "Sheets update value"
-    );
-
-    console.log("[updateEmployeeStats] AFTER update");
+    await retry(() => withTimeout(
+      sheets.spreadsheets.values.update(
+        { spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW', requestBody: { values: [[currentVal + Number(amount)]] } },
+        { timeout: SHEETS_TIMEOUT_MS }
+      ),
+      SHEETS_TIMEOUT_MS,
+      "Sheets update stats"
+    ));
   } catch (e) {
     console.error("Update Stats Error:", e);
   }
 }
 
 export async function POST(request) {
-  const startedAt = Date.now();
-
   try {
-    console.log("========== API START ==========");
-    console.log("ENV CHECK", {
-      hasSheetId: !!process.env.GOOGLE_SHEET_ID,
-      hasEmail: !!process.env.GOOGLE_CLIENT_EMAIL,
-      hasKey: !!process.env.GOOGLE_PRIVATE_KEY,
-    });
-
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    console.log("REQUEST", { action });
-
     // GET META
     if (!action || action === 'getMeta' || action === 'syncData') {
-      // ✅ cache pour éviter spam + timeouts
-      if (Date.now() - _cache.ts < CACHE_MS && _cache.payload) {
-        console.log("CACHE HIT getMeta");
-        return NextResponse.json(_cache.payload);
-      }
-
-      console.log("CACHE MISS getMeta - building data");
-
       const sheets = await getAuthSheets();
       const sheetId = process.env.GOOGLE_SHEET_ID;
-      if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
 
-      console.log("BEFORE SHEETS GET A2:I200");
-
-      const resFull = await withTimeout(
-        sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: "'Employés'!A2:I200",
-          valueRenderOption: 'UNFORMATTED_VALUE'
-        }),
-        15_000,
+      const resFull = await retry(() => withTimeout(
+        sheets.spreadsheets.values.get(
+          { spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' },
+          { timeout: SHEETS_TIMEOUT_MS }
+        ),
+        SHEETS_TIMEOUT_MS,
         "Sheets get employeesFull"
-      );
-
-      console.log("AFTER SHEETS GET A2:I200");
+      ));
 
       const rows = resFull.data.values || [];
       const employeesFull = rows.filter(r => r[1]).map(r => ({
@@ -298,7 +261,7 @@ export async function POST(request) {
         seniority: Number(r[5] ?? 0)
       }));
 
-      const payload = {
+      return NextResponse.json({
         success: true,
         version: APP_VERSION,
         employees: employeesFull.map(e => e.name),
@@ -308,13 +271,7 @@ export async function POST(request) {
         prices: PRICE_LIST,
         partners: PARTNERS,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
-      };
-
-      _cache = { ts: Date.now(), payload };
-
-      console.log("GET META OK", { employees: employeesFull.length, ms: Date.now() - startedAt });
-
-      return NextResponse.json(payload);
+      });
     }
 
     let embed = {
@@ -402,18 +359,11 @@ export async function POST(request) {
         await sendDiscordWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
       }
-
-      default:
-        console.log("UNKNOWN ACTION", action);
     }
 
-    console.log("API OK", { action, ms: Date.now() - startedAt });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("API ERROR:", err);
-    return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
