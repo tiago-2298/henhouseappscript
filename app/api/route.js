@@ -49,21 +49,26 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
+  // Plats
   'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65,
   'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45,
   'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65,
   'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
 
+  // Desserts
   'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30,
   'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
 
+  // Boissons
   'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
   "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
 
+  // Menus
   'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
   "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120,
   'LA CROISIÈRE GOURMANDE': 120,
 
+  // Alcools
   'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20,
   'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25,
   'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40,
@@ -72,6 +77,7 @@ const PRICE_LIST = {
   'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50,
   'Bouteille de Champagne': 125,
 
+  // Service
   'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
@@ -98,62 +104,21 @@ const PARTNERS = {
   },
 };
 
-// ================= TIMEOUT / RETRY =================
-const SHEETS_TIMEOUT_MS = 60000; // 60s (Vercel autorise plus, ton ancien code coupait à 15s)
-
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-async function withTimeout(promise, ms, label = 'timeout') {
-  let t;
-  const timeoutPromise = new Promise((_, reject) => {
-    t = setTimeout(() => reject(new Error(`${label} after ${ms}ms`)), ms);
-  });
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-async function retry(fn, attempts = 2) {
-  let lastErr;
-  for (let i = 0; i <= attempts; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      lastErr = e;
-      // backoff: 500ms, 1200ms, ...
-      await sleep(500 + i * 700);
-    }
-  }
-  throw lastErr;
-}
-
 // ================= UTILS =================
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  const sheetId = process.env.GOOGLE_SHEET_ID;
-
-  if (!privateKey || !clientEmail) {
-    throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
-  }
-  if (!sheetId) {
-    throw new Error("Variable manquante: GOOGLE_SHEET_ID");
-  }
-
-  const auth = new google.auth.JWT(
-    clientEmail,
-    null,
-    privateKey,
-    ['https://www.googleapis.com/auth/spreadsheets']
-  );
-
-  // force l’auth avant l’appel Sheets (évite certains “hang”)
-  await withTimeout(auth.authorize(), 15000, 'Auth authorize');
-
+  if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
+  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
   return google.sheets({ version: 'v4', auth });
 }
+
+const withTimeout = async (promise, ms, label) => {
+  return await Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} after ${ms}ms`)), ms))
+  ]);
+};
 
 async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   if (!url) return;
@@ -162,11 +127,15 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
     if (fileBase64) {
       const base64Part = (fileBase64.includes(',')) ? fileBase64.split(',')[1] : fileBase64;
       if (!base64Part) {
-        await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
         return;
       }
 
-      // Node-safe base64 decode
+      // ✅ Node-safe decode (remplace atob)
       const buffer = Buffer.from(base64Part, 'base64');
       const blob = new Blob([buffer], { type: 'image/jpeg' });
 
@@ -175,7 +144,11 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
       formData.append('payload_json', JSON.stringify(payload));
       await fetch(url, { method: 'POST', body: formData });
     } else {
-      await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
     }
   } catch (e) {
     console.error("Webhook error:", e);
@@ -188,15 +161,16 @@ async function updateEmployeeStats(employeeName, amount, type) {
 
     const sheets = await getAuthSheets();
     const sheetId = process.env.GOOGLE_SHEET_ID;
+    if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
 
-    const resList = await retry(() => withTimeout(
-      sheets.spreadsheets.values.get(
-        { spreadsheetId: sheetId, range: "'Employés'!B2:B200" },
-        { timeout: SHEETS_TIMEOUT_MS }
-      ),
-      SHEETS_TIMEOUT_MS,
-      "Sheets list employees"
-    ));
+    const resList = await withTimeout(
+      sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: "'Employés'!B2:B200"
+      }),
+      12000,
+      "Sheets get employees list"
+    );
 
     const rows = resList.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
@@ -206,25 +180,28 @@ async function updateEmployeeStats(employeeName, amount, type) {
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
 
-    const currentValRes = await retry(() => withTimeout(
-      sheets.spreadsheets.values.get(
-        { spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' },
-        { timeout: SHEETS_TIMEOUT_MS }
-      ),
-      SHEETS_TIMEOUT_MS,
-      "Sheets get currentVal"
-    ));
+    const currentValRes = await withTimeout(
+      sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: targetRange,
+        valueRenderOption: 'UNFORMATTED_VALUE'
+      }),
+      12000,
+      "Sheets get current stat"
+    );
 
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
 
-    await retry(() => withTimeout(
-      sheets.spreadsheets.values.update(
-        { spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW', requestBody: { values: [[currentVal + Number(amount)]] } },
-        { timeout: SHEETS_TIMEOUT_MS }
-      ),
-      SHEETS_TIMEOUT_MS,
-      "Sheets update stats"
-    ));
+    await withTimeout(
+      sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: targetRange,
+        valueInputOption: 'RAW',
+        requestBody: { values: [[currentVal + Number(amount)]] }
+      }),
+      12000,
+      "Sheets update stat"
+    );
   } catch (e) {
     console.error("Update Stats Error:", e);
   }
@@ -235,31 +212,52 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
 
-    // GET META
+    // ✅ GET META (optimisé: batchGet + plage réduite)
     if (!action || action === 'getMeta' || action === 'syncData') {
       const sheets = await getAuthSheets();
       const sheetId = process.env.GOOGLE_SHEET_ID;
+      if (!sheetId) throw new Error("Variable manquante: GOOGLE_SHEET_ID");
 
-      const resFull = await retry(() => withTimeout(
-        sheets.spreadsheets.values.get(
-          { spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' },
-          { timeout: SHEETS_TIMEOUT_MS }
-        ),
-        SHEETS_TIMEOUT_MS,
+      // On split en 2 ranges (ça évite le gros bloc A:I + recalcul trop lourd)
+      // A->D = data fixe (id, nom, poste, tel)
+      // F->I = stats/calculs (ancienneté, CA, stock, salaire)
+      // ⚠️ Range réduit à 80 lignes (tu as 25 employés)
+      const res = await withTimeout(
+        sheets.spreadsheets.values.batchGet({
+          spreadsheetId: sheetId,
+          ranges: [
+            "'Employés'!A2:D80",
+            "'Employés'!F2:I80"
+          ],
+          valueRenderOption: 'UNFORMATTED_VALUE'
+        }),
+        15000,
         "Sheets get employeesFull"
-      ));
+      );
 
-      const rows = resFull.data.values || [];
-      const employeesFull = rows.filter(r => r[1]).map(r => ({
-        id: String(r[0] ?? ''),
-        name: String(r[1] ?? '').trim(),
-        role: String(r[2] ?? ''),
-        phone: String(r[3] ?? ''),
-        ca: Number(r[6] ?? 0),
-        stock: Number(r[7] ?? 0),
-        salary: Number(r[8] ?? 0),
-        seniority: Number(r[5] ?? 0)
-      }));
+      const vr = res.data.valueRanges || [];
+      const abcd = vr[0]?.values || [];
+      const fghi = vr[1]?.values || [];
+
+      const employeesFull = [];
+
+      for (let i = 0; i < abcd.length; i++) {
+        const r1 = abcd[i] || [];
+        const r2 = fghi[i] || [];
+
+        if (!r1[1]) continue;
+
+        employeesFull.push({
+          id: String(r1[0] ?? ''),
+          name: String(r1[1] ?? '').trim(),
+          role: String(r1[2] ?? ''),
+          phone: String(r1[3] ?? ''),
+          seniority: Number(r2[0] ?? 0),
+          ca: Number(r2[1] ?? 0),
+          stock: Number(r2[2] ?? 0),
+          salary: Number(r2[3] ?? 0),
+        });
+      }
 
       return NextResponse.json({
         success: true,
