@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // ✅ IMPORTANT (évite les timeouts Vercel trop courts)
 
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
@@ -109,14 +110,16 @@ const PARTNERS = {
 };
 
 // ================= CACHE (mémoire Vercel) =================
-// Sur Vercel, le cache tient pendant la vie du même runtime (ça réduit énormément les appels Sheets)
 globalThis.__HENHOUSE_CACHE__ = globalThis.__HENHOUSE_CACHE__ || { ts: 0, meta: null };
 
 // ================= UTILS =================
 async function getAuthSheets() {
   const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-  if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
+
+  if (!privateKey || !clientEmail) {
+    throw new Error("Variables Google manquantes (GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL)");
+  }
 
   const auth = new google.auth.JWT(
     clientEmail,
@@ -125,10 +128,8 @@ async function getAuthSheets() {
     ['https://www.googleapis.com/auth/spreadsheets']
   );
 
-  // Important : options globales (timeout gaxios)
   google.options({
     timeout: SHEETS_TIMEOUT_MS,
-    // pas besoin de retry long si ça bloque
     retry: false,
   });
 
@@ -148,6 +149,7 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   try {
     if (fileBase64) {
       const base64Part = (fileBase64.includes(',')) ? fileBase64.split(',')[1] : fileBase64;
+
       if (!base64Part) {
         await fetch(url, {
           method: 'POST',
@@ -300,7 +302,6 @@ export async function POST(request) {
 
       const meta = await buildMetaFromSheets();
       globalThis.__HENHOUSE_CACHE__ = { ts: now, meta };
-
       return NextResponse.json(meta);
     }
 
@@ -321,8 +322,7 @@ export async function POST(request) {
         ];
         await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalFact, 'CA');
-        // ✅ invalide cache pour forcer refresh prochain loadData
-        globalThis.__HENHOUSE_CACHE__ = { ts: 0, meta: null };
+        globalThis.__HENHOUSE_CACHE__ = { ts: 0, meta: null }; // ✅ invalide cache
         break;
       }
 
