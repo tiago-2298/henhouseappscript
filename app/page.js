@@ -1,5 +1,3 @@
-return <div style={{padding:20, color:"#fff"}}>TEST OK</div>;
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 
@@ -719,4 +717,5 @@ export default function Home() {
     </div>
   );
 }
+
 
