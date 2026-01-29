@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.21-FIX';
+const APP_VERSION = '2026.01.21-DEBUG-V3';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -87,16 +87,24 @@ const PARTNERS = {
 
 // ================= UTILS =================
 async function getAuthSheets() {
+    console.log("DEBUG: 1. Entrée dans getAuthSheets");
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     
-    if (!privateKey || !clientEmail) {
-        console.error("DEBUG: Variables Google manquantes dans Vercel");
-        throw new Error("Variables Google manquantes");
-    }
+    if (!privateKey) console.error("DEBUG: ERREUR - La Private Key est vide !");
+    if (!clientEmail) console.error("DEBUG: ERREUR - Le Client Email est vide !");
+
+    if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes");
     
-    const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-    return google.sheets({ version: 'v4', auth });
+    try {
+        console.log("DEBUG: 2. Création du jeton JWT...");
+        const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+        console.log("DEBUG: 3. JWT créé avec succès.");
+        return google.sheets({ version: 'v4', auth });
+    } catch (e) {
+        console.error("DEBUG: ERREUR lors de l'auth JWT:", e.message);
+        throw e;
+    }
 }
 
 async function sendDiscordWebhook(url, payload, fileBase64 = null) {
@@ -121,6 +129,7 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
+        console.log(`DEBUG: Update stats pour ${employeeName} (Type: ${type})`);
         if (!employeeName || !amount || Number(amount) <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -146,24 +155,37 @@ async function updateEmployeeStats(employeeName, amount, type) {
             spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
-    } catch (e) { console.error("Update Stats Error:", e.message); }
+    } catch (e) { console.error("Update Stats Error:", e); }
 }
 
 export async function POST(request) {
+    console.log("DEBUG: --- NOUVELLE REQUÊTE POST REÇUE ---");
     try {
         const body = await request.json().catch(() => ({}));
         const { action, data } = body;
+        console.log("DEBUG: Action détectée ->", action || "getMeta");
 
         if (!action || action === 'getMeta' || action === 'syncData') {
+            console.log("DEBUG: 4. Lancement de l'auth pour getMeta...");
             const sheets = await getAuthSheets();
             const sheetId = process.env.GOOGLE_SHEET_ID;
+            console.log("DEBUG: 5. Utilisation du Sheet ID ->", sheetId);
 
-            // TEST DE CONNEXION INITIALE
+            // TEST DE CONNEXION SIMPLE
+            console.log("DEBUG: 6. Tentative de lecture de la Range A1:B2...");
+            try {
+                const test = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "A1:B2" });
+                console.log("DEBUG: 7. Connexion réussie, données A1:B2 lues !");
+            } catch (e) {
+                console.error("DEBUG: ERREUR CRITIQUE lors du fetch A1:B2:", e.message);
+                throw e;
+            }
+
+            console.log("DEBUG: 8. Lecture de l'onglet 'Employés'...");
             const resFull = await sheets.spreadsheets.values.get({ 
-                spreadsheetId: sheetId, 
-                range: "'Employés'!A2:I200", 
-                valueRenderOption: 'UNFORMATTED_VALUE' 
+                spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
             });
+            console.log("DEBUG: 9. Lecture réussie, traitement des lignes...");
 
             const rows = resFull.data.values || [];
             const employeesFull = rows.filter(r => r[1]).map(r => ({
@@ -172,6 +194,7 @@ export async function POST(request) {
                 salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
             }));
 
+            console.log("DEBUG: 10. Envoi de la réponse JSON au client.");
             return NextResponse.json({
                 success: true, version: APP_VERSION,
                 employees: employeesFull.map(e => e.name), employeesFull,
@@ -181,7 +204,7 @@ export async function POST(request) {
             });
         }
 
-        // --- TRAITEMENT DES ACTIONS ---
+        // --- PARTIE ENVOI WEBHOOKS ---
         let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
         switch (action) {
@@ -208,6 +231,7 @@ export async function POST(request) {
                 await updateEmployeeStats(data.employee, tProd, 'STOCK');
                 break;
 
+            // ... Reste des cases identiques ...
             case 'sendEntreprise':
                 embed.title = `🚚 Livraison Pro de ${data.employee}`;
                 embed.fields = [
@@ -259,7 +283,7 @@ export async function POST(request) {
         }
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error("DEBUG: ERREUR POST ->", err.message);
+        console.error("DEBUG: ERREUR POST FINALE ->", err.message);
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
