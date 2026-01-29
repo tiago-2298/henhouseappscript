@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.21-DEBUG-V3';
+const APP_VERSION = '2026.01.21-DEBUG-ULTRA';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -91,18 +91,23 @@ async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     
-    if (!privateKey) console.error("DEBUG: ERREUR - La Private Key est vide !");
-    if (!clientEmail) console.error("DEBUG: ERREUR - Le Client Email est vide !");
+    if (!privateKey) console.error("DEBUG: ERREUR - La Private Key est vide dans .env !");
+    if (!clientEmail) console.error("DEBUG: ERREUR - Le Client Email est vide dans .env !");
 
-    if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes");
+    if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes dans l'environnement");
     
     try {
-        console.log("DEBUG: 2. Création du jeton JWT...");
-        const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-        console.log("DEBUG: 3. JWT créé avec succès.");
+        console.log("DEBUG: 2. Tentative de création du jeton JWT...");
+        const auth = new google.auth.JWT(
+            clientEmail, 
+            null, 
+            privateKey, 
+            ['https://www.googleapis.com/auth/spreadsheets']
+        );
+        console.log("DEBUG: 3. Authentification JWT configurée.");
         return google.sheets({ version: 'v4', auth });
     } catch (e) {
-        console.error("DEBUG: ERREUR lors de l'auth JWT:", e.message);
+        console.error("DEBUG: ERREUR FATALE lors de l'auth JWT:", e.message);
         throw e;
     }
 }
@@ -129,7 +134,7 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
-        console.log(`DEBUG: Update stats pour ${employeeName} (Type: ${type})`);
+        console.log(`DEBUG: Update stats pour ${employeeName} (Type: ${type}, Montant: ${amount})`);
         if (!employeeName || !amount || Number(amount) <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
@@ -138,7 +143,10 @@ async function updateEmployeeStats(employeeName, amount, type) {
         const rows = resList.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
         
-        if (rowIndex === -1) return;
+        if (rowIndex === -1) {
+            console.warn(`DEBUG: Employé ${employeeName} introuvable dans la colonne B.`);
+            return;
+        }
 
         const realRow = rowIndex + 2;
         const col = type === 'CA' ? 'G' : 'H';
@@ -155,60 +163,78 @@ async function updateEmployeeStats(employeeName, amount, type) {
             spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
-    } catch (e) { console.error("Update Stats Error:", e); }
+        console.log(`DEBUG: Stats mises à jour pour ${employeeName} en cellule ${targetRange}`);
+    } catch (e) { console.error("DEBUG: Erreur updateEmployeeStats:", e.message); }
 }
 
 export async function POST(request) {
-    console.log("DEBUG: --- NOUVELLE REQUÊTE POST REÇUE ---");
+    console.log("DEBUG: --- NOUVELLE REQUÊTE POST ---");
     try {
         const body = await request.json().catch(() => ({}));
         const { action, data } = body;
-        console.log("DEBUG: Action détectée ->", action || "getMeta");
+        console.log("DEBUG: Action demandée ->", action || "Initialisation (getMeta)");
 
         if (!action || action === 'getMeta' || action === 'syncData') {
-            console.log("DEBUG: 4. Lancement de l'auth pour getMeta...");
+            console.log("DEBUG: 4. Initialisation de la connexion Sheets...");
             const sheets = await getAuthSheets();
             const sheetId = process.env.GOOGLE_SHEET_ID;
-            console.log("DEBUG: 5. Utilisation du Sheet ID ->", sheetId);
-
-            // TEST DE CONNEXION SIMPLE
-            console.log("DEBUG: 6. Tentative de lecture de la Range A1:B2...");
-            try {
-                const test = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "A1:B2" });
-                console.log("DEBUG: 7. Connexion réussie, données A1:B2 lues !");
-            } catch (e) {
-                console.error("DEBUG: ERREUR CRITIQUE lors du fetch A1:B2:", e.message);
-                throw e;
+            
+            if (!sheetId) {
+                console.error("DEBUG: GOOGLE_SHEET_ID est manquant !");
+                return NextResponse.json({ success: false, message: "ID Sheet manquant" }, { status: 500 });
             }
 
-            console.log("DEBUG: 8. Lecture de l'onglet 'Employés'...");
-            const resFull = await sheets.spreadsheets.values.get({ 
-                spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
-            });
-            console.log("DEBUG: 9. Lecture réussie, traitement des lignes...");
+            console.log("DEBUG: 5. Tentative de lecture de la Range 'Employés'!A2:I200...");
+            
+            let resFull;
+            try {
+                resFull = await sheets.spreadsheets.values.get({ 
+                    spreadsheetId: sheetId, 
+                    range: "'Employés'!A2:I200", 
+                    valueRenderOption: 'UNFORMATTED_VALUE' 
+                });
+                console.log("DEBUG: 6. Données récupérées avec succès.");
+            } catch (googleError) {
+                console.error("DEBUG: ERREUR GOOGLE API lors de la lecture des données:", googleError.message);
+                // Si l'erreur contient "403", c'est un problème de partage de fichier
+                // Si l'erreur contient "404", c'est un problème d'ID de fichier ou de nom d'onglet
+                throw googleError;
+            }
 
             const rows = resFull.data.values || [];
+            console.log(`DEBUG: 7. Nombre de lignes trouvées : ${rows.length}`);
+
             const employeesFull = rows.filter(r => r[1]).map(r => ({
-                id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
-                phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
-                salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
+                id: String(r[0] ?? ''), 
+                name: String(r[1] ?? '').trim(), 
+                role: String(r[2] ?? ''),
+                phone: String(r[3] ?? ''), 
+                ca: Number(r[6] ?? 0), 
+                stock: Number(r[7] ?? 0),
+                salary: Number(r[8] ?? 0), 
+                seniority: Number(r[5] ?? 0)
             }));
 
-            console.log("DEBUG: 10. Envoi de la réponse JSON au client.");
+            console.log("DEBUG: 8. Fin du traitement, envoi de la réponse JSON.");
             return NextResponse.json({
-                success: true, version: APP_VERSION,
-                employees: employeesFull.map(e => e.name), employeesFull,
-                products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-                prices: PRICE_LIST, partners: PARTNERS,
+                success: true, 
+                version: APP_VERSION,
+                employees: employeesFull.map(e => e.name), 
+                employeesFull,
+                products: Object.values(PRODUCTS_CAT).flat(), 
+                productsByCategory: PRODUCTS_CAT,
+                prices: PRICE_LIST, 
+                partners: PARTNERS,
                 vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
             });
         }
 
-        // --- PARTIE ENVOI WEBHOOKS ---
+        // --- GESTION DES AUTRES ACTIONS ---
         let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
         switch (action) {
             case 'sendFactures':
+                console.log("DEBUG: Traitement Facture...");
                 const totalFact = data.items?.reduce((a, i) => a + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
                 embed.title = `📑 Vente de ${data.employee}`;
                 embed.fields = [
@@ -221,6 +247,7 @@ export async function POST(request) {
                 break;
 
             case 'sendProduction':
+                console.log("DEBUG: Traitement Production...");
                 const tProd = data.items?.reduce((s, i) => s + Number(i.qty), 0);
                 embed.title = `📦 Production de ${data.employee}`;
                 embed.fields = [
@@ -231,8 +258,8 @@ export async function POST(request) {
                 await updateEmployeeStats(data.employee, tProd, 'STOCK');
                 break;
 
-            // ... Reste des cases identiques ...
             case 'sendEntreprise':
+                console.log("DEBUG: Traitement Entreprise...");
                 embed.title = `🚚 Livraison Pro de ${data.employee}`;
                 embed.fields = [
                     { name: '🏢 Client', value: `**${data.company}**`, inline: true },
@@ -242,6 +269,7 @@ export async function POST(request) {
                 break;
 
             case 'sendExpense':
+                console.log("DEBUG: Traitement Note de Frais...");
                 embed.title = `💳 Frais déclaré par ${data.employee}`;
                 embed.fields = [
                     { name: '🛠️ Type', value: data.kind, inline: true },
@@ -253,6 +281,7 @@ export async function POST(request) {
                 break;
 
             case 'sendGarage':
+                console.log("DEBUG: Traitement Garage...");
                 embed.title = data.action === 'Sortie' ? `🔑 Sortie par ${data.employee}` : `🅿️ Entrée par ${data.employee}`;
                 embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
                 embed.fields = [
@@ -263,6 +292,7 @@ export async function POST(request) {
                 break;
 
             case 'sendPartnerOrder':
+                console.log("DEBUG: Traitement Partenaire...");
                 embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
                 embed.fields = [
                     { name: '🏢 Entreprise', value: data.company, inline: true },
@@ -275,6 +305,7 @@ export async function POST(request) {
                 break;
 
             case 'sendSupport':
+                console.log("DEBUG: Traitement Support...");
                 embed.title = `🆘 Ticket de ${data.employee}`;
                 embed.fields = [{ name: '📌 Sujet', value: data.sub }];
                 embed.description = `**Message :**\n${data.msg}`;
@@ -283,7 +314,7 @@ export async function POST(request) {
         }
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error("DEBUG: ERREUR POST FINALE ->", err.message);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        console.error("DEBUG: ERREUR GLOBALE DANS LE POST ->", err.message);
+        return NextResponse.json({ success: false, message: "Erreur serveur : " + err.message }, { status: 500 });
     }
 }
