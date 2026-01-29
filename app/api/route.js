@@ -174,7 +174,7 @@ export async function POST(request) {
             console.log("DEBUG: Lecture du Sheet ID ->", sheetId);
 
             const resFull = await sheets.spreadsheets.values.get({ 
-                spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
+                spreadsheetId: sheetId, range: "'A1:B2", valueRenderOption: 'UNFORMATTED_VALUE' 
             });
             
             console.log("DEBUG: Données brutes récupérées. Nombre de lignes ->", resFull.data.values?.length || 0);
@@ -278,5 +278,6 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
+
 
 
