@@ -91,7 +91,7 @@ async function getAuthSheets() {
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     
-    if (!privateKey) console.error("DEBUG: La Private Key est manquante ou vide !");
+    if (!privateKey) console.error("DEBUG: La Private Key est manquante !");
     if (!clientEmail) console.error("DEBUG: Le Client Email est manquant !");
 
     if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes");
@@ -133,12 +133,12 @@ async function updateEmployeeStats(employeeName, amount, type) {
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "Employés'!B2:B200" });
+        const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
         const rows = resList.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
         
         if (rowIndex === -1) {
-            console.warn(`DEBUG: Employé ${employeeName} non trouvé dans la liste.`);
+            console.warn(`DEBUG: Employé ${employeeName} non trouvé.`);
             return;
         }
 
@@ -173,13 +173,19 @@ export async function POST(request) {
             const sheetId = process.env.GOOGLE_SHEET_ID;
             console.log("DEBUG: Lecture du Sheet ID ->", sheetId);
 
+            // TEST DE CONNEXION SUR UNE RANGE SIMPLE
             const resFull = await sheets.spreadsheets.values.get({ 
-                spreadsheetId: sheetId, range: "'A1:B2", valueRenderOption: 'UNFORMATTED_VALUE' 
+                spreadsheetId: sheetId, range: "A1:B2", valueRenderOption: 'UNFORMATTED_VALUE' 
             });
             
-            console.log("DEBUG: Données brutes récupérées. Nombre de lignes ->", resFull.data.values?.length || 0);
+            console.log("DEBUG: Connexion réussie. Données A1:B2 lues.");
 
-            const rows = resFull.data.values || [];
+            // ICI ON REMET LA VRAIE LECTURE SI LE TEST PASSE
+            const realRes = await sheets.spreadsheets.values.get({ 
+                spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
+            });
+
+            const rows = realRes.data.values || [];
             const employeesFull = rows.filter(r => r[1]).map(r => ({
                 id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
                 phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
@@ -196,7 +202,6 @@ export async function POST(request) {
             });
         }
 
-        // --- Reste du switch action (Factures, Stock, etc.) ---
         let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
         switch (action) {
@@ -278,7 +283,3 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
-
-
-
-
