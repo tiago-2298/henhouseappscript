@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.21';
+const APP_VERSION = '2026.01.21-DEBUG';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -49,26 +49,17 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
-    // Plats
     'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65, 
     'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45, 
     'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65, 
     'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
-    
-    // Desserts
     'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30, 
     'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
-    
-    // Boissons
     'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30, 
     "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
-    
-    // Menus
     'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110, 
     "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120, 
     'LA CROISIÈRE GOURMANDE': 120,
-    
-    // Alcools
     'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20, 
     'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25, 
     'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40, 
@@ -76,8 +67,6 @@ const PRICE_LIST = {
     'Verre de Vodka': 45, 'Verre de Rhum': 45, 'Verre de Tequila Citron': 50, 
     'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50, 
     'Bouteille de Champagne': 125,
-    
-    // Service
     'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
@@ -98,11 +87,23 @@ const PARTNERS = {
 
 // ================= UTILS =================
 async function getAuthSheets() {
+    console.log("DEBUG: Initialisation de l'authentification Google...");
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+    
+    if (!privateKey) console.error("DEBUG: La Private Key est manquante ou vide !");
+    if (!clientEmail) console.error("DEBUG: Le Client Email est manquant !");
+
     if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes");
-    const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-    return google.sheets({ version: 'v4', auth });
+    
+    try {
+        const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+        console.log("DEBUG: Objet JWT créé avec succès.");
+        return google.sheets({ version: 'v4', auth });
+    } catch (e) {
+        console.error("DEBUG: Erreur lors de la création de l'objet auth:", e.message);
+        throw e;
+    }
 }
 
 async function sendDiscordWebhook(url, payload, fileBase64 = null) {
@@ -127,22 +128,24 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
+        console.log(`DEBUG: Mise à jour stats pour ${employeeName} (${type}: +${amount})`);
         if (!employeeName || !amount || Number(amount) <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        // 1. Récupérer les noms pour trouver la ligne
         const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
         const rows = resList.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
         
-        if (rowIndex === -1) return;
+        if (rowIndex === -1) {
+            console.warn(`DEBUG: Employé ${employeeName} non trouvé dans la liste.`);
+            return;
+        }
 
         const realRow = rowIndex + 2;
         const col = type === 'CA' ? 'G' : 'H';
         const targetRange = `'Employés'!${col}${realRow}`;
 
-        // 2. Récupérer la valeur actuelle
         const currentValRes = await sheets.spreadsheets.values.get({ 
             spreadsheetId: sheetId, 
             range: targetRange, 
@@ -150,30 +153,40 @@ async function updateEmployeeStats(employeeName, amount, type) {
         });
         const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
 
-        // 3. Update avec l'addition
         await sheets.spreadsheets.values.update({
             spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
-    } catch (e) { console.error("Update Stats Error:", e); }
+        console.log("DEBUG: Update Sheets réussi.");
+    } catch (e) { console.error("DEBUG Error updateEmployeeStats:", e.message); }
 }
 
 export async function POST(request) {
+    console.log("DEBUG: Requête POST reçue.");
     try {
         const body = await request.json().catch(() => ({}));
         const { action, data } = body;
+        console.log("DEBUG: Action demandée ->", action || "getMeta");
 
         if (!action || action === 'getMeta' || action === 'syncData') {
             const sheets = await getAuthSheets();
+            const sheetId = process.env.GOOGLE_SHEET_ID;
+            console.log("DEBUG: Lecture du Sheet ID ->", sheetId);
+
             const resFull = await sheets.spreadsheets.values.get({ 
-                spreadsheetId: process.env.GOOGLE_SHEET_ID, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
+                spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' 
             });
+            
+            console.log("DEBUG: Données brutes récupérées. Nombre de lignes ->", resFull.data.values?.length || 0);
+
             const rows = resFull.data.values || [];
             const employeesFull = rows.filter(r => r[1]).map(r => ({
                 id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
                 phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
                 salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
             }));
+
+            console.log("DEBUG: Envoi des données au client.");
             return NextResponse.json({
                 success: true, version: APP_VERSION,
                 employees: employeesFull.map(e => e.name), employeesFull,
@@ -183,6 +196,7 @@ export async function POST(request) {
             });
         }
 
+        // --- Reste du switch action (Factures, Stock, etc.) ---
         let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
         switch (action) {
@@ -260,8 +274,7 @@ export async function POST(request) {
         }
         return NextResponse.json({ success: true });
     } catch (err) {
+        console.error("DEBUG: ERREUR POST GLOBALE ->", err.message);
         return NextResponse.json({ success: false, message: err.message }, { status: 500 });
     }
 }
-
-
