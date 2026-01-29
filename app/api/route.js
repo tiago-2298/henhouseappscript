@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.29-FIX-JWT';
+const APP_VERSION = '2026.01.29-BASE64-FIX';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -87,27 +87,33 @@ const PARTNERS = {
 
 // ================= UTILS =================
 async function getAuthSheets() {
-    console.log("DEBUG: 1. Entrée dans getAuthSheets");
+    console.log("DEBUG: 1. Entrée dans getAuthSheets (Mode AUTO-DETECT)");
     
-    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    let privateKeyInput = process.env.GOOGLE_PRIVATE_KEY;
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
 
-    if (!privateKey || !clientEmail) {
+    if (!privateKeyInput || !clientEmail) {
         throw new Error("Variables d'environnement manquantes sur Vercel");
     }
 
-    // --- NETTOYAGE AGRESSIF DE LA CLÉ ---
-    privateKey = privateKey
-        .replace(/^['"]|['"]$/g, '') // Enlève guillemets début/fin
-        .replace(/\\n/g, '\n')       // Transforme \n texte en vrais sauts de ligne
-        .trim();
+    let privateKey;
+    try {
+        // Détection automatique : Si ça commence par LS0t, c'est du Base64
+        if (privateKeyInput.startsWith('LS0t')) {
+            console.log("DEBUG: 1.1 Décodage Base64 détecté...");
+            privateKey = Buffer.from(privateKeyInput, 'base64').toString('utf-8');
+        } else {
+            // Sinon nettoyage classique
+            privateKey = privateKeyInput.replace(/\\n/g, '\n').replace(/^['"]|['"]$/g, '');
+        }
+        
+        // Finalisation du formatage des sauts de ligne
+        privateKey = privateKey.replace(/\\n/g, '\n');
+    } catch (e) {
+        console.error("DEBUG: Erreur de traitement de la clé:", e.message);
+        throw e;
+    }
 
-    console.log("DEBUG: 1.1. État de la clé nettoyée :", {
-        longueur: privateKey.length,
-        commencePar: privateKey.substring(0, 25),
-        contientSautsLigne: privateKey.includes('\n')
-    });
-    
     try {
         const auth = new google.auth.JWT(
             clientEmail, 
@@ -117,10 +123,10 @@ async function getAuthSheets() {
         );
         
         const sheets = google.sheets({ version: 'v4', auth });
-        console.log("DEBUG: 3. JWT configuré.");
+        console.log("DEBUG: 3. Authentification configurée.");
         return sheets;
     } catch (e) {
-        console.error("DEBUG: ERREUR JWT:", e.message);
+        console.error("DEBUG: ERREUR JWT FATALE:", e.message);
         throw e;
     }
 }
@@ -147,15 +153,12 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
+        console.log(`DEBUG: Update stats pour ${employeeName}`);
         if (!employeeName || !amount || Number(amount) <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        // On cible l'onglet 'Employés' explicitement
-        const resList = await sheets.spreadsheets.values.get({ 
-            spreadsheetId: sheetId, 
-            range: "'Employés'!B2:B200" 
-        });
+        const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
         const rows = resList.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
         
@@ -189,9 +192,8 @@ export async function POST(request) {
             const sheets = await getAuthSheets();
             const sheetId = process.env.GOOGLE_SHEET_ID;
             
-            console.log("DEBUG: 5. Lecture onglet 'Employés'...");
+            console.log("DEBUG: 5. Tentative de lecture onglet 'Employés'...");
             
-            // Tentative de lecture sécurisée avec gestion d'erreur JWT
             const resFull = await sheets.spreadsheets.values.get({ 
                 spreadsheetId: sheetId, 
                 range: "'Employés'!A2:I200", 
