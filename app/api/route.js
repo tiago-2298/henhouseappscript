@@ -1,6 +1,9 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// ✅ IMPORTANT Vercel : autorise plus de temps à la Function
+export const maxDuration = 60;
+
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
