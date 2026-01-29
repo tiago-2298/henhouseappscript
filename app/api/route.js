@@ -88,26 +88,41 @@ const PARTNERS = {
 // ================= UTILS =================
 async function getAuthSheets() {
     console.log("DEBUG: 1. Entrée dans getAuthSheets");
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    
+    // On nettoie la clé : on enlève les guillemets éventuels et on gère les sauts de ligne
+    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    if (privateKey && privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.substring(1, privateKey.length - 1);
+    }
+    privateKey = privateKey?.replace(/\\n/g, '\n');
+
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
     
-    if (!privateKey) console.error("DEBUG: ERREUR - La Private Key est vide dans .env !");
-    if (!clientEmail) console.error("DEBUG: ERREUR - Le Client Email est vide dans .env !");
+    console.log("DEBUG: 1.1. Vérification format clé :", {
+        longueur: privateKey?.length,
+        commencePar: privateKey?.substring(0, 25),
+        finitPar: privateKey?.substring(privateKey?.length - 20)
+    });
 
-    if (!privateKey || !clientEmail) throw new Error("Variables Google manquantes dans l'environnement");
+    if (!privateKey || !clientEmail) {
+        throw new Error("Variables d'environnement manquantes sur Vercel");
+    }
     
     try {
-        console.log("DEBUG: 2. Tentative de création du jeton JWT...");
+        console.log("DEBUG: 2. Création du jeton JWT...");
         const auth = new google.auth.JWT(
             clientEmail, 
             null, 
             privateKey, 
             ['https://www.googleapis.com/auth/spreadsheets']
         );
-        console.log("DEBUG: 3. Authentification JWT configurée.");
-        return google.sheets({ version: 'v4', auth });
+        
+        // On force un timeout court pour ne pas attendre 30 secondes
+        const sheets = google.sheets({ version: 'v4', auth });
+        console.log("DEBUG: 3. JWT configuré.");
+        return sheets;
     } catch (e) {
-        console.error("DEBUG: ERREUR FATALE lors de l'auth JWT:", e.message);
+        console.error("DEBUG: ERREUR JWT:", e.message);
         throw e;
     }
 }
@@ -318,3 +333,4 @@ export async function POST(request) {
         return NextResponse.json({ success: false, message: "Erreur serveur : " + err.message }, { status: 500 });
     }
 }
+
