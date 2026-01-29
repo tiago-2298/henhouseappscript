@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.21-DEBUG-ULTRA';
+const APP_VERSION = '2026.01.29-FIX-JWT';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -89,27 +89,26 @@ const PARTNERS = {
 async function getAuthSheets() {
     console.log("DEBUG: 1. Entrée dans getAuthSheets");
     
-    // On nettoie la clé : on enlève les guillemets éventuels et on gère les sauts de ligne
     let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-    if (privateKey && privateKey.startsWith('"') && privateKey.endsWith('"')) {
-        privateKey = privateKey.substring(1, privateKey.length - 1);
-    }
-    privateKey = privateKey?.replace(/\\n/g, '\n');
-
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-    
-    console.log("DEBUG: 1.1. Vérification format clé :", {
-        longueur: privateKey?.length,
-        commencePar: privateKey?.substring(0, 25),
-        finitPar: privateKey?.substring(privateKey?.length - 20)
-    });
 
     if (!privateKey || !clientEmail) {
         throw new Error("Variables d'environnement manquantes sur Vercel");
     }
+
+    // --- NETTOYAGE AGRESSIF DE LA CLÉ ---
+    privateKey = privateKey
+        .replace(/^['"]|['"]$/g, '') // Enlève guillemets début/fin
+        .replace(/\\n/g, '\n')       // Transforme \n texte en vrais sauts de ligne
+        .trim();
+
+    console.log("DEBUG: 1.1. État de la clé nettoyée :", {
+        longueur: privateKey.length,
+        commencePar: privateKey.substring(0, 25),
+        contientSautsLigne: privateKey.includes('\n')
+    });
     
     try {
-        console.log("DEBUG: 2. Création du jeton JWT...");
         const auth = new google.auth.JWT(
             clientEmail, 
             null, 
@@ -117,7 +116,6 @@ async function getAuthSheets() {
             ['https://www.googleapis.com/auth/spreadsheets']
         );
         
-        // On force un timeout court pour ne pas attendre 30 secondes
         const sheets = google.sheets({ version: 'v4', auth });
         console.log("DEBUG: 3. JWT configuré.");
         return sheets;
@@ -149,19 +147,19 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
 
 async function updateEmployeeStats(employeeName, amount, type) {
     try {
-        console.log(`DEBUG: Update stats pour ${employeeName} (Type: ${type}, Montant: ${amount})`);
         if (!employeeName || !amount || Number(amount) <= 0) return;
         const sheets = await getAuthSheets();
         const sheetId = process.env.GOOGLE_SHEET_ID;
 
-        const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
+        // On cible l'onglet 'Employés' explicitement
+        const resList = await sheets.spreadsheets.values.get({ 
+            spreadsheetId: sheetId, 
+            range: "'Employés'!B2:B200" 
+        });
         const rows = resList.data.values || [];
         const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
         
-        if (rowIndex === -1) {
-            console.warn(`DEBUG: Employé ${employeeName} introuvable dans la colonne B.`);
-            return;
-        }
+        if (rowIndex === -1) return;
 
         const realRow = rowIndex + 2;
         const col = type === 'CA' ? 'G' : 'H';
@@ -178,7 +176,6 @@ async function updateEmployeeStats(employeeName, amount, type) {
             spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW',
             requestBody: { values: [[currentVal + Number(amount)]] }
         });
-        console.log(`DEBUG: Stats mises à jour pour ${employeeName} en cellule ${targetRange}`);
     } catch (e) { console.error("DEBUG: Erreur updateEmployeeStats:", e.message); }
 }
 
@@ -187,38 +184,21 @@ export async function POST(request) {
     try {
         const body = await request.json().catch(() => ({}));
         const { action, data } = body;
-        console.log("DEBUG: Action demandée ->", action || "Initialisation (getMeta)");
 
         if (!action || action === 'getMeta' || action === 'syncData') {
-            console.log("DEBUG: 4. Initialisation de la connexion Sheets...");
             const sheets = await getAuthSheets();
             const sheetId = process.env.GOOGLE_SHEET_ID;
             
-            if (!sheetId) {
-                console.error("DEBUG: GOOGLE_SHEET_ID est manquant !");
-                return NextResponse.json({ success: false, message: "ID Sheet manquant" }, { status: 500 });
-            }
-
-            console.log("DEBUG: 5. Tentative de lecture de la Range 'Employés'!A2:I200...");
+            console.log("DEBUG: 5. Lecture onglet 'Employés'...");
             
-            let resFull;
-            try {
-                resFull = await sheets.spreadsheets.values.get({ 
-                    spreadsheetId: sheetId, 
-                    range: "'Employés'!A2:I200", 
-                    valueRenderOption: 'UNFORMATTED_VALUE' 
-                });
-                console.log("DEBUG: 6. Données récupérées avec succès.");
-            } catch (googleError) {
-                console.error("DEBUG: ERREUR GOOGLE API lors de la lecture des données:", googleError.message);
-                // Si l'erreur contient "403", c'est un problème de partage de fichier
-                // Si l'erreur contient "404", c'est un problème d'ID de fichier ou de nom d'onglet
-                throw googleError;
-            }
+            // Tentative de lecture sécurisée avec gestion d'erreur JWT
+            const resFull = await sheets.spreadsheets.values.get({ 
+                spreadsheetId: sheetId, 
+                range: "'Employés'!A2:I200", 
+                valueRenderOption: 'UNFORMATTED_VALUE' 
+            });
 
             const rows = resFull.data.values || [];
-            console.log(`DEBUG: 7. Nombre de lignes trouvées : ${rows.length}`);
-
             const employeesFull = rows.filter(r => r[1]).map(r => ({
                 id: String(r[0] ?? ''), 
                 name: String(r[1] ?? '').trim(), 
@@ -230,7 +210,6 @@ export async function POST(request) {
                 seniority: Number(r[5] ?? 0)
             }));
 
-            console.log("DEBUG: 8. Fin du traitement, envoi de la réponse JSON.");
             return NextResponse.json({
                 success: true, 
                 version: APP_VERSION,
@@ -244,12 +223,10 @@ export async function POST(request) {
             });
         }
 
-        // --- GESTION DES AUTRES ACTIONS ---
         let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
         switch (action) {
             case 'sendFactures':
-                console.log("DEBUG: Traitement Facture...");
                 const totalFact = data.items?.reduce((a, i) => a + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
                 embed.title = `📑 Vente de ${data.employee}`;
                 embed.fields = [
@@ -262,7 +239,6 @@ export async function POST(request) {
                 break;
 
             case 'sendProduction':
-                console.log("DEBUG: Traitement Production...");
                 const tProd = data.items?.reduce((s, i) => s + Number(i.qty), 0);
                 embed.title = `📦 Production de ${data.employee}`;
                 embed.fields = [
@@ -274,7 +250,6 @@ export async function POST(request) {
                 break;
 
             case 'sendEntreprise':
-                console.log("DEBUG: Traitement Entreprise...");
                 embed.title = `🚚 Livraison Pro de ${data.employee}`;
                 embed.fields = [
                     { name: '🏢 Client', value: `**${data.company}**`, inline: true },
@@ -284,7 +259,6 @@ export async function POST(request) {
                 break;
 
             case 'sendExpense':
-                console.log("DEBUG: Traitement Note de Frais...");
                 embed.title = `💳 Frais déclaré par ${data.employee}`;
                 embed.fields = [
                     { name: '🛠️ Type', value: data.kind, inline: true },
@@ -296,7 +270,6 @@ export async function POST(request) {
                 break;
 
             case 'sendGarage':
-                console.log("DEBUG: Traitement Garage...");
                 embed.title = data.action === 'Sortie' ? `🔑 Sortie par ${data.employee}` : `🅿️ Entrée par ${data.employee}`;
                 embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
                 embed.fields = [
@@ -307,7 +280,6 @@ export async function POST(request) {
                 break;
 
             case 'sendPartnerOrder':
-                console.log("DEBUG: Traitement Partenaire...");
                 embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
                 embed.fields = [
                     { name: '🏢 Entreprise', value: data.company, inline: true },
@@ -320,7 +292,6 @@ export async function POST(request) {
                 break;
 
             case 'sendSupport':
-                console.log("DEBUG: Traitement Support...");
                 embed.title = `🆘 Ticket de ${data.employee}`;
                 embed.fields = [{ name: '📌 Sujet', value: data.sub }];
                 embed.description = `**Message :**\n${data.msg}`;
@@ -329,8 +300,7 @@ export async function POST(request) {
         }
         return NextResponse.json({ success: true });
     } catch (err) {
-        console.error("DEBUG: ERREUR GLOBALE DANS LE POST ->", err.message);
-        return NextResponse.json({ success: false, message: "Erreur serveur : " + err.message }, { status: 500 });
+        console.error("DEBUG: ERREUR GLOBALE ->", err.message);
+        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
     }
 }
-
