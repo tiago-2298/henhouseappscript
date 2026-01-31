@@ -215,8 +215,8 @@ export default function Home() {
 
   const total = useMemo(() => cart.reduce((a,b)=>a+b.qty*b.pu, 0), [cart]);
   
-  // NOUVEAU : CALCUL DU GAIN SALAIRE (45%)
-  const salaryGain = useMemo(() => (total * 0.45), [total]);
+  // CORRECTION : PAS DE CENTIMES (ENTIER)
+  const salaryGain = useMemo(() => Math.floor(total * 0.45), [total]);
 
   const myProfile = useMemo(() => data?.employeesFull?.find(e => e.name === user), [data, user]);
 
@@ -368,10 +368,10 @@ export default function Home() {
             </div>
             
             <div style={{padding: '20px 0', borderTop: '1px solid var(--brd)'}}>
-              <div className="tool-bar">
-                <button className="icon-tool" title="Reload" onClick={() => window.location.reload()}>🔃</button>
-                <button className="icon-tool" title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
-                <button className="icon-tool" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
+              <div className="tool-bar" style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginBottom:15}}>
+                <button className="nav-l" style={{padding:10, justifyContent:'center'}} title="Reload" onClick={() => window.location.reload()}>🔃</button>
+                <button className="nav-l" style={{padding:10, justifyContent:'center'}} title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
+                <button className="nav-l" style={{padding:10, justifyContent:'center'}} onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
                   {isMuted ? '🔇' : '🔊'}
                 </button>
               </div>
@@ -559,9 +559,17 @@ export default function Home() {
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 NOTES DE FRAIS</h2>
                         <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Remboursement essence et réparations</p>
-                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
-                        <input className="inp" type="number" placeholder="Montant exact ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        
+                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
+                           {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
+                        </select>
+                        
+                        <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}>
+                           <option value="Essence">Essence</option>
+                           <option value="Réparation">Réparation</option>
+                        </select>
+                        
+                        <input className="inp" type="number" placeholder="Montant entier ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
                         
                         <div 
                            className={`dropzone ${dragActive ? 'active' : ''}`}
@@ -621,7 +629,7 @@ export default function Home() {
                           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom: 20}}>
                               <div className="card" style={{background: 'rgba(255,255,255,0.03)', border:'1px solid var(--brd)'}}>
                                 <p style={{fontSize:'0.75rem', color:'var(--muted)', fontWeight:800, marginBottom:5}}>C.A PERSONNEL</p>
-                                <p style={{fontSize: '1.6rem', fontWeight: 950, color:'#fff'}}>${myProfile.ca.toLocaleString()}</p>
+                                <p style={{fontSize: '1.6rem', fontWeight: 950, color:'#fff'}}>${Math.floor(myProfile.ca).toLocaleString()}</p>
                               </div>
                               <div className="card" style={{background: 'rgba(255,255,255,0.03)', border:'1px solid var(--brd)'}}>
                                 <p style={{fontSize:'0.75rem', color:'var(--muted)', fontWeight:800, marginBottom:5}}>UNITÉS PRODUITES</p>
@@ -631,22 +639,11 @@ export default function Home() {
 
                           <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, rgba(24,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 25, padding:25}}>
                               <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 900, marginBottom:8}}>💵 RÉMUNÉRATION ESTIMÉE</p>
-                              <p style={{fontSize: '2.4rem', fontWeight: 950}}>${myProfile.salary?.toLocaleString() || 0}</p>
+                              <p style={{fontSize: '2.4rem', fontWeight: 950}}>${Math.floor(myProfile.salary)?.toLocaleString() || 0}</p>
                               <div style={{height:4, background:'rgba(255,152,0,0.2)', borderRadius:10, margin:'15px 0'}}>
                                   <div style={{width:'70%', height:'100%', background:'var(--p)', borderRadius:10}}></div>
                               </div>
                               <p style={{fontSize: '0.7rem', opacity: 0.6}}>Basé sur le barème contractuel de production et vente</p>
-                          </div>
-
-                          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:15}}>
-                                <div style={{padding:15, background:'rgba(0,0,0,0.2)', borderRadius:18, border:'1px solid var(--brd)'}}>
-                                    <p style={{fontSize:'0.65rem', color:'var(--muted)', fontWeight:800}}>ANCIENNETÉ</p>
-                                    <p style={{fontWeight:900, fontSize:'1.1rem'}}>{myProfile.seniority} <span style={{fontSize:'0.8rem', opacity:0.5}}>jours</span></p>
-                                </div>
-                                <div style={{padding:15, background:'rgba(0,0,0,0.2)', borderRadius:18, border:'1px solid var(--brd)'}}>
-                                    <p style={{fontSize:'0.65rem', color:'var(--muted)', fontWeight:800}}>CONTACT</p>
-                                    <p style={{fontWeight:900, fontSize:'1.1rem'}}>{myProfile.phone}</p>
-                                </div>
                           </div>
                         </div>
                       </div>
@@ -655,14 +652,7 @@ export default function Home() {
                     {currentTab === 'support' && (
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 CENTRE D'ASSISTANCE</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Contact direct avec la direction pour tout problème urgent</p>
-                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
-                          <option>Problème Stock / Inventaire</option>
-                          <option>Erreur Facturation</option>
-                          <option>Demande d'absence / Congés</option>
-                          <option>Autre demande urgente</option>
-                        </select>
-                        <textarea className="inp" style={{height:200, resize:'none', paddingTop:15}} placeholder="Décrivez votre demande avec le plus de détails possible..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <textarea className="inp" style={{height:200, resize:'none', paddingTop:15}} placeholder="Décrivez votre demande..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
                         <button className="btn-p" style={{marginTop:15}} disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>OUVRIR LE TICKET</button>
                       </div>
                     )}
@@ -674,108 +664,60 @@ export default function Home() {
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30, maxWidth:1200, margin:'0 auto'}}>
                   <div className="card" style={{padding:35, textAlign:'left', background:'rgba(24,26,32,0.5)'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950, fontSize:'1.4rem', display:'flex', alignItems:'center', gap:12}}>
-                        <span style={{fontSize:'1.8rem'}}>🥇</span> TOP 10 CHIFFRE D'AFFAIRES
-                    </h2>
+                    <h2 style={{marginBottom:30, fontWeight:950, fontSize:'1.4rem', display:'flex', alignItems:'center', gap:12}}>🥇 TOP 10 CHIFFRE D'AFFAIRES</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20, position:'relative'}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8, position:'relative', zIndex:2}}>
-                           <span style={{fontWeight:800}}>{i === 0 ? '👑' : (i+1)+'.'} {e.name}</span>
-                           <b style={{color: i===0 ? 'var(--p)' : '#fff', fontSize:'1.1rem'}}>${e.ca.toLocaleString()}</b>
-                        </div>
-                        <div className="perf-bar" style={{height:6}}><div className="perf-fill" style={{width: (e.ca / Math.max(...data.employeesFull.map(x=>x.ca)) * 100) + '%', borderRadius:10}}></div></div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="card" style={{padding:35, textAlign:'left', background:'rgba(24,26,32,0.5)'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950, fontSize:'1.4rem', display:'flex', alignItems:'center', gap:12}}>
-                        <span style={{fontSize:'1.8rem'}}>👨‍🍳</span> TOP 10 PRODUCTION
-                    </h2>
-                    {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
-                      <div key={i} style={{marginBottom: 20}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
-                           <span style={{fontWeight:800}}>{i === 0 ? '🔥' : (i+1)+'.'} {e.name}</span>
-                           <b style={{color: i===0 ? '#10b981' : '#fff', fontSize:'1.1rem'}}>{e.stock.toLocaleString()} <span style={{fontSize:'0.7rem', opacity:0.5}}>u.</span></b>
+                           <span style={{fontWeight:800}}>{i === 0 ? '👑' : (i+1)+'.'} {e.name}</span>
+                           <b style={{color: i===0 ? 'var(--p)' : '#fff'}}>${Math.floor(e.ca).toLocaleString()}</b>
                         </div>
-                        <div className="perf-bar" style={{background:'rgba(16, 185, 129, 0.1)', height:6}}><div className="perf-fill" style={{background:'#10b981', width: (e.stock / Math.max(...data.employeesFull.map(x=>x.stock)) * 100) + '%', borderRadius:10}}></div></div>
+                        <div className="perf-bar" style={{height:6}}><div className="perf-fill" style={{width: (e.ca / Math.max(...data.employeesFull.map(x=>x.ca)) * 100) + '%'}}></div></div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* ANNUAIRE */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                    <div style={{marginBottom:30}}>
-                        <h2 style={{fontSize:'1.8rem', fontWeight:950}}>Annuaire du personnel</h2>
-                        <p style={{color:'var(--muted)'}}>{data.employeesFull.length} agents répertoriés</p>
-                    </div>
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:20}}>
-                    {data.employeesFull.map(e => (
-                        <div key={e.id} className="card" style={{padding:25, textAlign:'left', display:'flex', gap:20, alignItems:'center', background:'rgba(255,255,255,0.02)'}}>
-                        <div style={{width:65, height:65, borderRadius:20, background:'var(--panel)', border:'1px solid var(--brd)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.6rem', fontWeight:950, color:'var(--p)'}}>{e.name.charAt(0)}</div>
-                        <div style={{flex:1}}>
-                            <div style={{fontWeight:900, fontSize:'1.1rem', color:'#fff'}}>{e.name}</div>
-                            <div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:800, textTransform:'uppercase', marginTop:2}}>{e.role}</div>
-                            <a href={`tel:${e.phone}`} style={{fontSize:'0.9rem', marginTop:10, color:'var(--muted)', display:'block', textDecoration:'none', fontWeight:700}}>📞 {e.phone}</a>
-                        </div>
-                        </div>
-                    ))}
-                    </div>
                 </div>
               )}
             </div>
           </main>
 
-          {/* PANIER AVEC INDICATEUR DE SALAIRE */}
+          {/* PANIER */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:30, borderBottom:'1px solid var(--brd)'}}>
-                  <h2 style={{fontSize:'1.2rem', fontWeight:950, display:'flex', alignItems:'center', gap:10}}>
-                    <span style={{fontSize:'1.5rem'}}>🛒</span> VOTRE PANIER
-                  </h2>
+                  <h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 VOTRE PANIER</h2>
               </div>
-              <div style={{padding:20, background:'rgba(255,152,0,0.03)'}}>
-                  <input className="inp" placeholder="N° FACTURE OBLIGATOIRE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.3rem', letterSpacing:2, marginBottom:0, borderStyle:'dashed', borderWidth:2}} />
+              <div style={{padding:20}}>
+                  <input className="inp" placeholder="N° FACTURE OBLIGATOIRE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.3rem'}} />
               </div>
               <div style={{flex:1, overflowY:'auto', padding:'10px 20px'}}>
-                {cart.length === 0 ? (
-                    <div style={{height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', opacity:0.2}}>
-                        <span style={{fontSize:'4rem'}}>🛍️</span>
-                        <p style={{fontWeight:900, marginTop:10}}>PANIER VIDE</p>
-                    </div>
-                ) : cart.map((i, idx)=>(
-                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'18px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center', animation:'fadeIn 0.3s ease'}}>
+                {cart.map((i, idx)=>(
+                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'18px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
                     <div style={{flex:1}}>
                         <div style={{fontWeight:800, fontSize:'0.9rem', color:'#fff'}}>{i.name}</div>
-                        <div style={{color:'var(--p)', fontSize:'0.85rem', fontWeight:900}}>${i.pu} <span style={{color:'var(--muted)', fontWeight:500, fontSize:'0.7rem'}}>par unité</span></div>
+                        <div style={{color:'var(--p)', fontSize:'0.85rem', fontWeight:900}}>${i.pu}</div>
                     </div>
-                    <div style={{display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.03)', padding:6, borderRadius:12}}>
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:30, height:30, borderRadius:8, cursor:'pointer', fontWeight:900}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
-                      <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} style={{border:'none', background:'transparent'}} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:30, height:30, borderRadius:8, cursor:'pointer', fontWeight:900}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
+                    <div style={{display:'flex', alignItems:'center', gap:10}}>
+                      <button className="nav-l" style={{padding:6, width:30, height:30, justifyContent:'center'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
+                      <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
+                      <button className="nav-l" style={{padding:6, width:30, height:30, justifyContent:'center'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{padding:30, background:'#0a0a0a', borderTop:'1px solid var(--brd)', boxShadow:'0 -10px 30px rgba(0,0,0,0.5)'}}>
-                
-                {/* NOUVEL INDICATEUR DE SALAIRE */}
+              <div style={{padding:30, background:'#0a0a0a', borderTop:'1px solid var(--brd)'}}>
                 {total > 0 && (
                   <div style={{textAlign:'center'}}>
                     <div className="salary-badge">
-                      <span>💸</span> Cette vente va ajouter <b>${salaryGain.toFixed(2)}</b> à votre salaire
+                      <span>💸</span> Gain salaire : <b>+${salaryGain}</b>
                     </div>
                   </div>
                 )}
-
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:25, alignItems:'flex-end'}}>
-                    <span style={{fontWeight:900, fontSize:'0.8rem', color:'var(--muted)', letterSpacing:1}}>TOTAL À PAYER</span>
-                    <b style={{fontSize:'2.8rem', color:'var(--p)', fontWeight:950, lineHeight:1}}>${total.toLocaleString()}</b>
+                    <span style={{fontWeight:900, fontSize:'0.8rem', color:'var(--muted)'}}>TOTAL</span>
+                    <b style={{fontSize:'2.8rem', color:'var(--p)', fontWeight:950}}>${Math.floor(total).toLocaleString()}</b>
                 </div>
-                <button className="btn-p" style={{height:65, fontSize:'1.1rem'}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                  {sending ? "TRANSMISSION..." : "VALIDER LA VENTE"}
+                <button className="btn-p" style={{height:65}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
+                  VALIDER LA VENTE
                 </button>
               </div>
             </aside>
@@ -784,9 +726,9 @@ export default function Home() {
       )}
 
       {toast && (
-        <div className="toast" style={{ background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'), color: '#fff' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 950, letterSpacing: '1px', marginBottom: '5px' }}>{toast.t}</div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 600, opacity: 0.95 }}>{toast.m}</div>
+        <div className="toast" style={{ background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)')}}>
+          <div style={{ fontWeight: 950 }}>{toast.t}</div>
+          <div style={{ fontSize: '0.95rem' }}>{toast.m}</div>
         </div>
       )}
     </div>
