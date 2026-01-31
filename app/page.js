@@ -214,6 +214,10 @@ export default function Home() {
   useEffect(() => { loadData(); }, []);
 
   const total = useMemo(() => cart.reduce((a,b)=>a+b.qty*b.pu, 0), [cart]);
+  
+  // NOUVEAU : CALCUL DU GAIN SALAIRE (45%)
+  const salaryGain = useMemo(() => (total * 0.45), [total]);
+
   const myProfile = useMemo(() => data?.employeesFull?.find(e => e.name === user), [data, user]);
 
   const updateCartQty = (idx, val) => {
@@ -317,6 +321,25 @@ export default function Home() {
         @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .salary-badge {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+          padding: 8px 12px;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 900;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 15px;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
       `}</style>
 
       {view === 'login' ? (
@@ -705,7 +728,7 @@ export default function Home() {
             </div>
           </main>
 
-          {/* PANIER */}
+          {/* PANIER AVEC INDICATEUR DE SALAIRE */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:30, borderBottom:'1px solid var(--brd)'}}>
@@ -737,6 +760,16 @@ export default function Home() {
                 ))}
               </div>
               <div style={{padding:30, background:'#0a0a0a', borderTop:'1px solid var(--brd)', boxShadow:'0 -10px 30px rgba(0,0,0,0.5)'}}>
+                
+                {/* NOUVEL INDICATEUR DE SALAIRE */}
+                {total > 0 && (
+                  <div style={{textAlign:'center'}}>
+                    <div className="salary-badge">
+                      <span>💸</span> Cette vente va ajouter <b>${salaryGain.toFixed(2)}</b> à votre salaire
+                    </div>
+                  </div>
+                )}
+
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:25, alignItems:'flex-end'}}>
                     <span style={{fontWeight:900, fontSize:'0.8rem', color:'var(--muted)', letterSpacing:1}}>TOTAL À PAYER</span>
                     <b style={{fontSize:'2.8rem', color:'var(--p)', fontWeight:950, lineHeight:1}}>${total.toLocaleString()}</b>
