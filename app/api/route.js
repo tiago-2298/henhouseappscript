@@ -81,13 +81,15 @@ const PARTNERS = {
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
-        'C - Gilmore Jaden','C - Delgado Madison','C - Eider Aldana','C - Léon Dawson'
+        'RE - DJOUDI Toufik','C - Gilmore Jaden','C - Delgado Madison',
+        'C - Léon Dawson ','C - Eider Aldana','C - Aldana Jaïa',
+        'C - Pearce Asap Jr ','C - Rojas Diozelina',
       ],
       menus: [
-        { name: 'Wings + Berry Fizz', catalog: 80 },
-        { name: 'Ribbs + Agua Fresca Pastèque', catalog: 70 },
-        { name: 'Saumon + Jus de raisin rouge + Churros Caramel', catalog: 65 },
-        { name: 'Paella + Jus de raisin blanc', catalog: 65 }
+        { name: 'Burger Gourmet + Kombucha Citron', catalog: 75 },
+        { name: 'Ribs + Jus d’orange', catalog: 65 },
+        { name: 'Wings épicé + Berry Fizz', catalog: 65 },
+        { name: 'Paella ou Crousti + Nectar Exotique', catalog: 75 }
       ],
       webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
@@ -365,3 +367,4 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
   }
 }
+
