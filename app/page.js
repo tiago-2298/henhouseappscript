@@ -91,7 +91,6 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
   const [dragActive, setDragActive] = useState(false);
-  const [dirSearch, setDirSearch] = useState('');
 
   const initialForms = {
     invoiceNum: '',
@@ -313,28 +312,27 @@ export default function Home() {
         .salary-badge { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.2); animation: float 3s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         
+        /* TOOLBAR DESIGN */
         .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
         .tool-btn { background: #1a1a1a; border: 1px solid var(--brd); color: #fff; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
         .tool-btn:hover { border-color: var(--p); color: var(--p); background: #222; }
         
+        /* EMPLOYEE FOOTER */
         .emp-badge { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid var(--brd); margin-bottom: 10px; }
         .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
         .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 25px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; }
-        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .dz-preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 15px; border-radius: 8px; border: 2px solid #fff; }
+        /* EXPENSE DROPZONE */
+        .dropzone { border: 2px dashed var(--brd); border-radius: 20px; padding: 30px; text-align: center; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; overflow: hidden; }
+        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); transform: scale(1.02); }
+        .dz-preview-container { position: relative; margin-top: 15px; border-radius: 12px; overflow: hidden; border: 2px solid var(--brd); }
+        .dz-preview { width: 100%; max-height: 200px; object-fit: contain; display: block; background: #000; }
+        .dz-remove { position: absolute; top: 10px; right: 10px; background: #ef4444; color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; font-weight: 900; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s; z-index: 5; }
+        .dz-remove:hover { transform: scale(1.1); background: #f87171; }
 
-        /* NOUVEAUX STYLES ANNUAIRE & PROFIL */
-        .dir-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
-        .dir-card:hover { border-color: var(--p); transform: translateY(-3px); }
-        .dir-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(45deg, var(--p), #ffb74d); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; color: #fff; margin-bottom: 15px; box-shadow: 0 10px 20px rgba(255,152,0,0.2); }
-        .dir-call { margin-top: 15px; padding: 10px 20px; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--txt); text-decoration: none; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .dir-call:hover { background: var(--p); color: #fff; }
-
-        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--brd); padding: 20px; border-radius: 20px; text-align: center; }
-        .stat-val { font-size: 1.8rem; font-weight: 950; color: #fff; margin-bottom: 5px; }
-        .stat-lbl { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
       {view === 'login' ? (
@@ -375,12 +373,15 @@ export default function Home() {
                 <div className="emp-name">{user}</div>
                 <div className="emp-role">{myProfile?.role || 'Agent'}</div>
               </div>
+              
               <button className="nav-l" onClick={logout} style={{color:'#ef4444', justifyContent: 'center', background:'rgba(239, 68, 68, 0.05)', marginTop: '5px'}}>🚪 DÉCONNEXION</button>
             </div>
           </aside>
 
           <main className="main">
             <div className="fade-in">
+              
+              {/* TABLEAU DE BORD */}
               {currentTab === 'home' && (
                 <div className="fade-in">
                    <div style={{marginBottom:45}}>
@@ -431,6 +432,7 @@ export default function Home() {
                 </div>
               )}
 
+              {/* CAISSE */}
               {currentTab === 'invoices' && (
                 <div className="fade-in">
                   <div style={{display:'flex', flexWrap:'wrap', gap:15, marginBottom:30, alignItems:'center'}}>
@@ -467,10 +469,11 @@ export default function Home() {
                 </div>
               )}
 
-              {/* AUTRES MODULES STANDARDS */}
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
+              {/* MODULES CENTRÉS */}
+              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'profile', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
+                    
                     {currentTab === 'stock' && (
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 PRODUCTION</h2>
@@ -533,20 +536,60 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* MODULE FRAIS AMÉLIORÉ */}
                     {currentTab === 'expenses' && (
                       <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 FRAIS</h2>
-                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:Math.round(e.target.value)}})} />
-                        <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => document.getElementById('inpFile').click()}>
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 NOTES DE FRAIS</h2>
+                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:20}}>Essence & Réparations</p>
+                        
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12}}>
+                          <div>
+                            <label style={{fontSize:'0.65rem', fontWeight:800, color:'var(--p)', marginLeft:5}}>VÉHICULE</label>
+                            <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                          </div>
+                          <div>
+                            <label style={{fontSize:'0.65rem', fontWeight:800, color:'var(--p)', marginLeft:5}}>TYPE</label>
+                            <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
+                          </div>
+                        </div>
+                        
+                        <label style={{fontSize:'0.65rem', fontWeight:800, color:'var(--p)', marginLeft:5}}>MONTANT ($)</label>
+                        <input className="inp" type="number" placeholder="0" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:Math.round(e.target.value)}})} />
+                        
+                        <div 
+                          className={`dropzone ${dragActive ? 'active' : ''}`} 
+                          onDragOver={e => { e.preventDefault(); setDragActive(true); }} 
+                          onDragLeave={() => setDragActive(false)} 
+                          onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} 
+                          onClick={() => !forms.expense.file && document.getElementById('inpFile').click()}
+                        >
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
+                           
                            {forms.expense.file ? (
-                             <div><div style={{color:'var(--p)', fontWeight:900}}>✅ PHOTO CHARGÉE</div><img src={forms.expense.file} className="dz-preview" /></div>
+                             <div className="fade-in">
+                               <div style={{color:'#10b981', fontWeight:900, fontSize:'0.75rem', marginBottom:10}}>PREUVE CAPTURÉE ✅</div>
+                               <div className="dz-preview-container">
+                                 <button className="dz-remove" onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }} title="Supprimer la photo">×</button>
+                                 <img src={forms.expense.file} className="dz-preview" alt="Reçu" />
+                               </div>
+                             </div>
                            ) : (
-                             <div><div style={{fontSize:'2rem'}}>📸</div><div style={{fontWeight:800}}>PHOTO DU REÇU</div></div>
+                             <div>
+                               <div style={{fontSize:'2.5rem', marginBottom:10}}>📸</div>
+                               <div style={{fontWeight:900, fontSize:'0.9rem'}}>PHOTO DU REÇU / FACTURE</div>
+                               <div style={{fontSize:'0.7rem', opacity:0.5, marginTop:5}}>Cliquez, déposez ou collez (Ctrl+V)</div>
+                             </div>
                            )}
                         </div>
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>ENVOYER</button>
+                        
+                        <button 
+                          className="btn-p" 
+                          disabled={sending || !forms.expense.amount || !forms.expense.file} 
+                          onClick={()=>send('sendExpense', forms.expense)}
+                          style={{boxShadow: forms.expense.file ? '0 10px 25px rgba(255,152,0,0.3)' : 'none'}}
+                        >
+                          {sending ? "TRANSMISSION..." : "SOUMETTRE LA NOTE DE FRAIS"}
+                        </button>
                       </div>
                     )}
 
@@ -563,9 +606,59 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* PROFIL AMÉLIORÉ */}
+                    {currentTab === 'profile' && myProfile && (
+                      <div className="fade-in">
+                        <div style={{textAlign:'center', marginBottom: 35}}>
+                          <div style={{position:'relative', width:120, height:120, margin:'0 auto 20px'}}>
+                            <div style={{width:'100%', height:'100%', borderRadius:'35%', background:'linear-gradient(45deg, var(--p), #ffb74d)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3.5rem', fontWeight:950, color:'#fff', boxShadow:'0 15px 35px rgba(255,152,0,0.2)'}}>{user.charAt(0)}</div>
+                            <div style={{position:'absolute', bottom:0, right:0, background:'#10b981', width:30, height:30, borderRadius:'50%', border:'4px solid var(--panel)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'0.8rem'}}>✓</div>
+                          </div>
+                          <h1 style={{fontSize:'2.2rem', fontWeight:950, letterSpacing:'-1px'}}>{user}</h1>
+                          <div style={{display:'inline-block', padding:'4px 15px', background:'rgba(255,152,0,0.1)', color:'var(--p)', borderRadius:20, fontWeight:800, fontSize:'0.7rem', textTransform:'uppercase', marginTop:5}}>{myProfile.role}</div>
+                        </div>
+
+                        <div className="card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, rgba(24,26,32,1) 100%)', border: '1px solid var(--p)', marginBottom: 25, padding:25, textAlign:'left'}}>
+                            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10}}>
+                              <p style={{fontSize:'0.8rem', color:'var(--p)', fontWeight: 900}}>RÉMUNÉRATION ESTIMÉE</p>
+                              <span style={{fontSize:'1.2rem'}}>💵</span>
+                            </div>
+                            <p style={{fontSize: '2.8rem', fontWeight: 950, lineHeight:1}}>${Math.round(myProfile.salary || 0).toLocaleString()}</p>
+                            <div className="perf-bar" style={{height:6, marginTop:20}}><div className="perf-fill" style={{width:'75%'}}></div></div>
+                            <p style={{fontSize:'0.65rem', color:'var(--muted)', marginTop:8}}>Basé sur 45% de votre C.A et bonus de production</p>
+                        </div>
+
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:15}}>
+                          <div className="card" style={{padding:20, textAlign:'left'}}>
+                            <p style={{fontSize:'0.65rem', color:'var(--muted)', fontWeight:800}}>VOLUME VENTES</p>
+                            <p style={{fontWeight:950, fontSize:'1.4rem'}}>${Math.round(myProfile.ca).toLocaleString()}</p>
+                            <div className="perf-bar" style={{height:4}}><div className="perf-fill" style={{width:'60%'}}></div></div>
+                          </div>
+                          <div className="card" style={{padding:20, textAlign:'left'}}>
+                            <p style={{fontSize:'0.65rem', color:'var(--muted)', fontWeight:800}}>PROD. CUISINE</p>
+                            <p style={{fontWeight:950, fontSize:'1.4rem'}}>{myProfile.stock} <small style={{fontSize:'0.7rem', opacity:0.5}}>u.</small></p>
+                            <div className="perf-bar" style={{height:4}}><div className="perf-fill" style={{width:'40%', background:'#10b981'}}></div></div>
+                          </div>
+                        </div>
+
+                        <div style={{marginTop:25, padding:20, borderRadius:20, background:'rgba(255,255,255,0.02)', border:'1px solid var(--brd)'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:10}}>
+                            <span style={{fontSize:'1.1rem'}}>📅</span>
+                            <div style={{flex:1}}>
+                              <p style={{fontSize:'0.6rem', color:'var(--muted)', fontWeight:800}}>ANCIENNETÉ</p>
+                              <p style={{fontSize:'0.9rem', fontWeight:700}}>Agent depuis 142 jours</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {currentTab === 'support' && (
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 SUPPORT</h2>
+                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
+                          <option>Stock</option><option>Facture</option><option>Absence</option><option>Autre</option>
+                        </select>
                         <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
                         <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
                       </div>
@@ -574,82 +667,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* AMÉLIORATION : PROFIL */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="fade-in" style={{maxWidth:900, margin:'0 auto'}}>
-                    <div style={{background:'var(--panel)', border:'1px solid var(--brd)', borderRadius:30, padding:50, position:'relative', overflow:'hidden', marginBottom:30}}>
-                        <div style={{position:'absolute', top:0, right:0, width:300, height:300, background:'radial-gradient(circle, rgba(255,152,0,0.05) 0%, transparent 70%)', pointerEvents:'none'}}></div>
-                        
-                        <div style={{display:'flex', alignItems:'center', gap:40, marginBottom:50}}>
-                            <div className="dir-avatar" style={{width:160, height:160, fontSize:'4.5rem', marginBottom:0}}>{user.charAt(0)}</div>
-                            <div>
-                                <h1 style={{fontSize:'3.5rem', fontWeight:950, marginBottom:5}}>{user}</h1>
-                                <div style={{display:'flex', gap:10, alignItems:'center'}}>
-                                    <span style={{padding:'6px 15px', background:'rgba(255,152,0,0.1)', color:'var(--p)', borderRadius:30, fontSize:'0.8rem', fontWeight:900, textTransform:'uppercase'}}>{myProfile.role}</span>
-                                    <span style={{color:'var(--muted)', fontSize:'0.9rem', fontWeight:600}}>Agent depuis {myProfile.seniority || 0} jours</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
-                            <div className="stat-box">
-                                <div className="stat-val">${Math.round(myProfile.ca || 0).toLocaleString()}</div>
-                                <div className="stat-lbl">Chiffre d'Affaires</div>
-                            </div>
-                            <div className="stat-box">
-                                <div className="stat-val">{myProfile.stock || 0}</div>
-                                <div className="stat-lbl">Unités Produites</div>
-                            </div>
-                            <div className="stat-box" style={{borderColor:'var(--p)', background:'rgba(255,152,0,0.05)'}}>
-                                <div className="stat-val" style={{color:'var(--p)'}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
-                                <div className="stat-lbl">Salaire Actuel</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30}}>
-                        <div className="card" style={{textAlign:'left', padding:30}}>
-                            <h3 style={{fontSize:'1.1rem', fontWeight:900, marginBottom:20, display:'flex', alignItems:'center', gap:10}}>📌 Informations de contact</h3>
-                            <div style={{display:'flex', flexDirection:'column', gap:15}}>
-                                <div><div style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>TÉLÉPHONE</div><div style={{fontWeight:700}}>{myProfile.phone}</div></div>
-                                <div><div style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>IDENTIFIANT</div><div style={{fontWeight:700}}>HH-{myProfile.id || 'XXXX'}</div></div>
-                            </div>
-                        </div>
-                        <div className="card" style={{textAlign:'left', padding:30}}>
-                            <h3 style={{fontSize:'1.1rem', fontWeight:900, marginBottom:20}}>🛡️ Sécurité de session</h3>
-                            <p style={{fontSize:'0.85rem', color:'var(--muted)', marginBottom:20}}>Votre session est active. Pensez à vous déconnecter en fin de service.</p>
-                            <button className="btn-p" style={{background:'rgba(239, 68, 68, 0.1)', color:'#ef4444'}} onClick={logout}>DÉCONNEXION IMMÉDIATE</button>
-                        </div>
-                    </div>
-                </div>
-              )}
-
-              {/* AMÉLIORATION : ANNUAIRE */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:40}}>
-                        <div>
-                            <h2 style={{fontSize:'2.5rem', fontWeight:950}}>Annuaire</h2>
-                            <p style={{color:'var(--muted)', fontWeight:600}}>{data.employeesFull.length} collaborateurs actifs chez Hen House</p>
-                        </div>
-                        <div style={{width:400}}>
-                            <input className="inp" placeholder="Rechercher un collègue..." value={dirSearch} onChange={e=>setDirSearch(e.target.value)} style={{marginBottom:0}} />
-                        </div>
-                    </div>
-
-                    <div className="grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))'}}>
-                    {data.employeesFull.filter(e => e.name.toLowerCase().includes(dirSearch.toLowerCase()) || e.role.toLowerCase().includes(dirSearch.toLowerCase())).map(e => (
-                        <div key={e.id} className="dir-card">
-                            <div className="dir-avatar">{e.name.charAt(0)}</div>
-                            <div style={{fontSize:'1.2rem', fontWeight:900, color:'#fff'}}>{e.name}</div>
-                            <div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:800, textTransform:'uppercase', marginTop:4}}>{e.role}</div>
-                            <a href={`tel:${e.phone}`} className="dir-call"><span>📞</span> {e.phone}</a>
-                        </div>
-                    ))}
-                    </div>
-                </div>
-              )}
-
+              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
                   <div className="card" style={{padding:35, textAlign:'left'}}>
@@ -676,6 +694,35 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* ANNUAIRE AMÉLIORÉ */}
+              {currentTab === 'directory' && (
+                <div className="fade-in">
+                    <div style={{marginBottom:30}}>
+                      <h2 style={{fontSize:'2rem', fontWeight:950}}>Annuaire du personnel</h2>
+                      <p style={{color:'var(--muted)'}}>{data.employeesFull.length} agents répertoriés chez Hen House</p>
+                    </div>
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:20}}>
+                    {data.employeesFull.map(e => (
+                        <div key={e.id} className="card fade-in" style={{padding:0, textAlign:'left', background:'var(--panel)', border:'1px solid var(--brd)', display:'flex', flexDirection:'column'}}>
+                          <div style={{padding:20, display:'flex', gap:15, alignItems:'center'}}>
+                            <div style={{width:60, height:60, borderRadius:18, background:'rgba(255,152,0,0.1)', border:'1px solid rgba(255,152,0,0.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem', fontWeight:950, color:'var(--p)'}}>{e.name.charAt(0)}</div>
+                            <div style={{flex:1}}>
+                                <div style={{fontWeight:900, fontSize:'1.1rem', color:'#fff'}}>{e.name}</div>
+                                <div style={{display:'inline-block', padding:'2px 8px', background: e.role.includes('Chef') ? 'rgba(16,185,129,0.1)' : 'rgba(148,163,184,0.1)', color: e.role.includes('Chef') ? '#10b981' : 'var(--muted)', borderRadius:6, fontWeight:800, fontSize:'0.6rem', textTransform:'uppercase'}}>{e.role}</div>
+                            </div>
+                          </div>
+                          <div style={{padding:'0 20px 20px'}}>
+                            <div style={{background:'rgba(0,0,0,0.2)', borderRadius:12, padding:12, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                               <div style={{fontSize:'0.85rem', fontWeight:700, color:'var(--muted)'}}>📞 {e.phone}</div>
+                               <a href={`tel:${e.phone}`} style={{background:'var(--p)', color:'#fff', width:32, height:32, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', fontSize:'0.9rem'}}>📞</a>
+                            </div>
+                          </div>
+                        </div>
+                    ))}
+                    </div>
                 </div>
               )}
             </div>
