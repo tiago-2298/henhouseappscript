@@ -268,7 +268,7 @@ export default function Home() {
   return (
     <div className="app">
       <style jsx global>{`
-        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 20px; --glass: rgba(24, 26, 32, 0.7); }
+        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; --glass: rgba(24, 26, 32, 0.7); }
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
@@ -277,20 +277,21 @@ export default function Home() {
 
         body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
         .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 280px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; z-index: 100; }
-        .nav-l { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.3s; font-size: 0.85rem; margin-bottom: 4px; }
+        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; z-index: 100; }
+        .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.3s; font-size: 0.85rem; margin-bottom: 4px; }
         .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 8px 20px rgba(255, 152, 0, 0.25); transform: translateX(5px); }
         .nav-l:hover:not(.active) { background: rgba(255,255,255,0.07); color: #fff; }
         
         .main { flex: 1; overflow-y: auto; padding: 40px; position: relative; background: radial-gradient(circle at 0% 0%, #1a1c23 0%, #0b0d11 100%); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 18px; }
         
-        .card { background: var(--panel); border: 1px solid var(--brd); padding: 20px; border-radius: 24px; cursor: pointer; transition: 0.4s; text-align: center; position: relative; overflow: hidden; }
-        .card:hover { border-color: var(--p); transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 20px; cursor: pointer; transition: 0.4s; text-align: center; position: relative; overflow: hidden; }
+        .card:hover { border-color: var(--p); transform: translateY(-5px); }
         .card.sel { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .card-qty { position: absolute; top: 10px; right: 10px; background: var(--p); color: #fff; width: 24px; height: 24px; border-radius: 50%; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid var(--panel); }
 
         .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        .form-ui { width: 100%; max-width: 600px; background: var(--glass); backdrop-filter: blur(24px); padding: 40px; border-radius: 32px; border: 1px solid var(--brd); box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
+        .form-ui { width: 100%; max-width: 550px; background: var(--glass); backdrop-filter: blur(20px); padding: 40px; border-radius: 32px; border: 1px solid var(--brd); box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
         
         .inp { width: 100%; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; transition: 0.2s; }
         .inp:focus { outline: none; border-color: var(--p); }
@@ -299,43 +300,49 @@ export default function Home() {
         .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
         
         .cart { width: 340px; border-left: 1px solid var(--brd); background: #000; display: flex; flex-direction: column; }
+        .qty-inp { width: 55px; background: #0b0d11; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 8px; font-weight: 800; padding: 6px 0; font-size: 1rem; }
+        
+        .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 20px; margin-bottom: 10px; scrollbar-width: none; }
+        .chip { padding: 10px 20px; border-radius: 30px; background: var(--panel); border: 1px solid var(--brd); color: var(--muted); cursor: pointer; white-space: nowrap; font-weight: 800; font-size: 0.8rem; transition: 0.3s; }
+        .chip.active { background: var(--p); color: #fff; border-color: var(--p); }
+
+        .perf-bar { height: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        .perf-fill { height: 100%; background: var(--p); transition: width 1s; }
+
+        .salary-badge { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.2); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         
         .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
-        .tool-btn { background: #1a1a1a; border: 1px solid var(--brd); color: #fff; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; }
+        .tool-btn { background: #1a1a1a; border: 1px solid var(--brd); color: #fff; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
         .tool-btn:hover { border-color: var(--p); color: var(--p); background: #222; }
-
-        .emp-badge { background: linear-gradient(135deg, #181a20 0%, #000 100%); padding: 18px; border-radius: 20px; border: 1px solid var(--brd); margin-bottom: 10px; }
         
-        /* Directory specific */
-        .dir-card { text-align: left; display: flex; gap: 20px; align-items: center; background: rgba(255,255,255,0.02); }
-        .dir-avatar { width: 60px; height: 60px; border-radius: 18px; background: var(--panel); border: 1px solid var(--brd); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 900; color: var(--p); flex-shrink: 0; }
-        .dir-call { background: var(--p); color: #fff; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: 0.2s; }
-        .dir-call:hover { transform: scale(1.1); }
+        .emp-badge { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid var(--brd); margin-bottom: 10px; }
+        .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
+        .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* Profile specific */
-        .profile-hero { display: flex; flex-direction: column; align-items: center; margin-bottom: 35px; }
-        .profile-avatar { width: 120px; height: 120px; border-radius: 40px; background: linear-gradient(135deg, var(--p), #fb8c00); display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: 950; color: #fff; box-shadow: 0 15px 35px rgba(255,152,0,0.3); margin-bottom: 20px; position: relative; }
-        .profile-rank { position: absolute; bottom: -10px; background: #fff; color: #000; padding: 4px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 900; box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
-        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; }
-        .stat-box { background: rgba(255,255,255,0.03); border: 1px solid var(--brd); padding: 20px; border-radius: 20px; text-align: left; }
-        .stat-val { font-size: 1.8rem; font-weight: 900; display: block; margin-top: 5px; }
-        .stat-label { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-        
-        .toast { position: fixed; bottom: 30px; right: 30px; padding: 15px 25px; border-radius: 16px; z-index: 1000; display: flex; flex-direction: column; min-width: 250px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 25px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; }
+        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .dz-preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 15px; border-radius: 8px; border: 2px solid #fff; }
+
+        /* Styles spécifiques pour Annuaire et Profil */
+        .avatar-circle { width: 80px; height: 80px; border-radius: 30px; background: linear-gradient(135deg, var(--p), #fb8c00); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; color: #fff; box-shadow: 0 10px 20px rgba(255,152,0,0.2); }
+        .stat-card { background: rgba(255,255,255,0.02); border: 1px solid var(--brd); border-radius: 20px; padding: 20px; text-align: left; transition: 0.3s; }
+        .stat-card:hover { border-color: var(--p); transform: scale(1.02); }
+        .profile-header { background: linear-gradient(to right, #1a1c23, #000); border-radius: 30px; padding: 40px; margin-bottom: 30px; border: 1px solid var(--brd); display: flex; align-items: center; gap: 30px; position: relative; overflow: hidden; }
+        .profile-header::after { content: 'HEN HOUSE'; position: absolute; right: -20px; bottom: -20px; font-size: 8rem; font-weight: 900; opacity: 0.03; pointer-events: none; }
       `}</style>
 
       {view === 'login' ? (
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
-          <div className="form-ui" style={{textAlign: 'center', maxWidth: 420}}>
-            <img src="https://i.goopics.net/dskmxi.png" height="120" style={{marginBottom:35}} />
-            <h1 style={{fontSize:'2rem', fontWeight:950, marginBottom:10}}>Bienvenue</h1>
-            <p style={{color:'var(--muted)', fontSize:'0.95rem', marginBottom:35}}>Portail Sécurisé Hen House</p>
+          <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
+            <img src="https://i.goopics.net/dskmxi.png" height="110" style={{marginBottom:35}} />
+            <h1 style={{fontSize:'1.8rem', fontWeight:900, marginBottom:10}}>Authentification</h1>
+            <p style={{color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Interface Agent Hen House</p>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Choisissez votre compte...</option>
+              <option value="">👤 Sélectionner votre profil...</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>DÉMARRER LA SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>OUVRIR LA SESSION</button>
           </div>
         </div>
       ) : (
@@ -352,52 +359,63 @@ export default function Home() {
             
             <div style={{paddingTop: '20px', borderTop: '1px solid var(--brd)'}}>
               <div className="toolbar">
-                <button className="tool-btn" onClick={() => window.location.reload()}>🔃</button>
-                <button className="tool-btn" onClick={() => loadData(true)}>☁️</button>
-                <button className="tool-btn" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
+                <button className="tool-btn" title="Rafraîchir" onClick={() => window.location.reload()}>🔃</button>
+                <button className="tool-btn" title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
+                <button className="tool-btn" title="Son" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
                   {isMuted ? '🔇' : '🔊'}
                 </button>
               </div>
               <div className="emp-badge">
-                <div style={{fontWeight:900, fontSize:'0.95rem'}}>{user}</div>
-                <div style={{color: 'var(--p)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase'}}>{myProfile?.role || 'Agent'}</div>
+                <div className="emp-name">{user}</div>
+                <div className="emp-role">{myProfile?.role || 'Agent'}</div>
               </div>
-              <button className="nav-l" onClick={logout} style={{color:'#ef4444', justifyContent: 'center', background:'rgba(239, 68, 68, 0.05)', marginTop: '5px'}}>🚪 QUITTER</button>
+              <button className="nav-l" onClick={logout} style={{color:'#ef4444', justifyContent: 'center', background:'rgba(239, 68, 68, 0.05)', marginTop: '5px'}}>🚪 DÉCONNEXION</button>
             </div>
           </aside>
 
           <main className="main">
             <div className="fade-in">
-              {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
                    <div style={{marginBottom:45}}>
-                       <h1 style={{fontSize: '3rem', fontWeight: 950, marginBottom: 12}}>Salut, {user.split(' ')[0]} 🍗</h1>
-                       <p style={{color: 'var(--muted)', fontSize: '1.1rem'}}>Résumé de votre activité Hen House.</p>
+                       <h1 style={{fontSize: '2.8rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px'}}>Ravi de vous revoir, {user.split(' ')[0]} 👋</h1>
+                       <div style={{display:'flex', alignItems:'center', gap:10}}>
+                           <span style={{padding:'4px 12px', background:'var(--p)', borderRadius:20, fontSize:'0.7rem', fontWeight:900, color:'#fff'}}>EN LIGNE</span>
+                           <p style={{color: 'var(--muted)', fontSize: '1.05rem'}}>Performances Hen House en temps réel.</p>
+                       </div>
                    </div>
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 45}}>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #2a1b0a 100%)', border:'1px solid rgba(255,152,0,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
                          <div>
-                            <div style={{fontSize: '0.8rem', color:'var(--muted)', fontWeight: 800}}>C.A GLOBAL</div>
-                            <div style={{fontSize: '2.5rem', fontWeight: 950, color: 'var(--p)'}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>CHIFFRE D'AFFAIRES</div>
+                            <div style={{fontSize: '2.4rem', fontWeight: 950, color: 'var(--p)'}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                         </div>
+                      </div>
+                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #0d2e21 100%)', border:'1px solid rgba(16,185,129,0.2)'}}>
+                         <div style={{fontSize: '3.5rem'}}>📦</div>
+                         <div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>PRODUCTION TOTAL</div>
+                            <div style={{fontSize: '2.4rem', fontWeight: 950, color: '#10b981'}}>{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
                          </div>
                       </div>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #1e1b4b 100%)', border:'1px solid rgba(99,102,241,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>💶</div>
                          <div>
-                            <div style={{fontSize: '0.8rem', color:'var(--muted)', fontWeight: 800}}>GAIN ESTIMÉ</div>
-                            <div style={{fontSize: '2.5rem', fontWeight: 950, color: '#6366f1'}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>SALAIRE ESTIMÉ</div>
+                            <div style={{fontSize: '2.4rem', fontWeight: 950, color: '#6366f1'}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
                          </div>
                       </div>
                    </div>
-                   <div style={{background:'rgba(255,255,255,0.02)', padding:35, borderRadius:28, border:'1px solid var(--brd)'}}>
-                        <h3 style={{marginBottom: 25, fontWeight: 900, color: '#fff', fontSize: '1.2rem'}}>RACCOURCIS</h3>
-                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:15}}>
+                   <div style={{background:'rgba(255,255,255,0.02)', padding:30, borderRadius:24, border:'1px solid var(--brd)'}}>
+                        <h3 style={{marginBottom: 25, fontWeight: 900, color: '#fff', fontSize: '1.1rem', display:'flex', alignItems:'center', gap:10}}>
+                            <span style={{width:4, height:20, background:'var(--p)', borderRadius:10}}></span> SERVICES HEN HOUSE
+                        </h3>
+                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:15}}>
                         {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
                             <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25, background:'var(--bg)'}}>
-                                <span style={{fontSize:'3rem', display:'block', marginBottom:12}}>{m.e}</span>
-                                <div style={{fontSize:'1rem', fontWeight:800}}>{m.l}</div>
+                                <span style={{fontSize:'2.8rem', display:'block', marginBottom:12}}>{m.e}</span>
+                                <div style={{fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
                             </div>
                         ))}
                         </div>
@@ -405,88 +423,16 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ANNUAIRE AMÉLIORÉ */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                  <div style={{marginBottom: 35}}>
-                    <h2 style={{fontSize:'2.2rem', fontWeight:950}}>Annuaire</h2>
-                    <p style={{color:'var(--muted)'}}>Contactez vos collègues Hen House</p>
-                  </div>
-                  <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:20}}>
-                    {data.employeesFull.map(e => (
-                      <div key={e.id} className="card dir-card">
-                        <div className="dir-avatar">{e.name.charAt(0)}</div>
-                        <div style={{flex: 1}}>
-                          <div style={{fontWeight: 900, fontSize: '1.1rem', color: '#fff'}}>{e.name}</div>
-                          <div style={{fontSize: '0.75rem', color: 'var(--p)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 12}}>{e.role}</div>
-                          <div style={{display:'flex', alignItems:'center', gap: 10}}>
-                             <a href={`tel:${e.phone}`} className="dir-call">📞</a>
-                             <span style={{fontSize: '0.9rem', color: 'var(--muted)', fontWeight: 600}}>{e.phone}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* PROFIL AMÉLIORÉ */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="fade-in center-box">
-                  <div className="form-ui">
-                    <div className="profile-hero">
-                      <div className="profile-avatar">
-                        {user.charAt(0)}
-                        <div className="profile-rank">AGENT ACTIF</div>
-                      </div>
-                      <h1 style={{fontSize:'2.2rem', fontWeight:950, marginBottom: 5}}>{user}</h1>
-                      <p style={{color:'var(--p)', fontWeight:800, fontSize:'1rem'}}>{myProfile.role}</p>
-                    </div>
-
-                    <div className="stat-grid" style={{marginBottom: 25}}>
-                       <div className="stat-box">
-                          <span className="stat-label">Chiffre d'Affaires</span>
-                          <span className="stat-val" style={{color: 'var(--p)'}}>${Math.round(myProfile.ca).toLocaleString()}</span>
-                       </div>
-                       <div className="stat-box">
-                          <span className="stat-label">Salaire Estimé</span>
-                          <span className="stat-val" style={{color: '#6366f1'}}>${Math.round(myProfile.salary).toLocaleString()}</span>
-                       </div>
-                       <div className="stat-box">
-                          <span className="stat-label">Unités Produites</span>
-                          <span className="stat-val">{myProfile.stock.toLocaleString()}</span>
-                       </div>
-                       <div className="stat-box">
-                          <span className="stat-label">Identifiant</span>
-                          <span className="stat-val" style={{fontSize: '1.2rem', marginTop: '12px'}}>#HH-00{myProfile.id}</span>
-                       </div>
-                    </div>
-
-                    <div style={{background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '24px', border: '1px solid var(--brd)'}}>
-                      <div style={{display:'flex', justifyContent: 'space-between', marginBottom: 15}}>
-                        <span style={{fontWeight: 800, fontSize: '0.85rem'}}>Numéro de téléphone</span>
-                        <span style={{fontWeight: 900, color: 'var(--p)'}}>{myProfile.phone}</span>
-                      </div>
-                      <div style={{display:'flex', justifyContent: 'space-between'}}>
-                        <span style={{fontWeight: 800, fontSize: '0.85rem'}}>Date d'entrée</span>
-                        <span style={{fontWeight: 900}}>{myProfile.seniority} jours d'ancienneté</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AUTRES MODULES */}
               {currentTab === 'invoices' && (
                 <div className="fade-in">
-                  <div style={{display:'flex', gap:15, marginBottom:30}}>
-                    <div style={{position:'relative', flex:1}}>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:15, marginBottom:30, alignItems:'center'}}>
+                    <div style={{position:'relative', flex:1, minWidth:250}}>
                         <span style={{position:'absolute', left:15, top:13, opacity:0.4}}>🔍</span>
                         <input className="inp" placeholder="Rechercher..." style={{marginBottom:0, paddingLeft:45}} onChange={e=>setSearch(e.target.value)} />
                     </div>
                   </div>
                   <div className="chips-container">
-                    <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
+                    <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tout le menu</div>
                     {Object.keys(data.productsByCategory).map(c => (
                         <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c.replace('_', ' ')}</div>
                     ))}
@@ -500,11 +446,11 @@ export default function Home() {
                             if(cartItem) setCart(cart.map(x=>x.name===p?{...x, qty:x.qty+1}:x));
                             else setCart([...cart, {name:p, qty:1, pu:data.prices[p]||0}]);
                         }}>
-                            {cartItem && <div style={{position:'absolute', top:10, right:10, background:'var(--p)', color:'#fff', width:24, height:24, borderRadius:'50%', fontSize:'0.7rem', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, border:'2px solid var(--panel)'}}>{cartItem.qty}</div>}
-                            <div style={{height:120, borderRadius:15, overflow:'hidden', background:'#000', marginBottom:12}}>
-                               {IMAGES[p] ? <img src={IMAGES[p]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', color:'var(--p)', fontWeight:900}}>{p.charAt(0)}</div>}
+                            {cartItem && <div className="card-qty">{cartItem.qty}</div>}
+                            <div style={{height:120, borderRadius:15, overflow:'hidden', background:'#000', marginBottom:12, position:'relative'}}>
+                            {IMAGES[p] ? <img src={IMAGES[p]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', background:'#111', color:'var(--p)', fontWeight:900}}>{p.charAt(0)}</div>}
                             </div>
-                            <div style={{fontWeight:800, fontSize:'0.75rem', height:35, overflow:'hidden'}}>{p}</div>
+                            <div style={{fontWeight:800, fontSize:'0.75rem', height:35, overflow:'hidden', color:'#fff'}}>{p}</div>
                             <div style={{color:'var(--p)', fontWeight:950, fontSize:'1.1rem', marginTop:8}}>${data.prices[p]}</div>
                         </div>
                       );
@@ -513,88 +459,178 @@ export default function Home() {
                 </div>
               )}
 
-              {/* FORMULAIRES STANDARD (STOCK, GARAGE, etc.) */}
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
+              {currentTab === 'stock' && (
                 <div className="center-box">
                   <div className="form-ui">
-                    {currentTab === 'stock' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900}}>📦 PRODUCTION</h2>
-                        {forms.stock.map((item, i) => (
-                          <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
-                            <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
-                              const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}><option value="">Choisir...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{
-                              const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
-                            }} />
-                          </div>
-                        ))}
-                        <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', margin:'10px 0 25px'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER</button>
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER LA PRODUCTION</button>
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 PRODUCTION</h2>
+                    <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Mise en stock cuisine</p>
+                    {forms.stock.map((item, i) => (
+                      <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
+                        <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
+                          const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
+                        }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                        <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{
+                          const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
+                        }} />
                       </div>
-                    )}
-                    {currentTab === 'garage' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900}}>🚗 GARAGE</h2>
-                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
-                        <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--brd)'}}>
-                            <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
-                            <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
-                        </div>
-                        <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER LE VÉHICULE</button>
-                      </div>
-                    )}
-                    {currentTab === 'expenses' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900}}>💳 FRAIS</h2>
-                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
-                        <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => document.getElementById('inpFile').click()}>
-                           <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
-                           {forms.expense.file ? (
-                             <div><img src={forms.expense.file} className="dz-preview" /></div>
-                           ) : (
-                             <div><div style={{fontSize:'2rem'}}>📸</div><div style={{fontWeight:800}}>PHOTO / COLLEZ LE REÇU</div></div>
-                           )}
-                        </div>
-                        <button className="btn-p" disabled={sending || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>DÉPOSER LA DEMANDE</button>
-                      </div>
-                    )}
-                    {currentTab === 'partners' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
-                        <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
-                        <select className="inp" value={forms.partner.company} onChange={e=>{
-                             const c = e.target.value;
-                             setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
-                        }}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
-                        {forms.partner.items.map((item, idx) => (
-                           <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
-                             <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{
-                               const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                             }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
-                             <input type="number" className="inp" style={{width:80}} value={item.qty} onChange={e=>{
-                               const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                             }} />
-                           </div>
-                        ))}
-                        <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER LE MENU</button>
-                      </div>
-                    )}
+                    ))}
+                    <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', margin:'10px 0 25px', padding:15}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ LIGNE</button>
+                    <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER</button>
                   </div>
                 </div>
               )}
 
-              {/* PERFORMANCE */}
+              {currentTab === 'enterprise' && (
+                <div className="center-box">
+                  <div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🏢 COMMANDE PRO</h2>
+                    <input className="inp" placeholder="Nom Entreprise" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                    {forms.enterprise.items.map((item, i) => (
+                      <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                        <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
+                          const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
+                        }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                        <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{
+                          const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
+                        }} />
+                      </div>
+                    ))}
+                    <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
+                  </div>
+                </div>
+              )}
+
+              {currentTab === 'partners' && (
+                <div className="center-box">
+                  <div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
+                    <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
+                    <div style={{display:'flex', gap:12, marginBottom:12}}>
+                      <select className="inp" style={{flex:1, marginBottom:0}} value={forms.partner.company} onChange={e=>{
+                         const c = e.target.value;
+                         setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
+                      }}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
+                      <select className="inp" style={{flex:1, marginBottom:0}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
+                    </div>
+                    {forms.partner.items.map((item, idx) => (
+                       <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
+                         <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
+                           const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                         }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
+                         <input type="number" className="qty-inp" style={{height:52, width:70}} value={item.qty} onChange={e=>{
+                           const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                         }} />
+                       </div>
+                    ))}
+                    <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER</button>
+                  </div>
+                </div>
+              )}
+
+              {currentTab === 'expenses' && (
+                <div className="center-box">
+                  <div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 NOTES DE FRAIS</h2>
+                    <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:20}}>Essence & Réparations</p>
+                    <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                    <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
+                    <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:Math.round(e.target.value)}})} />
+                    <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => document.getElementById('inpFile').click()}>
+                       <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
+                       {forms.expense.file ? (
+                         <div><div style={{color:'var(--p)', fontWeight:900, fontSize:'0.75rem'}}>PHOTO CHARGÉE ✅</div><img src={forms.expense.file} className="dz-preview" /></div>
+                       ) : (
+                         <div><div style={{fontSize:'2rem'}}>📸</div><div style={{fontWeight:800}}>PHOTO DU REÇU</div><div style={{fontSize:'0.65rem', opacity:0.5}}>Cliquez ou Ctrl+V</div></div>
+                       )}
+                    </div>
+                    <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>ENVOYER LA NOTE</button>
+                  </div>
+                </div>
+              )}
+
+              {currentTab === 'garage' && (
+                <div className="center-box">
+                  <div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🚗 GARAGE</h2>
+                    <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                    <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
+                    <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--brd)'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
+                        <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                    </div>
+                    <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER</button>
+                  </div>
+                </div>
+              )}
+
+              {currentTab === 'profile' && myProfile && (
+                <div className="fade-in">
+                  <div className="profile-header">
+                    <div className="avatar-circle">{user.charAt(0)}</div>
+                    <div>
+                      <h1 style={{fontSize:'2.5rem', fontWeight:950, marginBottom:5}}>{user}</h1>
+                      <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                        <span style={{color: 'var(--p)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1}}>{myProfile.role}</span>
+                        <span style={{width: 4, height: 4, background: 'var(--muted)', borderRadius: '50%'}}></span>
+                        <span style={{color: 'var(--muted)', fontWeight: 600}}>Agent ID: #00{myProfile.id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 30}}>
+                    <div className="stat-card">
+                      <div style={{fontSize: '2rem', marginBottom: 10}}>💰</div>
+                      <div style={{fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 5}}>C.A. Généré</div>
+                      <div style={{fontSize: '1.8rem', fontWeight: 950}}>${Math.round(myProfile.ca).toLocaleString()}</div>
+                    </div>
+                    <div className="stat-card">
+                      <div style={{fontSize: '2rem', marginBottom: 10}}>📦</div>
+                      <div style={{fontSize: '0.75rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 5}}>Unités Produites</div>
+                      <div style={{fontSize: '1.8rem', fontWeight: 950}}>{myProfile.stock.toLocaleString()}</div>
+                    </div>
+                    <div className="stat-card" style={{borderColor: 'var(--p)', background: 'rgba(255,152,0,0.05)'}}>
+                      <div style={{fontSize: '2rem', marginBottom: 10}}>💶</div>
+                      <div style={{fontSize: '0.75rem', fontWeight: 800, color: 'var(--p)', textTransform: 'uppercase', marginBottom: 5}}>Salaire Estimé</div>
+                      <div style={{fontSize: '1.8rem', fontWeight: 950, color: 'var(--p)'}}>${Math.round(myProfile.salary).toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  <div className="stat-card">
+                    <h3 style={{marginBottom: 20, fontWeight: 900}}>Informations Personnelles</h3>
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30}}>
+                      <div>
+                        <label style={{fontSize: '0.65rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase'}}>Téléphone</label>
+                        <div style={{fontWeight: 700, fontSize: '1.1rem', marginTop: 5}}>📞 {myProfile.phone}</div>
+                      </div>
+                      <div>
+                        <label style={{fontSize: '0.65rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase'}}>Ancienneté</label>
+                        <div style={{fontWeight: 700, fontSize: '1.1rem', marginTop: 5}}>📅 {myProfile.seniority} jours</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentTab === 'support' && (
+                <div className="center-box">
+                  <div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 SUPPORT</h2>
+                    <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
+                      <option>Stock</option><option>Facture</option><option>Absence</option><option>Autre</option>
+                    </select>
+                    <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                    <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                  </div>
+                </div>
+              )}
+
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
                   <div className="card" style={{padding:35, textAlign:'left'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 CLASSEMENT C.A</h2>
+                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 TOP C.A</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '1rem', marginBottom:8}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
                            <span>{i+1}. <b>{e.name}</b></span>
                            <b style={{color: i===0 ? 'var(--p)' : '#fff'}}>${Math.round(e.ca).toLocaleString()}</b>
                         </div>
@@ -606,7 +642,7 @@ export default function Home() {
                     <h2 style={{marginBottom:30, fontWeight:950}}>📦 TOP PRODUCTION</h2>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '1rem', marginBottom:8}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
                            <span>{i+1}. <b>{e.name}</b></span>
                            <b>{e.stock.toLocaleString()}</b>
                         </div>
@@ -616,42 +652,72 @@ export default function Home() {
                   </div>
                 </div>
               )}
+
+              {currentTab === 'directory' && (
+                <div className="fade-in">
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 30}}>
+                      <div>
+                        <h1 style={{fontSize: '2.5rem', fontWeight: 950}}>Annuaire</h1>
+                        <p style={{color: 'var(--muted)', fontWeight: 600}}>Retrouvez toute l'équipe Hen House</p>
+                      </div>
+                      <div style={{background: 'rgba(255,152,0,0.1)', color: 'var(--p)', padding: '8px 15px', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem'}}>
+                        {data.employeesFull.length} COLLABORATEURS
+                      </div>
+                    </div>
+                    
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:20}}>
+                    {data.employeesFull.sort((a,b) => a.name.localeCompare(b.name)).map(e => (
+                        <div key={e.id} className="stat-card" style={{display:'flex', gap:20, alignItems:'center', cursor: 'default'}}>
+                          <div style={{width:60, height:60, borderRadius:18, background:'var(--panel)', border:'1px solid var(--brd)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem', fontWeight:950, color:'var(--p)'}}>{e.name.charAt(0)}</div>
+                          <div style={{flex:1}}>
+                              <div style={{fontWeight:900, fontSize:'1.1rem', color: '#fff'}}>{e.name}</div>
+                              <div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:800, textTransform: 'uppercase', marginTop: 2}}>{e.role}</div>
+                              <div style={{display: 'flex', alignItems: 'center', gap: 15, marginTop: 10}}>
+                                <a href={`tel:${e.phone}`} style={{textDecoration: 'none', fontSize:'0.85rem', color:'var(--muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5}}>
+                                  📞 {e.phone}
+                                </a>
+                              </div>
+                          </div>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+              )}
             </div>
           </main>
 
-          {/* CART */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:30, borderBottom:'1px solid var(--brd)'}}>
-                  <h2 style={{fontSize:'1.3rem', fontWeight:950}}>VOTRE PANIER</h2>
+                  <h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 PANIER</h2>
               </div>
               <div style={{padding:20}}>
-                  <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.4rem', letterSpacing:2}} />
+                  <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.3rem', letterSpacing:2}} />
               </div>
               <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
                 {cart.map((i, idx)=>(
-                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
+                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignitems:'center'}}>
                     <div style={{flex:1}}>
                         <div style={{fontWeight:800, fontSize:'0.9rem'}}>{i.name}</div>
-                        <div style={{color:'var(--p)', fontSize:'0.85rem', fontWeight:900}}>${i.pu}</div>
+                        <div style={{color:'var(--p)', fontSize:'0.8rem'}}>${i.pu}</div>
                     </div>
-                    <div style={{display:'flex', alignItems:'center', gap:10}}>
-                      <button style={{background:'var(--brd)', color:'#fff', width:30, height:30, borderRadius:8, border:'none'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
-                      <span style={{fontWeight:900, width:25, textAlign:'center'}}>{i.qty}</span>
-                      <button style={{background:'var(--brd)', color:'#fff', width:30, height:30, borderRadius:8, border:'none'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
+                    <div style={{display:'flex', alignitems:'center', gap:10}}>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
+                      <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
               </div>
               <div style={{padding:30, background:'#0a0a0a', borderTop:'1px solid var(--brd)'}}>
                 {total > 0 && (
-                  <div style={{textAlign:'center'}}><div className="salary-badge">💸 GAIN : <b>+${salaryGain}</b></div></div>
+                  <div style={{textAlign:'center'}}><div className="salary-badge">💸 Gain Salaire : <b>+${salaryGain}</b></div></div>
                 )}
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}>
                     <span style={{fontWeight:900, color:'var(--muted)'}}>TOTAL</span>
-                    <b style={{fontSize:'2.8rem', color:'var(--p)', fontWeight:950}}>${total.toLocaleString()}</b>
+                    <b style={{fontSize:'2.5rem', color:'var(--p)', fontWeight:950}}>${total.toLocaleString()}</b>
                 </div>
-                <button className="btn-p" style={{height:65}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
+                <button className="btn-p" style={{height:60}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
                   {sending ? "ENVOI..." : "VALIDER VENTE"}
                 </button>
               </div>
@@ -662,8 +728,8 @@ export default function Home() {
 
       {toast && (
         <div className="toast" style={{ background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#16a34a' : 'var(--p)'), color: '#fff' }}>
-          <div style={{ fontSize: '0.9rem', fontWeight: 950, marginBottom: '4px' }}>{toast.t}</div>
-          <div style={{ fontSize: '1rem', fontWeight: 600 }}>{toast.m}</div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 950 }}>{toast.t}</div>
+          <div style={{ fontSize: '0.95rem' }}>{toast.m}</div>
         </div>
       )}
     </div>
