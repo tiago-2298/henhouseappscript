@@ -312,12 +312,10 @@ export default function Home() {
         .salary-badge { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.2); animation: float 3s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         
-        /* TOOLBAR DESIGN */
         .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
         .tool-btn { background: #1a1a1a; border: 1px solid var(--brd); color: #fff; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
         .tool-btn:hover { border-color: var(--p); color: var(--p); background: #222; }
         
-        /* EMPLOYEE FOOTER */
         .emp-badge { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid var(--brd); margin-bottom: 10px; }
         .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
         .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -326,22 +324,18 @@ export default function Home() {
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
         .dz-preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 15px; border-radius: 8px; border: 2px solid #fff; }
 
-        /* NOUVEAUX STYLES PROFIL & ANNUAIRE */
-        .profile-header { position: relative; width: 100%; height: 120px; background: linear-gradient(90deg, #ff9800, #ff5722); border-radius: 24px 24px 0 0; margin-bottom: 60px; }
-        .profile-avatar-wrap { position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%); width: 110px; height: 110px; border-radius: 35px; background: #1a1a1a; border: 6px solid var(--panel); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 900; color: var(--p); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 25px; }
-        .stat-item { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 20px; border: 1px solid var(--brd); text-align: left; }
-        .stat-val { font-size: 1.4rem; font-weight: 900; color: #fff; display: block; }
-        .stat-lab { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; }
-        
-        .dir-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 24px; padding: 20px; display: flex; align-items: center; gap: 20px; transition: 0.3s; cursor: default; }
-        .dir-card:hover { border-color: var(--p); transform: scale(1.02); }
-        .dir-avatar { width: 65px; height: 65px; border-radius: 20px; background: rgba(255,152,0,0.1); border: 1px solid rgba(255,152,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; color: var(--p); }
-        .dir-info { flex: 1; }
-        .dir-name { font-weight: 900; font-size: 1.1rem; color: #fff; margin-bottom: 2px; }
-        .dir-role { font-size: 0.7rem; font-weight: 800; color: var(--p); text-transform: uppercase; }
-        .dir-call { width: 45px; height: 45px; border-radius: 14px; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; transition: 0.2s; }
-        .dir-call:hover { transform: rotate(15deg); background: #059669; }
+        /* NOUVEAUX STYLES ANNUAIRE & PROFIL */
+        .dir-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s ease; position: relative; overflow: hidden; }
+        .dir-card:hover { border-color: var(--p); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .dir-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(45deg, #222, #444); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; color: var(--p); margin-bottom: 15px; border: 3px solid var(--brd); }
+        .dir-call { background: var(--p); color: #fff; text-decoration: none; padding: 8px 20px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; margin-top: 15px; transition: 0.2s; width: 100%; text-align: center; }
+        .dir-call:hover { opacity: 0.9; transform: scale(1.02); }
+
+        .profile-header { background: linear-gradient(135deg, #ff9800 0%, #e65100 100%); padding: 40px; border-radius: 24px; text-align: center; color: #fff; position: relative; margin-bottom: 30px; overflow: hidden; }
+        .profile-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .profile-stat-box { background: var(--panel); border: 1px solid var(--brd); padding: 20px; border-radius: 20px; text-align: center; }
+        .profile-stat-val { font-size: 1.8rem; font-weight: 900; color: #fff; display: block; }
+        .profile-stat-lbl { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; }
       `}</style>
 
       {view === 'login' ? (
@@ -475,8 +469,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* AUTRES MODULES STANDARDS... */}
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
+              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'profile', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
@@ -497,7 +490,50 @@ export default function Home() {
                         <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER</button>
                       </div>
                     )}
-                    {/* ... (Reste des formulaires identiques à l'original) */}
+
+                    {currentTab === 'enterprise' && (
+                      <div className="fade-in">
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🏢 COMMANDE PRO</h2>
+                        <input className="inp" placeholder="Nom Entreprise" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                        {forms.enterprise.items.map((item, i) => (
+                          <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                            <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
+                              const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
+                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{
+                              const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
+                            }} />
+                          </div>
+                        ))}
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
+                      </div>
+                    )}
+
+                    {currentTab === 'partners' && (
+                      <div className="fade-in">
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
+                        <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
+                        <div style={{display:'flex', gap:12, marginBottom:12}}>
+                          <select className="inp" style={{flex:1, marginBottom:0}} value={forms.partner.company} onChange={e=>{
+                             const c = e.target.value;
+                             setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
+                          }}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
+                          <select className="inp" style={{flex:1, marginBottom:0}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
+                        </div>
+                        {forms.partner.items.map((item, idx) => (
+                           <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
+                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
+                               const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                             }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
+                             <input type="number" className="qty-inp" style={{height:52, width:70}} value={item.qty} onChange={e=>{
+                               const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
+                             }} />
+                           </div>
+                        ))}
+                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER</button>
+                      </div>
+                    )}
+
                     {currentTab === 'expenses' && (
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 NOTES DE FRAIS</h2>
@@ -517,86 +553,79 @@ export default function Home() {
                         <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>ENVOYER LA NOTE</button>
                       </div>
                     )}
-                    {/* ... (Support, Garage, etc.) */}
-                  </div>
-                </div>
-              )}
 
-              {/* MODULE PROFIL AMÉLIORÉ */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="center-box">
-                  <div className="form-ui" style={{padding:0, overflow:'hidden', maxWidth: 650}}>
-                    <div className="profile-header">
-                       <div className="profile-avatar-wrap">{user.charAt(0)}</div>
-                    </div>
-                    <div style={{padding:'0 40px 40px', textAlign:'center'}}>
-                      <h1 style={{fontSize:'2.2rem', fontWeight:950, color:'#fff'}}>{user}</h1>
-                      <div style={{display:'inline-flex', alignItems:'center', gap:8, padding:'6px 16px', background:'rgba(255,152,0,0.1)', color:'var(--p)', borderRadius:30, fontSize:'0.8rem', fontWeight:800, marginTop:10}}>
-                         ⭐ {myProfile.role}
-                      </div>
-
-                      <div className="stat-grid">
-                         <div className="stat-item">
-                            <span className="stat-lab">Chiffre d'Affaires</span>
-                            <span className="stat-val">${Math.round(myProfile.ca).toLocaleString()}</span>
-                         </div>
-                         <div className="stat-item">
-                            <span className="stat-lab">Salaire Estimé</span>
-                            <span className="stat-val" style={{color:'#10b981'}}>${Math.round(myProfile.salary).toLocaleString()}</span>
-                         </div>
-                         <div className="stat-item">
-                            <span className="stat-lab">Unités Produites</span>
-                            <span className="stat-val">{myProfile.stock}</span>
-                         </div>
-                         <div className="stat-item">
-                            <span className="stat-lab">Identifiant</span>
-                            <span className="stat-val">#HH-{Math.floor(1000 + Math.random() * 9000)}</span>
-                         </div>
-                      </div>
-
-                      <div className="card" style={{marginTop:20, background:'rgba(255,255,255,0.02)', textAlign:'left', padding:20}}>
-                         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                            <div>
-                               <div style={{fontSize:'0.65rem', fontWeight:800, color: 'var(--muted)', textTransform:'uppercase'}}>Contact Pro</div>
-                               <div style={{fontSize:'1rem', fontWeight:800, color:'#fff', marginTop:4}}>{myProfile.phone || 'Non renseigné'}</div>
-                            </div>
-                            <button className="nav-l" style={{width:'auto', padding:'10px 20px'}} onClick={()=>setCurrentTab('support')}>Modifier</button>
-                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* MODULE ANNUAIRE AMÉLIORÉ */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:35}}>
-                       <div>
-                          <h2 style={{fontSize:'2.2rem', fontWeight:950, color:'#fff', letterSpacing:'-1px'}}>Annuaire</h2>
-                          <p style={{color:'var(--muted)', fontWeight:700}}>{data.employeesFull.length} collaborateurs actifs</p>
-                       </div>
-                       <input className="inp" placeholder="Filtrer par nom..." style={{width:300, marginBottom:0}} onChange={e=>setSearch(e.target.value)} />
-                    </div>
-                    
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:20}}>
-                    {data.employeesFull.filter(e => e.name.toLowerCase().includes(search.toLowerCase())).map(e => (
-                        <div key={e.id} className="dir-card">
-                           <div className="dir-avatar">{e.name.charAt(0)}</div>
-                           <div className="dir-info">
-                              <div className="dir-name">{e.name}</div>
-                              <div className="dir-role">{e.role}</div>
-                           </div>
-                           {e.phone && (
-                              <a href={`tel:${e.phone}`} className="dir-call" onClick={()=>playSound('click')}>📞</a>
-                           )}
+                    {currentTab === 'garage' && (
+                      <div className="fade-in">
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🚗 GARAGE</h2>
+                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
+                        <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--brd)'}}>
+                            <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
+                            <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
                         </div>
-                    ))}
-                    </div>
+                        <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER</button>
+                      </div>
+                    )}
+
+                    {currentTab === 'profile' && myProfile && (
+                      <div className="fade-in" style={{width: '100%'}}>
+                        <div className="profile-header">
+                            <div style={{width: 120, height: 120, borderRadius: '50%', background: '#fff', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', fontWeight: 950, color: '#e65100', border: '5px solid rgba(255,255,255,0.3)'}}>
+                                {user.charAt(0)}
+                            </div>
+                            <h1 style={{fontSize: '2.4rem', fontWeight: 950, marginBottom: 5}}>{user}</h1>
+                            <p style={{fontWeight: 800, textTransform: 'uppercase', opacity: 0.9, letterSpacing: 2}}>{myProfile.role}</p>
+                        </div>
+                        
+                        <div className="profile-stat-grid">
+                            <div className="profile-stat-box">
+                                <span className="profile-stat-lbl">C.A Mensuel</span>
+                                <span className="profile-stat-val">${Math.round(myProfile.ca).toLocaleString()}</span>
+                            </div>
+                            <div className="profile-stat-box">
+                                <span className="profile-stat-lbl">Salaire Estimé</span>
+                                <span className="profile-stat-val" style={{color: '#10b981'}}>${Math.round(myProfile.salary).toLocaleString()}</span>
+                            </div>
+                            <div className="profile-stat-box">
+                                <span className="profile-stat-lbl">Production</span>
+                                <span className="profile-stat-val" style={{color: var(--p)}}>{myProfile.stock}</span>
+                            </div>
+                        </div>
+
+                        <div className="card" style={{marginTop: 20, textAlign: 'left', padding: 25}}>
+                            <h4 style={{marginBottom: 15, fontWeight: 900, fontSize: '0.8rem', color: var(--muted), textTransform: 'uppercase'}}>Informations Professionnelles</h4>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: 15}}>
+                                <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                    <span style={{opacity: 0.6}}>📞 Contact</span>
+                                    <span style={{fontWeight: 800}}>{myProfile.phone}</span>
+                                </div>
+                                <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                    <span style={{opacity: 0.6}}>📅 Ancienneté</span>
+                                    <span style={{fontWeight: 800}}>{myProfile.seniority} jours</span>
+                                </div>
+                                <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                    <span style={{opacity: 0.6}}>🆔 Identifiant</span>
+                                    <span style={{fontWeight: 800}}>#00{myProfile.id}</span>
+                                </div>
+                            </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentTab === 'support' && (
+                      <div className="fade-in">
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 SUPPORT</h2>
+                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
+                          <option>Stock</option><option>Facture</option><option>Absence</option><option>Autre</option>
+                        </select>
+                        <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
                   <div className="card" style={{padding:35, textAlign:'left'}}>
@@ -626,6 +655,25 @@ export default function Home() {
                 </div>
               )}
 
+              {currentTab === 'directory' && (
+                <div className="fade-in">
+                    <div style={{marginBottom: 40, textAlign: 'center'}}>
+                        <h2 style={{fontSize: '2rem', fontWeight: 950, marginBottom: 10}}>Annuaire Hen House</h2>
+                        <p style={{color: var(--muted)}}>Contactez rapidement vos collègues en cas de besoin</p>
+                    </div>
+                    <div className="grid">
+                    {data.employeesFull.map(e => (
+                        <div key={e.id} className="dir-card">
+                            <div className="dir-avatar">{e.name.charAt(0)}</div>
+                            <div style={{fontWeight: 900, fontSize: '1.1rem', marginBottom: 5}}>{e.name}</div>
+                            <div style={{fontSize: '0.7rem', color: var(--p), fontWeight: 800, textTransform: 'uppercase'}}>{e.role}</div>
+                            <div style={{marginTop: 15, fontSize: '0.8rem', opacity: 0.6}}>🆔 #00{e.id}</div>
+                            <a href={`tel:${e.phone}`} className="dir-call">📞 APPELER</a>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+              )}
             </div>
           </main>
 
