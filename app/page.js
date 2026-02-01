@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 
-// --- CONFIGURATION (Gardée intacte) ---
+// --- CONFIGURATION ---
 const MODULES = [
   { id: 'home', l: 'Dashboard', e: '🏠' },
   { id: 'invoices', l: 'Caisse', e: '💰' },
@@ -142,7 +142,7 @@ export default function Home() {
       osc.connect(gain); gain.connect(ctx.destination);
       const now = ctx.currentTime;
       if (type === 'click') {
-        osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.05, now); // Volume baissé
+        osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.05, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(); osc.stop(now + 0.1);
       } else if (type === 'success') {
         osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now + 0.1);
@@ -183,7 +183,7 @@ export default function Home() {
 
   const updateCartQty = (idx, val) => {
     const n = [...cart];
-    // Allow empty string for typing
+    // Permettre de vider le champ pour taper
     if (val === '') {
         n[idx].qty = ''; 
     } else {
@@ -204,7 +204,7 @@ export default function Home() {
     if(sending) return; playSound('click'); setSending(true);
     try {
       const cleanPayload = {...payload};
-      // Nettoyage des qty si string
+      // Nettoyage des qty si string vide
       if(action === 'sendFactures') {
           cleanPayload.items = payload.items.map(x => ({...x, qty: Number(x.qty) || 0})).filter(x => x.qty > 0);
       }
@@ -601,40 +601,40 @@ export default function Home() {
               {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
-                   <div style={{marginBottom:40, display:'flex', justifyContent:'space-between', alignItems:'end'}}>
-                       <div>
-                           <h1 style={{fontSize: '3.5rem', fontWeight: 900, letterSpacing:'-2px', lineHeight:1}}>Hello, {user.split(' ')[0]}</h1>
-                           <p style={{color: 'var(--muted)', fontSize: '1.2rem', marginTop: 10}}>Prêt pour le service ? Voici tes stats.</p>
-                       </div>
-                       <div style={{textAlign:'right'}}>
-                           <div style={{fontSize:'3rem', fontWeight:900, color:'rgba(255,255,255,0.1)'}}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                       </div>
-                   </div>
-                   
-                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 50}}>
+                    <div style={{marginBottom:40, display:'flex', justifyContent:'space-between', alignItems:'end'}}>
+                        <div>
+                            <h1 style={{fontSize: '3.5rem', fontWeight: 900, letterSpacing:'-2px', lineHeight:1}}>Hello, {user.split(' ')[0]}</h1>
+                            <p style={{color: 'var(--muted)', fontSize: '1.2rem', marginTop: 10}}>Prêt pour le service ? Voici tes stats.</p>
+                        </div>
+                        <div style={{textAlign:'right'}}>
+                            <div style={{fontSize:'3rem', fontWeight:900, color:'rgba(255,255,255,0.1)'}}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        </div>
+                    </div>
+                    
+                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 50}}>
                       <div className="stat-card">
-                         <div className="stat-icon" style={{color: 'var(--p)'}}>💰</div>
-                         <div><div className="stat-label">Chiffre d'Affaires</div><div className="stat-val">${Math.round(myProfile?.ca || 0).toLocaleString()}</div></div>
+                          <div className="stat-icon" style={{color: 'var(--p)'}}>💰</div>
+                          <div><div className="stat-label">Chiffre d'Affaires</div><div className="stat-val">${Math.round(myProfile?.ca || 0).toLocaleString()}</div></div>
                       </div>
                       <div className="stat-card">
-                         <div className="stat-icon" style={{color: '#10b981'}}>📦</div>
-                         <div><div className="stat-label">Production</div><div className="stat-val">{myProfile?.stock.toLocaleString()}</div></div>
+                          <div className="stat-icon" style={{color: '#10b981'}}>📦</div>
+                          <div><div className="stat-label">Production</div><div className="stat-val">{myProfile?.stock.toLocaleString()}</div></div>
                       </div>
                       <div className="stat-card">
-                         <div className="stat-icon" style={{color: '#6366f1'}}>💶</div>
-                         <div><div className="stat-label">Salaire Estimé</div><div className="stat-val">${Math.round(myProfile?.salary || 0).toLocaleString()}</div></div>
+                          <div className="stat-icon" style={{color: '#6366f1'}}>💶</div>
+                          <div><div className="stat-label">Salaire Estimé</div><div className="stat-val">${Math.round(myProfile?.salary || 0).toLocaleString()}</div></div>
                       </div>
-                   </div>
+                    </div>
 
-                   <h3 style={{marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft:'4px solid var(--p)'}}>ACCÈS RAPIDE</h3>
-                   <div className="grid">
-                   {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
-                       <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{height: 160, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background: 'var(--glass)'}}>
-                           <span style={{fontSize:'3rem', marginBottom:15}}>{m.e}</span>
-                           <div style={{fontSize:'1rem', fontWeight:800}}>{m.l}</div>
-                       </div>
-                   ))}
-                   </div>
+                    <h3 style={{marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft:'4px solid var(--p)'}}>ACCÈS RAPIDE</h3>
+                    <div className="grid">
+                    {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
+                        <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{height: 160, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background: 'var(--glass)'}}>
+                            <span style={{fontSize:'3rem', marginBottom:15}}>{m.e}</span>
+                            <div style={{fontSize:'1rem', fontWeight:800}}>{m.l}</div>
+                        </div>
+                    ))}
+                    </div>
                 </div>
               )}
 
@@ -696,18 +696,18 @@ export default function Home() {
                              onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} 
                              onClick={() => !forms.expense.file && document.getElementById('inpFile').click()}
                              style={{border:'2px dashed var(--glass-b)', borderRadius:20, padding:30, textAlign:'center', cursor:'pointer', marginBottom:20, background: dragActive?'rgba(255,152,0,0.1)':'transparent'}}>
-                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
-                            {!forms.expense.file ? (
-                              <>
-                                <div style={{fontSize:'2.5rem', marginBottom:10, opacity:0.7}}>📸</div>
-                                <div style={{fontWeight:700, fontSize:'0.9rem', color:'var(--muted)'}}>Preuve (Click ou Ctrl+V)</div>
-                              </>
-                            ) : (
-                              <div style={{position:'relative'}}>
-                                <button style={{position:'absolute', top:-10, right:-10, background:'var(--error)', border:'none', color:'#fff', borderRadius:'50%', width:30, height:30, cursor:'pointer', zIndex:10}} onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
-                                <img src={forms.expense.file} style={{maxHeight:200, borderRadius:10, border:'2px solid #fff'}} />
-                              </div>
-                            )}
+                           <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
+                           {!forms.expense.file ? (
+                             <>
+                               <div style={{fontSize:'2.5rem', marginBottom:10, opacity:0.7}}>📸</div>
+                               <div style={{fontWeight:700, fontSize:'0.9rem', color:'var(--muted)'}}>Preuve (Click ou Ctrl+V)</div>
+                             </>
+                           ) : (
+                             <div style={{position:'relative'}}>
+                               <button style={{position:'absolute', top:-10, right:-10, background:'var(--error)', border:'none', color:'#fff', borderRadius:'50%', width:30, height:30, cursor:'pointer', zIndex:10}} onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
+                               <img src={forms.expense.file} style={{maxHeight:200, borderRadius:10, border:'2px solid #fff'}} />
+                             </div>
+                           )}
                         </div>
                         <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>Envoyer Note</button>
                     </div>
