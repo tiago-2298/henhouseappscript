@@ -183,7 +183,6 @@ export default function Home() {
 
   const updateCartQty = (idx, val) => {
     const n = [...cart];
-    // Permettre de vider le champ pour taper
     if (val === '') {
         n[idx].qty = ''; 
     } else {
@@ -204,7 +203,6 @@ export default function Home() {
     if(sending) return; playSound('click'); setSending(true);
     try {
       const cleanPayload = {...payload};
-      // Nettoyage des qty si string vide
       if(action === 'sendFactures') {
           cleanPayload.items = payload.items.map(x => ({...x, qty: Number(x.qty) || 0})).filter(x => x.qty > 0);
       }
@@ -460,6 +458,10 @@ export default function Home() {
         }
         .inp:focus { border-color: var(--p); box-shadow: 0 0 20px rgba(255, 152, 0, 0.15); background: rgba(0,0,0,0.5); }
         
+        /* STYLE POUR LES SELECT EN NOIR */
+        select.inp { background-color: #000 !important; color: #fff; }
+        option { background-color: #000; color: #fff; }
+
         .btn-p { 
             background: var(--p); color: #000; border:none; 
             padding: 18px; border-radius: 18px; 
@@ -722,6 +724,9 @@ export default function Home() {
                         <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});}}><option value="">Sélectionner...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                             <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});}} />
+                            {forms.stock.length > 1 && (
+                                <button className="del-btn" onClick={()=>{const n=[...forms.stock]; n.splice(i, 1); setForms({...forms, stock:n});}}>×</button>
+                            )}
                         </div>
                     ))}
                     <button className="inp" style={{background:'transparent', border:'1px dashed var(--glass-b)', color:'var(--muted)', cursor:'pointer'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ajouter Ligne</button>
@@ -739,7 +744,7 @@ export default function Home() {
                             <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
                                 <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
                                 <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}} />
-                                {i>0 && <button className="del-btn" onClick={()=>{const n=[...forms.enterprise.items]; n.splice(i,1); setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}>×</button>}
+                                {forms.enterprise.items.length > 1 && <button className="del-btn" onClick={()=>{const n=[...forms.enterprise.items]; n.splice(i,1); setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}>×</button>}
                             </div>
                         ))}
                     </div>
@@ -761,8 +766,16 @@ export default function Home() {
                         <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{const n=[...forms.partner.items]; n[idx].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}}>{data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name}>{m.name}</option>)}</select>
                             <input type="number" className="inp" style={{width:80, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.partner.items]; n[idx].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}} />
+                            {forms.partner.items.length > 1 && (
+                                <button className="del-btn" onClick={()=>{const n=[...forms.partner.items]; n.splice(idx, 1); setForms({...forms, partner:{...forms.partner, items:n}});}}>×</button>
+                            )}
                         </div>
                     ))}
+                    <button className="inp" style={{background:'transparent', border:'1px dashed var(--glass-b)', color:'var(--muted)', cursor:'pointer', padding:10}} onClick={()=>{
+                        const currentMenus = data.partners.companies[forms.partner.company]?.menus;
+                        const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
+                        setForms({...forms, partner:{...forms.partner, items: [...forms.partner.items, {menu: defaultMenu, qty: 1}]}});
+                    }}>+ Ajouter Ligne</button>
                     <button className="btn-p" style={{marginTop:20}} onClick={()=>send('sendPartnerOrder', forms.partner)}>Valider</button>
                 </div></div>
               )}
