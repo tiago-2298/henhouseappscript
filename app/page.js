@@ -64,7 +64,6 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
   const [dragActive, setDragActive] = useState(false);
-  // État pour la fenêtre de confirmation (Suppression/Déconnexion)
   const [confirmModal, setConfirmModal] = useState(null); 
 
   const initialForms = {
@@ -211,7 +210,6 @@ export default function Home() {
     finally { setSending(false); }
   };
 
-  // Nouvelle logique de déconnexion avec confirmation
   const requestLogout = () => {
     setConfirmModal({
         title: "DÉCONNEXION",
@@ -224,7 +222,6 @@ export default function Home() {
     });
   };
 
-  // Nouvelle logique pour vider le panier avec confirmation
   const requestClearCart = () => {
       if(cart.length === 0) return;
       setConfirmModal({
@@ -659,6 +656,7 @@ export default function Home() {
               {currentTab === 'support' && (
                 <div className="center-box"><div className="form-ui">
                     <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 ASSISTANCE</h2>
+                    <input className="inp" placeholder="Objet de la demande" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})} />
                     <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message au patron..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
                     <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER TICKET</button>
                 </div></div>
