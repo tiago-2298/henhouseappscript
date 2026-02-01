@@ -92,13 +92,13 @@ export default function Home() {
       img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1200;
+        const MAX_WIDTH = 800;
         const scale = MAX_WIDTH / img.width;
         canvas.width = MAX_WIDTH;
         canvas.height = img.height * scale;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+        resolve(canvas.toDataURL('image/jpeg', 0.6)); 
       };
     });
   };
@@ -112,7 +112,8 @@ export default function Home() {
     reader.onloadend = async () => {
         const compressed = await compressImage(reader.result);
         setForms(prev => ({ ...prev, expense: { ...prev.expense, file: compressed } }));
-        notify("📸 CAPTURE ENREGISTRÉE", "La preuve a été ajoutée au dossier.", "success");
+        // Notification Toast au lieu d'une barre dans l'UI
+        notify("📸 CAPTURE DÉTECTÉE", "Le reçu a été ajouté avec succès.", "success");
     };
     reader.readAsDataURL(file);
   };
@@ -275,12 +276,12 @@ export default function Home() {
         .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
         .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* FIX MODULE FRAIS - ZONE DROP & IMAGE */
-        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 25px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        /* ZONE DROP - IMAGE SANS BARRE VERTE */
+        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 20px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .dz-preview-container { position: relative; width: 100%; max-width: 300px; margin: 0 auto; }
-        .dz-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; border: 2px solid var(--p); box-shadow: 0 10px 20px rgba(0,0,0,0.4); background: #000; }
-        .btn-del-file { position: absolute; top: -10px; right: -10px; background: var(--error); color: #fff; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 900; z-index: 5; }
+        .dz-preview-container { position: relative; width: 100%; max-width: 250px; margin-top: 10px; }
+        .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; border: 2px solid var(--brd); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .btn-del-file { position: absolute; top: -10px; right: -10px; background: var(--error); color: #fff; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-weight: 900; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
         .v-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; position: relative; overflow: hidden; }
         .v-card:hover { border-color: var(--p); transform: translateY(-5px); }
@@ -294,6 +295,9 @@ export default function Home() {
         .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--brd); border-radius: 18px; padding: 20px; }
         .stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
         .stat-value { font-size: 1.5rem; font-weight: 950; color: #fff; }
+
+        .toast { position: fixed; top: 25px; right: 25px; padding: 15px 25px; border-radius: 12px; z-index: 9999; animation: slideIn 0.4s ease-out; box-shadow: 0 15px 40px rgba(0,0,0,0.6); min-width: 250px; }
+        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
       `}</style>
 
       {view === 'login' ? (
@@ -339,7 +343,7 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in">
-              {/* ACCUEIL */}
+              {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
                    <div style={{marginBottom:45}}>
@@ -385,7 +389,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* CAISSE */}
+              {/* INVOICES */}
               {currentTab === 'invoices' && (
                 <div className="fade-in">
                   <div style={{position:'relative', marginBottom:20}}>
@@ -420,12 +424,12 @@ export default function Home() {
                 </div>
               )}
 
-              {/* MODULE FRAIS - CORRIGÉ */}
+              {/* EXPENSES */}
               {currentTab === 'expenses' && (
                 <div className="center-box">
                     <div className="form-ui">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 FRAIS & ESSENCE</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Ajoutez vos reçus par capture d'écran ou fichier.</p>
+                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Remplacez la barre par une notificationToast.</p>
                         
                         <div style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1}} value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
@@ -452,60 +456,14 @@ export default function Home() {
                              </>
                            ) : (
                              <div className="dz-preview-container">
-                               <button className="btn-del-file" onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
-                               <img src={forms.expense.file} className="dz-preview" alt="Preuve" />
+                               <button className="btn-del-file" title="Supprimer" onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
+                               <img src={forms.expense.file} className="dz-preview" alt="Reçu" />
                              </div>
                            )}
                         </div>
                         
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>
-                            {sending ? "TRANSMISSION..." : "ENVOYER LA NOTE"}
-                        </button>
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>ENVOYER LA NOTE</button>
                     </div>
-                </div>
-              )}
-
-              {/* ANNUAIRE */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                    <h2 style={{fontSize:'2.2rem', fontWeight:950, marginBottom:35}}>Annuaire Interne</h2>
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:25}}>
-                    {data.employeesFull.map(e => (
-                        <div key={e.id} className="v-card">
-                            <div className="v-card-avatar">{e.name.charAt(0)}</div>
-                            <div className="v-card-name">{e.name}</div>
-                            <div className="v-card-role">{e.role}</div>
-                            <a href={`tel:${e.phone}`} className="v-card-btn">📞 {e.phone}</a>
-                        </div>
-                    ))}
-                    </div>
-                </div>
-              )}
-
-              {/* PROFIL */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="center-box">
-                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
-                        <div style={{textAlign:'center'}}>
-                            <div className="v-card-avatar" style={{width:100, height:100, margin:'0 auto 20px'}}>{user.charAt(0)}</div>
-                            <h1 style={{fontSize:'2.5rem', fontWeight:950}}>{user}</h1>
-                            <div style={{color:'var(--p)', fontWeight:800}}>{myProfile.role}</div>
-                        </div>
-                        <div className="profile-grid">
-                            <div className="stat-box">
-                                <div className="stat-label">Chiffre</div>
-                                <div className="stat-value">${Math.round(myProfile.ca).toLocaleString()}</div>
-                            </div>
-                            <div className="stat-box">
-                                <div className="stat-label">Production</div>
-                                <div className="stat-value">{myProfile.stock}</div>
-                            </div>
-                        </div>
-                        <div style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(0,0,0,0.3))', border: '1px solid var(--success)', borderRadius: 24, padding: 25, marginTop: 20, textAlign: 'center'}}>
-                            <div className="stat-label" style={{color: 'var(--success)'}}>Salaire estimé</div>
-                            <div style={{fontSize: '3rem', fontWeight: 950}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
-                        </div>
-                   </div>
                 </div>
               )}
 
@@ -572,6 +530,23 @@ export default function Home() {
                 </div></div>
               )}
 
+              {/* DIRECTORY */}
+              {currentTab === 'directory' && (
+                <div className="fade-in">
+                    <h2 style={{fontSize:'2.2rem', fontWeight:950, marginBottom:35}}>Annuaire Interne</h2>
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:25}}>
+                    {data.employeesFull.map(e => (
+                        <div key={e.id} className="v-card">
+                            <div className="v-card-avatar">{e.name.charAt(0)}</div>
+                            <div className="v-card-name">{e.name}</div>
+                            <div className="v-card-role">{e.role}</div>
+                            <a href={`tel:${e.phone}`} className="v-card-btn">📞 {e.phone}</a>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+              )}
+
               {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
@@ -602,6 +577,33 @@ export default function Home() {
                 </div>
               )}
 
+              {/* PROFILE */}
+              {currentTab === 'profile' && myProfile && (
+                <div className="center-box">
+                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
+                        <div style={{textAlign:'center'}}>
+                            <div className="v-card-avatar" style={{width:100, height:100, margin:'0 auto 20px'}}>{user.charAt(0)}</div>
+                            <h1 style={{fontSize:'2.5rem', fontWeight:950}}>{user}</h1>
+                            <div style={{color:'var(--p)', fontWeight:800}}>{myProfile.role}</div>
+                        </div>
+                        <div className="profile-grid">
+                            <div className="stat-box">
+                                <div className="stat-label">Chiffre</div>
+                                <div className="stat-value">${Math.round(myProfile.ca).toLocaleString()}</div>
+                            </div>
+                            <div className="stat-box">
+                                <div className="stat-label">Production</div>
+                                <div className="stat-value">{myProfile.stock}</div>
+                            </div>
+                        </div>
+                        <div style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(0,0,0,0.3))', border: '1px solid var(--success)', borderRadius: 24, padding: 25, marginTop: 20, textAlign: 'center'}}>
+                            <div className="stat-label" style={{color: 'var(--success)'}}>Salaire estimé</div>
+                            <div style={{fontSize: '3rem', fontWeight: 950}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
+                        </div>
+                   </div>
+                </div>
+              )}
+
               {/* SUPPORT */}
               {currentTab === 'support' && (
                 <div className="center-box"><div className="form-ui">
@@ -623,9 +625,9 @@ export default function Home() {
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
                     <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.9rem'}}>{i.name}</div><div style={{color:'var(--p)', fontSize:'0.8rem'}}>${i.pu}</div></div>
                     <div style={{display:'flex', alignItems:'center', gap:10}}>
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
+                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
                     </div>
                   </div>
                 ))}
