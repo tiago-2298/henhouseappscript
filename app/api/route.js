@@ -102,8 +102,8 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
     },
     'Esthétique Paleto': {
-     beneficiaries: [ 'Patronne','Manager','Expérimenté','Stagiaire'],
-     menus: [
+      beneficiaries: [ 'Patronne','Manager','Expérimenté','Stagiaire'],
+      menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
         { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }
       ],
@@ -375,6 +375,3 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
   }
 }
-
-
-
