@@ -64,6 +64,8 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  // État pour la fenêtre de confirmation (Suppression/Déconnexion)
+  const [confirmModal, setConfirmModal] = useState(null); 
 
   const initialForms = {
     invoiceNum: '',
@@ -112,7 +114,6 @@ export default function Home() {
     reader.onloadend = async () => {
         const compressed = await compressImage(reader.result);
         setForms(prev => ({ ...prev, expense: { ...prev.expense, file: compressed } }));
-        // Notification Toast au lieu d'une barre dans l'UI
         notify("📸 CAPTURE DÉTECTÉE", "Le reçu a été ajouté avec succès.", "success");
     };
     reader.readAsDataURL(file);
@@ -210,14 +211,59 @@ export default function Home() {
     finally { setSending(false); }
   };
 
-  const logout = () => { localStorage.removeItem('hh_user'); setView('login'); };
+  // Nouvelle logique de déconnexion avec confirmation
+  const requestLogout = () => {
+    setConfirmModal({
+        title: "DÉCONNEXION",
+        msg: "Voulez-vous vraiment fermer votre session ?",
+        action: () => {
+            localStorage.removeItem('hh_user');
+            setView('login');
+            setConfirmModal(null);
+        }
+    });
+  };
 
+  // Nouvelle logique pour vider le panier avec confirmation
+  const requestClearCart = () => {
+      if(cart.length === 0) return;
+      setConfirmModal({
+          title: "VIDER LE PANIER",
+          msg: "Cette action supprimera tous les articles. Continuer ?",
+          action: () => {
+              setCart([]);
+              setConfirmModal(null);
+              playSound('click');
+          }
+      });
+  };
+
+  // --- SKELETON LOADER SCREEN ---
   if (loading && !data) return (
-    <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#000'}}>
-        <div style={{textAlign:'center'}}>
-            <img src="https://i.goopics.net/dskmxi.png" height="80" style={{marginBottom:20, opacity:0.5}} />
-            <div className="perf-bar" style={{width:200}}><div className="perf-fill" style={{width:'50%', animation:'pulse 1.5s infinite'}}></div></div>
-        </div>
+    <div className="app">
+         <style jsx>{`
+            .sk-side { width: 260px; height: 100vh; background: #000; border-right: 1px solid #2d333f; padding: 20px; }
+            .sk-main { flex: 1; padding: 40px; background: #0f1115; }
+            .sk-box { background: rgba(255,255,255,0.05); border-radius: 12px; animation: pulse 1.5s infinite; }
+            .sk-row { display: flex; gap: 15px; margin-bottom: 20px; }
+            @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.6; } 100% { opacity: 0.3; } }
+         `}</style>
+         <div className="sk-side">
+            <div className="sk-box" style={{height: 60, width: 60, borderRadius: '50%', margin: '0 auto 40px'}} />
+            {[1,2,3,4,5,6].map(i => <div key={i} className="sk-box" style={{height: 40, width: '100%', marginBottom: 10}} />)}
+         </div>
+         <div className="sk-main">
+            <div className="sk-box" style={{height: 50, width: 300, marginBottom: 10}} />
+            <div className="sk-box" style={{height: 20, width: 200, marginBottom: 40}} />
+            <div className="sk-row">
+                <div className="sk-box" style={{height: 150, flex: 1}} />
+                <div className="sk-box" style={{height: 150, flex: 1}} />
+                <div className="sk-box" style={{height: 150, flex: 1}} />
+            </div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))', gap:20}}>
+                {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="sk-box" style={{height: 180}} />)}
+            </div>
+         </div>
     </div>
   );
 
@@ -276,7 +322,6 @@ export default function Home() {
         .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
         .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* ZONE DROP - IMAGE SANS BARRE VERTE */
         .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 20px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
         .dz-preview-container { position: relative; width: 100%; max-width: 250px; margin-top: 10px; }
@@ -298,6 +343,12 @@ export default function Home() {
 
         .toast { position: fixed; top: 25px; right: 25px; padding: 15px 25px; border-radius: 12px; z-index: 9999; animation: slideIn 0.4s ease-out; box-shadow: 0 15px 40px rgba(0,0,0,0.6); min-width: 250px; }
         @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+
+        /* MODAL STYLES */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+        .modal-box { background: #1a1a1a; border: 1px solid var(--brd); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: scale(0.9); animation: popIn 0.3s forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { to { transform: scale(1); } }
       `}</style>
 
       {view === 'login' ? (
@@ -337,7 +388,7 @@ export default function Home() {
                 <div className="emp-name">{user}</div>
                 <div className="emp-role">{myProfile?.role || 'Agent de terrain'}</div>
               </div>
-              <button className="nav-l" onClick={logout} style={{color: 'var(--error)', background: 'rgba(239, 68, 68, 0.05)', justifyContent: 'center'}}>🚪 DÉCONNEXION</button>
+              <button className="nav-l" onClick={requestLogout} style={{color: 'var(--error)', background: 'rgba(239, 68, 68, 0.05)', justifyContent: 'center'}}>🚪 DÉCONNEXION</button>
             </div>
           </aside>
 
@@ -618,7 +669,10 @@ export default function Home() {
           {/* PANIER */}
           {currentTab === 'invoices' && (
             <aside className="cart">
-              <div style={{padding:30, borderBottom:'1px solid var(--brd)'}}><h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 PANIER</h2></div>
+              <div style={{padding:30, borderBottom:'1px solid var(--brd)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                  <h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 PANIER</h2>
+                  <button onClick={requestClearCart} title="Tout vider" style={{background:'transparent', border:'none', fontSize:'1.2rem', cursor:'pointer', opacity:0.6}}>🗑️</button>
+              </div>
               <div style={{padding:20}}><input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center'}} /></div>
               <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
                 {cart.length === 0 ? <div style={{textAlign:'center', marginTop: 50, opacity: 0.3}}>Vide</div> : cart.map((i, idx)=>(
@@ -646,6 +700,20 @@ export default function Home() {
           <div style={{ fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: 2 }}>{toast.t}</div>
           <div style={{ fontSize: '0.95rem' }}>{toast.m}</div>
         </div>
+      )}
+
+      {/* CONFIRM MODAL */}
+      {confirmModal && (
+          <div className="modal-overlay" onClick={()=>setConfirmModal(null)}>
+              <div className="modal-box" onClick={e=>e.stopPropagation()}>
+                  <h3 style={{fontSize:'1.5rem', fontWeight:900, marginBottom:10}}>{confirmModal.title}</h3>
+                  <p style={{color:'var(--muted)', marginBottom:25}}>{confirmModal.msg}</p>
+                  <div style={{display:'flex', gap:10}}>
+                      <button className="btn-p" style={{background:'var(--brd)', color:'#fff'}} onClick={()=>setConfirmModal(null)}>Annuler</button>
+                      <button className="btn-p" onClick={confirmModal.action}>Confirmer</button>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );
