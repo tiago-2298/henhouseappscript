@@ -51,6 +51,14 @@ const NOTIF_MESSAGES = {
   sync: { title: "☁️ CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
 };
 
+// Petit composant Sparkline pour l'effet visuel
+const Sparkline = ({ color }) => (
+  <svg width="100%" height="40" viewBox="0 0 100 40" preserveAspectRatio="none" style={{opacity:0.6}}>
+    <path d="M0 35 Q 25 10 50 25 T 100 5" fill="none" stroke={color} strokeWidth="3" />
+    <path d="M0 35 Q 25 10 50 25 T 100 5 V 40 H 0 Z" fill={color} fillOpacity="0.2" stroke="none" />
+  </svg>
+);
+
 export default function Home() {
   const [view, setView] = useState('login');
   const [user, setUser] = useState('');
@@ -178,29 +186,43 @@ export default function Home() {
 
   useEffect(() => { loadData(); }, []);
 
-  const total = useMemo(() => Math.round(cart.reduce((a,b)=>a+b.qty*b.pu, 0)), [cart]);
+  const total = useMemo(() => Math.round(cart.reduce((a,b)=>a+(Number(b.qty)||0)*b.pu, 0)), [cart]);
+  const salaryGain = useMemo(() => Math.round(total * 0.45), [total]);
   const myProfile = useMemo(() => data?.employeesFull?.find(e => e.name === user), [data, user]);
 
+  // Nouvelle logique pour permettre de vider l'input sans que ça saute à 0
   const updateCartQty = (idx, val) => {
     const n = [...cart];
-    // Autoriser le champ vide pour l'édition
+    // Si vide ou négatif, on garde la chaine vide ou on met 0, mais on supprime pas direct
     if (val === '') {
         n[idx].qty = ''; 
-        setCart(n);
-        return;
+    } else {
+        const v = parseInt(val);
+        if(!isNaN(v)) n[idx].qty = v;
     }
-    const v = parseInt(val);
-    if (!isNaN(v) && v >= 0) {
-        if(v === 0) n.splice(idx, 1);
-        else n[idx].qty = v;
-        setCart(n);
-    }
+    setCart(n);
+  };
+
+  // Suppression explicite
+  const removeCartItem = (idx) => {
+    const n = [...cart];
+    n.splice(idx, 1);
+    setCart(n);
   };
 
   const send = async (action, payload) => {
     if(sending) return; playSound('click'); setSending(true);
     try {
-      const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...payload, employee: user} }) });
+      // Nettoyage des quantités vides avant envoi
+      let cleanPayload = payload;
+      if(action === 'sendFactures') {
+          cleanPayload = {
+              ...payload,
+              items: payload.items.map(x => ({ ...x, qty: Number(x.qty) || 1 }))
+          };
+      }
+
+      const r = await fetch('/api', { method: 'POST', body: JSON.stringify({ action, data: {...cleanPayload, employee: user} }) });
       const j = await r.json();
       if(j.success) { 
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
@@ -242,329 +264,213 @@ export default function Home() {
       });
   };
 
-  const removeFromCart = (idx) => {
-     const n = [...cart];
-     n.splice(idx, 1);
-     setCart(n);
-  };
-
   // --- SKELETON LOADER SCREEN ---
   if (loading && !data) return (
     <div className="app">
-        <style jsx>{`
-            .sk-side { width: 260px; height: 100vh; background: #000; border-right: 1px solid #2d333f; padding: 20px; }
-            .sk-main { flex: 1; padding: 40px; background: #0f1115; }
+         <style jsx>{`
+            .sk-side { width: 100px; height: 100vh; background: #000; padding: 20px; border-right: 1px solid #333; }
+            .sk-main { flex: 1; padding: 40px; background: #050505; }
             .sk-box { background: rgba(255,255,255,0.05); border-radius: 12px; animation: pulse 1.5s infinite; }
-            .sk-row { display: flex; gap: 15px; margin-bottom: 20px; }
             @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.6; } 100% { opacity: 0.3; } }
          `}</style>
-         <div className="sk-side">
-            <div className="sk-box" style={{height: 60, width: 60, borderRadius: '50%', margin: '0 auto 40px'}} />
-            {[1,2,3,4,5,6].map(i => <div key={i} className="sk-box" style={{height: 40, width: '100%', marginBottom: 10}} />)}
-         </div>
+         <div className="sk-side"></div>
          <div className="sk-main">
-            <div className="sk-box" style={{height: 50, width: 300, marginBottom: 10}} />
-            <div className="sk-box" style={{height: 20, width: 200, marginBottom: 40}} />
-            <div className="sk-row">
-                <div className="sk-box" style={{height: 150, flex: 1}} />
-                <div className="sk-box" style={{height: 150, flex: 1}} />
-                <div className="sk-box" style={{height: 150, flex: 1}} />
-            </div>
-            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(150px, 1fr))', gap:20}}>
-                {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="sk-box" style={{height: 180}} />)}
-            </div>
+            <div className="sk-box" style={{height: 200, width: '100%', marginBottom: 30}} />
+            <div className="sk-box" style={{height: 400, width: '100%'}} />
          </div>
     </div>
   );
 
   return (
     <div className="app">
+      {/* --- ORBITAL BACKGROUND --- */}
+      <div className="ambient-light">
+          <div className="orb orb-1"></div>
+          <div className="orb orb-2"></div>
+      </div>
+
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap');
-        
         :root { 
             --p: #ff9800; 
+            --p-glow: rgba(255, 152, 0, 0.4);
             --bg: #050505; 
-            --glass-base: rgba(18, 18, 20, 0.75);
+            --panel: #121212; 
+            --glass: rgba(20, 20, 20, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
             --txt: #f1f5f9; 
             --muted: #94a3b8; 
-            --radius: 20px; 
+            --radius: 24px; 
             --success: #10b981; 
             --error: #ef4444; 
         }
-        
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--p); }
+        body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
+        
+        /* Ambient Animation */
+        .ambient-light { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; z-index: -1; pointer-events: none; }
+        .orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.3; animation: float 15s infinite alternate; }
+        .orb-1 { width: 400px; height: 400px; background: var(--p); top: -100px; left: -100px; }
+        .orb-2 { width: 500px; height: 500px; background: #6366f1; bottom: -100px; right: -100px; animation-delay: -5s; }
+        @keyframes float { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
 
-        body { 
-            background: var(--bg); 
-            color: var(--txt); 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        /* AMBIANT BACKGROUND */
-        .bg-blobs { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
-        .blob { position: absolute; filter: blur(80px); opacity: 0.3; animation: floatBlob 20s infinite alternate; }
-        .blob-1 { top: -10%; left: -10%; width: 600px; height: 600px; background: purple; }
-        .blob-2 { bottom: -10%; right: -10%; width: 500px; height: 500px; background: var(--p); animation-delay: -5s; }
-        .blob-3 { top: 40%; left: 40%; width: 400px; height: 400px; background: #0044ff; animation-delay: -10s; opacity: 0.15; }
-
-        @keyframes floatBlob {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(100px, 50px) scale(1.1); }
-        }
-
-        .app { display: flex; height: 100vh; width: 100vw; position: relative; }
-
-        /* FLOATING SIDEBAR */
+        /* Layout */
+        .app { display: flex; height: 100vh; width: 100vw; gap: 20px; padding: 20px; }
+        
+        /* Sidebar Dock */
         .side { 
-            width: 260px; 
-            margin: 20px;
-            margin-right: 0;
-            border-radius: 24px;
-            background: var(--glass-base); 
-            backdrop-filter: blur(25px);
+            width: 90px; 
+            background: var(--glass); 
+            backdrop-filter: blur(40px);
             border: 1px solid var(--glass-border);
-            padding: 24px; 
-            display: flex; 
-            flex-direction: column; 
-            z-index: 100; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border-radius: 30px; 
+            display: flex; flex-direction: column; align-items: center; padding: 30px 0; 
+            z-index: 100; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: width 0.3s;
+        }
+        .side:hover { width: 240px; } 
+        .side:hover .nav-label { opacity: 1; transform: translateX(0); display: block; }
+        .side:hover .nav-icon { margin-right: 15px; }
+
+        .nav-btn { 
+            display: flex; align-items: center; justify-content: flex-start;
+            width: 80%; padding: 12px; margin-bottom: 8px; border-radius: 16px; 
+            background: transparent; border: none; color: var(--muted); 
+            cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .nav-icon { font-size: 1.5rem; transition: 0.3s; min-width: 30px; text-align: center; }
+        .nav-label { font-size: 0.95rem; font-weight: 700; opacity: 0; display: none; white-space: nowrap; transition: 0.2s; }
+        
+        .nav-btn.active { background: rgba(255,152,0,0.15); color: #fff; box-shadow: 0 0 20px var(--p-glow); border: 1px solid var(--p-glow); }
+        .nav-btn:hover:not(.active) { background: rgba(255,255,255,0.05); color: #fff; }
+
+        /* Main Area */
+        .main { 
+            flex: 1; border-radius: 30px; background: rgba(10,10,10,0.4); 
+            backdrop-filter: blur(20px); border: 1px solid var(--glass-border);
+            overflow-y: auto; padding: 40px; position: relative; 
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
         }
 
-        .nav-l { 
-            display: flex; align-items: center; gap: 12px; 
-            padding: 14px 16px; 
-            border-radius: 14px; 
-            border: 1px solid transparent; 
-            background: transparent; 
-            color: var(--muted); 
-            cursor: pointer; 
-            font-weight: 700; 
-            width: 100%; 
-            transition: 0.3s; 
-            font-size: 0.9rem; 
-            margin-bottom: 4px; 
-        }
-        .nav-l.active { 
-            background: rgba(255, 152, 0, 0.15); 
-            color: #fff; 
-            border-color: rgba(255, 152, 0, 0.3);
-            box-shadow: 0 0 15px rgba(255, 152, 0, 0.1); 
-        }
-        .nav-l:hover:not(.active) { background: rgba(255,255,255,0.05); color: #fff; }
+        /* Modern Cards */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
         
-        .main { flex: 1; overflow-y: auto; padding: 40px; position: relative; }
-        
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
-        
-        /* MODERN CARDS */
         .card { 
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid var(--glass-border); 
-            border-radius: 24px; 
-            cursor: pointer; 
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            text-align: center; 
-            position: relative; 
-            overflow: hidden; 
-            display: flex;
-            flex-direction: column;
+            background: rgba(30,30,30,0.6); border: 1px solid var(--glass-border);
+            border-radius: 24px; cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .card:hover { 
-            border-color: rgba(255, 152, 0, 0.5); 
-            transform: translateY(-6px); 
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 0 20px rgba(255, 152, 0, 0.1);
-        }
-        .card:active { transform: scale(0.97); }
-        
-        .card.sel { 
-            border-color: var(--p); 
-            background: rgba(255,152,0,0.08); 
-        }
-        
-        .card-img-box {
-            height: 120px;
-            width: 100%;
-            background: #000;
-            position: relative;
-        }
-        
-        .card-img { width: 100%; height: 100%; object-fit: cover; mask-image: linear-gradient(to bottom, black 80%, transparent 100%); }
-        
-        .card-info { padding: 12px; text-align: left; }
+        .card:hover { transform: translateY(-8px) scale(1.02); border-color: var(--p); box-shadow: 0 20px 40px var(--p-glow); z-index: 10; }
+        .card.sel { border-color: var(--p); box-shadow: 0 0 0 2px var(--p); }
+
+        .card-img { height: 140px; width: 100%; object-fit: cover; mask-image: linear-gradient(to bottom, black 60%, transparent 100%); }
+        .card-content { padding: 15px; position: relative; margin-top: -40px; }
+        .card-title { font-weight: 800; font-size: 0.9rem; line-height: 1.2; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .card-price { color: var(--p); font-weight: 900; font-size: 1.1rem; text-shadow: 0 0 10px var(--p-glow); }
 
         .card-qty { 
-            position: absolute; top: 10px; right: 10px; 
-            background: var(--p); color: #fff; 
-            width: 28px; height: 28px; 
-            border-radius: 50%; 
-            font-size: 0.8rem; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 900; 
-            border: 2px solid #000; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            z-index: 2;
+            position: absolute; top: 10px; right: 10px; background: var(--p); color: #000; 
+            width: 30px; height: 30px; border-radius: 50%; font-size: 0.8rem; 
+            display: flex; align-items: center; justify-content: center; font-weight: 900; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 5;
         }
 
-        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        
+        /* Form UI */
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80%; }
         .form-ui { 
-            width: 100%; max-width: 550px; 
-            background: var(--glass-base); 
-            backdrop-filter: blur(40px); 
-            padding: 40px; 
-            border-radius: 32px; 
-            border: 1px solid var(--glass-border); 
-            box-shadow: 0 30px 80px rgba(0,0,0,0.6); 
+            width: 100%; max-width: 550px; background: rgba(20,20,20,0.8); 
+            backdrop-filter: blur(40px); padding: 40px; border-radius: 32px; 
+            border: 1px solid var(--glass-border); box-shadow: 0 40px 80px rgba(0,0,0,0.6); 
+            position: relative;
         }
-        
         .inp { 
-            width: 100%; padding: 16px 20px; 
-            border-radius: 16px; 
-            border: 1px solid var(--glass-border); 
-            background: rgba(0,0,0,0.3); 
-            color: #fff; 
-            font-weight: 600; 
-            margin-bottom: 12px; 
-            transition: 0.2s; 
-            font-size: 0.95rem;
+            width: 100%; padding: 16px 20px; border-radius: 16px; border: 1px solid var(--glass-border); 
+            background: rgba(0,0,0,0.3); color: #fff; font-weight: 600; margin-bottom: 15px; 
+            transition: 0.3s; font-size: 0.95rem;
         }
-        .inp:focus { outline: none; border-color: var(--p); background: rgba(0,0,0,0.5); box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.1); }
+        .inp:focus { outline: none; border-color: var(--p); box-shadow: 0 0 20px var(--p-glow); background: rgba(0,0,0,0.6); }
         
         .btn-p { 
-            background: var(--p); 
-            color: #fff; 
-            border:none; 
-            padding: 18px; 
-            border-radius: 16px; 
-            font-weight: 800; 
-            cursor: pointer; 
-            width: 100%; 
-            transition: 0.3s; 
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.9rem;
+            background: var(--p); color: #000; border:none; padding: 20px; border-radius: 18px; 
+            font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.3s; 
+            box-shadow: 0 10px 30px var(--p-glow); text-transform: uppercase; letter-spacing: 1px;
         }
-        .btn-p:hover:not(:disabled) { box-shadow: 0 10px 25px rgba(255, 152, 0, 0.3); transform: translateY(-2px); filter: brightness(1.1); }
-        .btn-p:active:not(:disabled) { transform: scale(0.98); }
-        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
-        
-        /* FLOATING CART PANEL */
+        .btn-p:hover { transform: translateY(-2px); box-shadow: 0 15px 40px var(--p-glow); filter: brightness(1.1); }
+        .btn-p:active { transform: scale(0.98); }
+        .btn-p:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* Cart */
         .cart { 
-            width: 360px; 
-            margin: 20px;
-            margin-left: 0;
-            border-radius: 24px;
-            background: var(--glass-base);
-            backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border);
-            display: flex; flex-direction: column; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            width: 360px; background: var(--glass); backdrop-filter: blur(40px);
+            border-radius: 30px; border: 1px solid var(--glass-border); 
+            display: flex; flex-direction: column; overflow: hidden;
+            margin-left: 0; box-shadow: -20px 0 50px rgba(0,0,0,0.5);
         }
+        .cart-header { padding: 30px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border); }
+        .cart-item { display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid var(--glass-border); transition: 0.2s; }
+        .cart-item:hover { background: rgba(255,255,255,0.03); }
         
-        .qty-control { display: flex; align-items: center; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 2px; border: 1px solid var(--glass-border); }
-        .qty-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: #fff; cursor: pointer; border-radius: 8px; transition:0.2s; }
-        .qty-btn:hover { background: rgba(255,255,255,0.1); }
-        .qty-inp { width: 40px; background: transparent; border: none; color: #fff; text-align: center; font-weight: 800; font-size: 0.9rem; -moz-appearance: textfield; }
-        .qty-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .qty-inp:focus { outline: none; }
-        
-        .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 20px; margin-bottom: 10px; scrollbar-width: none; }
-        .chip { padding: 10px 20px; border-radius: 30px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--muted); cursor: pointer; white-space: nowrap; font-weight: 800; font-size: 0.8rem; transition: 0.3s; }
-        .chip:hover { background: rgba(255,255,255,0.1); }
-        .chip.active { background: var(--p); color: #fff; border-color: var(--p); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
+        .qty-control { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; border: 1px solid var(--glass-border); }
+        .qty-btn { width: 28px; height: 28px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: #fff; cursor: pointer; font-weight: 900; transition: 0.2s; }
+        .qty-btn:hover { background: var(--p); color: #000; }
+        .qty-input { width: 35px; background: transparent; border: none; color: #fff; text-align: center; font-weight: 800; font-size: 1rem; }
+        .qty-input:focus { outline: none; }
 
-        .perf-bar { height: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .perf-fill { height: 100%; background: var(--p); transition: width 1s; box-shadow: 0 0 10px var(--p); }
+        .btn-trash { background: rgba(239, 68, 68, 0.2); color: var(--error); border: none; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; margin-left: 10px; }
+        .btn-trash:hover { background: var(--error); color: #fff; }
 
-        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
-        .tool-btn { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: #fff; width: 42px; height: 42px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
-        .tool-btn:hover { border-color: var(--p); color: var(--p); background: rgba(255,152,0,0.1); }
-        
-        .emp-badge { background: linear-gradient(to right, rgba(255,255,255,0.03), transparent); padding: 15px; border-radius: 16px; border-left: 3px solid var(--p); margin-bottom: 10px; }
-        .emp-name { font-weight: 900; color: #fff; font-size: 0.95rem; margin-bottom: 2px; }
-        .emp-role { font-weight: 700; color: var(--p); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        /* Chips */
+        .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 10px; scrollbar-width: none; }
+        .chip { padding: 10px 24px; border-radius: 50px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: var(--muted); cursor: pointer; white-space: nowrap; font-weight: 700; font-size: 0.85rem; transition: 0.3s; backdrop-filter: blur(10px); }
+        .chip.active { background: var(--p); color: #000; border-color: var(--p); box-shadow: 0 0 20px var(--p-glow); }
+        .chip:hover:not(.active) { background: rgba(255,255,255,0.1); color: #fff; }
 
-        .dropzone { border: 2px dashed var(--glass-border); border-radius: 15px; padding: 20px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
-        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .dz-preview-container { position: relative; width: 100%; max-width: 250px; margin-top: 10px; }
-        .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; border: 2px solid var(--glass-border); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        .btn-del-file { position: absolute; top: -10px; right: -10px; background: var(--error); color: #fff; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-weight: 900; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        /* Others */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); padding: 15px 30px; border-radius: 50px; z-index: 9999; animation: dropIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 20px 60px rgba(0,0,0,0.8); min-width: 300px; text-align: center; font-weight: 700; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); }
+        @keyframes dropIn { from { transform: translate(-50%, -100%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
-        .v-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; position: relative; overflow: hidden; }
-        .v-card:hover { border-color: var(--p); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .v-card-avatar { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, var(--p), #ffb74d); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 950; color: #fff; margin-bottom: 15px; border: 4px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .v-card-name { font-size: 1.1rem; font-weight: 900; color: #fff; text-align: center; }
-        .v-card-role { color: var(--p); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; }
-        .v-card-btn { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 12px; text-decoration: none; color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .v-card-btn:hover { background: var(--p); color: #fff; }
-
-        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; }
-        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 18px; padding: 20px; }
-        .stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
-        .stat-value { font-size: 1.5rem; font-weight: 950; color: #fff; }
-
-        .toast { position: fixed; top: 30px; right: 30px; padding: 18px 28px; border-radius: 16px; z-index: 9999; animation: slideIn 0.4s ease-out; box-shadow: 0 15px 40px rgba(0,0,0,0.6); min-width: 280px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
-
-        /* MODAL STYLES */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
-        .modal-box { background: #121212; border: 1px solid var(--glass-border); padding: 35px; border-radius: 24px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.9); transform: scale(0.9); animation: popIn 0.3s forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { to { transform: scale(1); } }
       `}</style>
-      
-      <div className="bg-blobs">
-          <div className="blob blob-1"></div>
-          <div className="blob blob-2"></div>
-          <div className="blob blob-3"></div>
-      </div>
 
       {view === 'login' ? (
-        <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
+        <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center', zIndex:10}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 420}}>
-            <img src="https://i.goopics.net/dskmxi.png" height="110" style={{marginBottom:35, filter:'drop-shadow(0 0 20px rgba(255,152,0,0.3))'}} />
-            <h1 style={{fontSize:'2rem', fontWeight:900, marginBottom:10}}>Hen House</h1>
-            <p style={{color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Portail Agent Sécurisé</p>
-            <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Qui êtes-vous ?</option>
+            <div style={{width: 120, height: 120, background: '#000', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', boxShadow: '0 0 50px var(--p-glow)', border: '2px solid var(--p)'}}>
+                <span style={{fontSize: '3rem'}}>🐔</span>
+            </div>
+            <h1 style={{fontSize:'2.5rem', fontWeight:900, marginBottom:5, background: 'linear-gradient(to right, #fff, var(--muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>HEN HOUSE</h1>
+            <p style={{color:'var(--p)', fontSize:'0.9rem', marginBottom:40, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 800}}>Système de Gestion 2.0</p>
+            <select className="inp" value={user} onChange={e=>setUser(e.target.value)} style={{textAlign:'center', fontSize: '1.1rem'}}>
+              <option value="">👤 SÉLECTIONNER AGENT</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>DÉMARRER LA SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>ACCÉDER AU TERMINAL</button>
           </div>
         </div>
       ) : (
         <>
           <aside className="side">
-            <div style={{textAlign:'center', marginBottom:35}}><img src="https://i.goopics.net/dskmxi.png" height="45" /></div>
-            <div style={{flex:1, overflowY:'auto', paddingRight:5}}>
+            <div style={{marginBottom: 40, marginTop: 10}}>
+                <div style={{width: 50, height: 50, background: '#000', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--p)', boxShadow: '0 0 20px var(--p-glow)'}}>🐔</div>
+            </div>
+            
+            <div style={{flex:1, width: '100%', display:'flex', flexDirection:'column', alignItems:'center', gap: 5}}>
               {MODULES.map(t => (
-                <button key={t.id} className={`nav-l ${currentTab===t.id?'active':''}`} onClick={()=>{playSound('click'); setCurrentTab(t.id);}}>
-                  <span style={{fontSize:'1.3rem'}}>{t.e}</span> {t.l}
+                <button key={t.id} className={`nav-btn ${currentTab===t.id?'active':''}`} onClick={()=>{playSound('click'); setCurrentTab(t.id);}}>
+                  <span className="nav-icon">{t.e}</span> 
+                  <span className="nav-label">{t.l}</span>
                 </button>
               ))}
             </div>
             
-            <div style={{paddingTop: '20px', borderTop: '1px solid var(--glass-border)'}}>
-              <div className="toolbar">
-                <button className="tool-btn" title="Rafraîchir" onClick={() => window.location.reload()}>🔃</button>
-                <button className="tool-btn" title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
-                <button className="tool-btn" title="Sons" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
-                  {isMuted ? '🔇' : '🔊'}
-                </button>
-              </div>
-              <div className="emp-badge">
-                <div className="emp-name">{user}</div>
-                <div className="emp-role">{myProfile?.role || 'Agent de terrain'}</div>
-              </div>
-              <button className="nav-l" onClick={requestLogout} style={{color: 'var(--error)', background: 'rgba(239, 68, 68, 0.1)', justifyContent: 'center'}}>🚪 DÉCONNEXION</button>
+            <div style={{paddingTop: 20, width: '100%', display:'flex', flexDirection:'column', alignItems:'center', gap: 10}}>
+               <button className="nav-btn" onClick={() => {setIsMuted(!isMuted); playSound('click');}} style={{justifyContent: 'center', width: 50}}>
+                  <span className="nav-icon">{isMuted ? '🔇' : '🔊'}</span>
+               </button>
+               <button className="nav-btn" onClick={requestLogout} style={{background: 'rgba(239, 68, 68, 0.15)', color: 'var(--error)', justifyContent: 'center', width: 50, border: '1px solid rgba(239, 68, 68, 0.3)'}}>
+                  <span className="nav-icon">🚪</span>
+               </button>
             </div>
           </aside>
 
@@ -572,79 +478,102 @@ export default function Home() {
             <div className="fade-in">
               {/* HOME */}
               {currentTab === 'home' && (
-                <div className="fade-in">
-                   <div style={{marginBottom:45}}>
-                       <h1 style={{fontSize: '3rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px', background:'linear-gradient(to right, #fff, #aaa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent'}}>Bonjour, {user.split(' ')[0]} 👋</h1>
-                       <p style={{color: 'var(--muted)', fontSize: '1.1rem'}}>Voici vos indicateurs clés pour aujourd'hui.</p>
+                <div>
+                   <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 40}}>
+                       <div>
+                           <h1 style={{fontSize: '3rem', fontWeight: 900, marginBottom: 5, letterSpacing:'-1px', textShadow: '0 5px 20px rgba(0,0,0,0.5)'}}>Bonjour, {user.split(' ')[0]}</h1>
+                           <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                               <span style={{width:10, height:10, background:'var(--success)', borderRadius:'50%', boxShadow: '0 0 10px var(--success)'}}></span>
+                               <p style={{color: 'var(--muted)', fontSize: '1rem', fontWeight: 600}}>Système opérationnel • V.2026</p>
+                           </div>
+                       </div>
+                       <div style={{textAlign:'right'}}>
+                           <div style={{fontSize:'1.5rem', fontWeight:900}}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                           <div style={{color:'var(--p)', fontWeight:800}}>{myProfile?.role || 'AGENT'}</div>
+                       </div>
                    </div>
                    
-                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 45}}>
-                      <div className="card" style={{display:'flex', flexDirection:'row', alignItems:'center', gap:25, padding: 30, textAlign:'left', background: 'linear-gradient(135deg, rgba(255,152,0,0.1), rgba(0,0,0,0))'}}>
-                         <div style={{fontSize: '3.5rem', filter:'drop-shadow(0 0 10px rgba(255,152,0,0.5))'}}>💰</div>
-                         <div>
-                            <div className="stat-label">Chiffre d'Affaires</div>
-                            <div className="stat-value" style={{color:'var(--p)'}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 25, marginBottom: 50}}>
+                      <div className="card" style={{padding: 30, background: 'linear-gradient(135deg, rgba(255,152,0,0.1), rgba(0,0,0,0.4))', border: '1px solid rgba(255,152,0,0.3)'}}>
+                         <div style={{display:'flex', justifyContent:'space-between', marginBottom: 15}}>
+                             <span style={{fontSize:'3rem'}}>💰</span>
+                             <div style={{textAlign:'right'}}>
+                                 <div style={{color:'var(--p)', fontWeight:800, fontSize:'0.8rem', textTransform:'uppercase'}}>Chiffre d'Affaires</div>
+                                 <div style={{fontSize:'2rem', fontWeight:900}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                             </div>
                          </div>
+                         <Sparkline color="#ff9800" />
                       </div>
-                      <div className="card" style={{display:'flex', flexDirection:'row', alignItems:'center', gap:25, padding: 30, textAlign:'left', background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(0,0,0,0))'}}>
-                         <div style={{fontSize: '3.5rem', filter:'drop-shadow(0 0 10px rgba(16,185,129,0.5))'}}>📦</div>
-                         <div>
-                            <div className="stat-label">Plats Produits</div>
-                            <div className="stat-value" style={{color:'var(--success)'}}>{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
+
+                      <div className="card" style={{padding: 30, background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(0,0,0,0.4))', border: '1px solid rgba(16,185,129,0.3)'}}>
+                         <div style={{display:'flex', justifyContent:'space-between', marginBottom: 15}}>
+                             <span style={{fontSize:'3rem'}}>📦</span>
+                             <div style={{textAlign:'right'}}>
+                                 <div style={{color:'var(--success)', fontWeight:800, fontSize:'0.8rem', textTransform:'uppercase'}}>Production</div>
+                                 <div style={{fontSize:'2rem', fontWeight:900}}>{myProfile?.stock.toLocaleString()}</div>
+                             </div>
                          </div>
+                         <Sparkline color="#10b981" />
                       </div>
-                      <div className="card" style={{display:'flex', flexDirection:'row', alignItems:'center', gap:25, padding: 30, textAlign:'left', background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(0,0,0,0))'}}>
-                         <div style={{fontSize: '3.5rem', filter:'drop-shadow(0 0 10px rgba(99,102,241,0.5))'}}>💶</div>
-                         <div>
-                            <div className="stat-label">Salaire Estimé</div>
-                            <div className="stat-value" style={{color:'#818cf8'}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
+
+                      <div className="card" style={{padding: 30, background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(0,0,0,0.4))', border: '1px solid rgba(99,102,241,0.3)'}}>
+                         <div style={{display:'flex', justifyContent:'space-between', marginBottom: 15}}>
+                             <span style={{fontSize:'3rem'}}>💶</span>
+                             <div style={{textAlign:'right'}}>
+                                 <div style={{color:'#6366f1', fontWeight:800, fontSize:'0.8rem', textTransform:'uppercase'}}>Salaire Estimé</div>
+                                 <div style={{fontSize:'2rem', fontWeight:900}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
+                             </div>
                          </div>
+                         <Sparkline color="#6366f1" />
                       </div>
                    </div>
 
-                   <div style={{background:'rgba(255,255,255,0.02)', padding:30, borderRadius:30, border:'1px solid var(--glass-border)'}}>
-                        <h3 style={{marginBottom: 25, fontWeight: 900, color: '#fff', fontSize: '1.1rem'}}>SERVICES RAPIDES</h3>
-                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:15}}>
+                   <h3 style={{marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)'}}>ACCÈS RAPIDE</h3>
+                   <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:20}}>
                         {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
-                            <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25, justifyContent:'center'}}>
-                                <span style={{fontSize:'2.8rem', display:'block', marginBottom:12}}>{m.e}</span>
-                                <div style={{fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                            <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25, display:'flex', flexDirection:'column', alignItems:'center', gap:10}}>
+                                <span style={{fontSize:'2.5rem'}}>{m.e}</span>
+                                <div style={{fontSize:'0.9rem', fontWeight:800, color: 'var(--muted)'}}>{m.l}</div>
                             </div>
                         ))}
-                        </div>
                    </div>
                 </div>
               )}
 
               {/* INVOICES */}
               {currentTab === 'invoices' && (
-                <div className="fade-in">
-                  <div style={{position:'relative', marginBottom:20}}>
-                        <span style={{position:'absolute', left:18, top:16, opacity:0.4}}>🔍</span>
-                        <input className="inp" placeholder="Rechercher un plat..." style={{paddingLeft:45, background:'rgba(255,255,255,0.05)'}} onChange={e=>setSearch(e.target.value)} />
+                <div>
+                  <div style={{display:'flex', gap: 15, marginBottom: 25}}>
+                     <div style={{position:'relative', flex: 1}}>
+                         <span style={{position:'absolute', left:18, top:16, opacity:0.5}}>🔍</span>
+                         <input className="inp" placeholder="Rechercher un produit..." style={{paddingLeft:50, marginBottom:0, background: 'rgba(0,0,0,0.4)'}} onChange={e=>setSearch(e.target.value)} />
+                     </div>
                   </div>
+                  
                   <div className="chips-container">
                     <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
                     {Object.keys(data.productsByCategory).map(c => (
                         <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c}</div>
                     ))}
                   </div>
+
                   <div className="grid">
                     {data.products.filter(p => (catFilter==='Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p=>{
                       const cartItem = cart.find(i=>i.name===p);
                       return (
                         <div key={p} className={`card ${cartItem?'sel':''}`} onClick={()=>{
                             playSound('click'); 
-                            if(cartItem) setCart(cart.map(x=>x.name===p?{...x, qty:parseInt(x.qty||0)+1}:x));
+                            if(cartItem) setCart(cart.map(x=>x.name===p?{...x, qty:(Number(x.qty)||0)+1}:x));
                             else setCart([...cart, {name:p, qty:1, pu:data.prices[p]||0}]);
                         }}>
                             {cartItem && <div className="card-qty">{cartItem.qty}</div>}
-                            <div className="card-img-box">
-                                {IMAGES[p] ? <img src={IMAGES[p]} className="card-img" /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', background:'#111', color: 'var(--p)'}}>{p.charAt(0)}</div>}
-                            </div>
-                            <div className="card-info">
-                                <div style={{fontWeight:800, fontSize:'0.85rem', marginBottom:5, height:40, overflow:'hidden', lineHeight:'1.2'}}>{p}</div>
-                                <div style={{color:'var(--p)', fontWeight:950, fontSize:'1.1rem'}}>${data.prices[p]}</div>
+                            {IMAGES[p] ? 
+                                <img src={IMAGES[p]} className="card-img" /> : 
+                                <div className="card-img" style={{background:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3rem'}}>{p.charAt(0)}</div>
+                            }
+                            <div className="card-content">
+                                <div className="card-title">{p}</div>
+                                <div className="card-price">${data.prices[p]}</div>
                             </div>
                         </div>
                       );
@@ -657,32 +586,32 @@ export default function Home() {
               {currentTab === 'expenses' && (
                 <div className="center-box">
                     <div className="form-ui">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 FRAIS & ESSENCE</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Déclarez vos dépenses professionnelles ici.</p>
+                        <h2 style={{marginBottom:30, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>💳 FRAIS & ESSENCE</h2>
                         
-                        <div style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1}} value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:15, marginBottom:5}}>
+                            <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
                                 {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
                             </select>
-                            <select className="inp" style={{flex:1}} value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}>
+                            <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}>
                                 <option>Essence</option><option>Réparation</option><option>Autre</option>
                             </select>
                         </div>
-                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} style={{fontSize:'1.2rem', fontWeight:900}} />
                         
                         <div className={`dropzone ${dragActive ? 'active' : ''}`} 
                              onDragOver={e => { e.preventDefault(); setDragActive(true); }} 
                              onDragLeave={() => setDragActive(false)} 
                              onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} 
                              onClick={() => !forms.expense.file && document.getElementById('inpFile').click()}>
-                           
+                            
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
                            
                            {!forms.expense.file ? (
-                             <>
+                             <div style={{opacity:0.6}}>
                                <div style={{fontSize:'3rem', marginBottom:10}}>📸</div>
-                               <div style={{fontWeight:800, color:'var(--muted)'}}>CLIQUEZ OU COLLEZ (CTRL+V)</div>
-                             </>
+                               <div style={{fontWeight:800}}>PREUVE REQUISE</div>
+                               <div style={{fontSize:'0.8rem'}}>Glisser ou Coller (CTRL+V)</div>
+                             </div>
                            ) : (
                              <div className="dz-preview-container">
                                <button className="btn-del-file" title="Supprimer" onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
@@ -691,7 +620,7 @@ export default function Home() {
                            )}
                         </div>
                         
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>ENVOYER LA NOTE</button>
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>VALIDER LA NOTE</button>
                     </div>
                 </div>
               )}
@@ -699,77 +628,93 @@ export default function Home() {
               {/* STOCK */}
               {currentTab === 'stock' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 STOCK CUISINE</h2>
-                    {forms.stock.map((item, i) => (
-                        <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
-                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});}}><option value="">Sélectionner...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});}} />
-                        </div>
-                    ))}
-                    <button className="nav-l" style={{border:'2px dashed var(--glass-border)', justifyContent:'center', marginBottom: 20, color:'#fff'}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER LIGNE</button>
-                    <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
+                    <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>📦 STOCK CUISINE</h2>
+                    <div style={{maxHeight: 400, overflowY: 'auto', paddingRight: 5}}>
+                        {forms.stock.map((item, i) => (
+                            <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                                <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});}}><option value="">Sélectionner...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                                <input type="number" className="inp" style={{width:80, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});}} />
+                            </div>
+                        ))}
+                    </div>
+                    <button className="nav-btn" style={{width:'100%', justifyContent:'center', border:'1px dashed var(--muted)', marginBottom:20}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER LIGNE</button>
+                    <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>DÉCLARER PRODUCTION</button>
                 </div></div>
               )}
 
               {/* ENTERPRISE */}
               {currentTab === 'enterprise' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🏢 COMMANDE ENTREPRISE</h2>
-                    <input className="inp" placeholder="Nom Société" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
-                    {forms.enterprise.items.map((item, i) => (
-                        <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}} />
-                        </div>
-                    ))}
-                    <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>TRANSMETTRE COMMANDE</button>
+                    <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🏢 COMMANDE PRO</h2>
+                    <input className="inp" placeholder="Nom de l'entreprise" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                    <div style={{background:'rgba(0,0,0,0.2)', padding:15, borderRadius:15, marginBottom:20}}>
+                        {forms.enterprise.items.map((item, i) => (
+                            <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                                <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                                <input type="number" className="inp" style={{width:80, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}} />
+                            </div>
+                        ))}
+                        <div style={{textAlign:'center', fontSize:'0.8rem', opacity:0.6, cursor:'pointer'}} onClick={()=>setForms({...forms, enterprise:{...forms.enterprise, items:[...forms.enterprise.items, {product:'', qty:1}]}})}>+ Ajouter un produit</div>
+                    </div>
+                    <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER LA COMMANDE</button>
                 </div></div>
               )}
 
               {/* PARTNERS */}
               {currentTab === 'partners' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
-                    <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
-                    <div style={{display:'flex', gap:12, marginBottom:12}}>
-                        <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{const c=e.target.value; setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});}}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
-                        <select className="inp" style={{flex:1}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
+                    <h2 style={{marginBottom:25, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🤝 PARTENAIRES</h2>
+                    <input className="inp" placeholder="Numéro Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} style={{textAlign:'center', fontSize:'1.1rem', letterSpacing:2}} />
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:15, marginBottom:15}}>
+                        <select className="inp" value={forms.partner.company} onChange={e=>{const c=e.target.value; setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});}}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
+                        <select className="inp" value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
                     </div>
-                    {forms.partner.items.map((item, idx) => (
-                        <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{const n=[...forms.partner.items]; n[idx].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}}>{data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name}>{m.name}</option>)}</select>
-                            <input type="number" className="inp" style={{width:70}} value={item.qty} onChange={e=>{const n=[...forms.partner.items]; n[idx].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}} />
-                        </div>
-                    ))}
-                    <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
+                    <div style={{padding:15, background:'rgba(255,255,255,0.03)', borderRadius:15, marginBottom:20}}>
+                        {forms.partner.items.map((item, idx) => (
+                            <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
+                                <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{const n=[...forms.partner.items]; n[idx].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}}>{data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name}>{m.name}</option>)}</select>
+                                <input type="number" className="inp" style={{width:70, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.partner.items]; n[idx].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}} />
+                            </div>
+                        ))}
+                    </div>
+                    <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER LE CONTRAT</button>
                 </div></div>
               )}
 
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🚗 ÉTAT VÉHICULE</h2>
-                    <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                    <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
-                    <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--glass-border)'}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
-                        <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                    <h2 style={{marginBottom:30, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🚗 VÉHICULES</h2>
+                    <div style={{background:'rgba(0,0,0,0.3)', padding:20, borderRadius:20, marginBottom:20}}>
+                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})} style={{marginBottom:20}}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                        <div style={{display:'flex', gap:10}}>
+                             <button className="inp" style={{flex:1, background: forms.garage.action==='Entrée'?'var(--p)':'rgba(0,0,0,0.5)', color: forms.garage.action==='Entrée'?'#000':'#fff', border: forms.garage.action==='Entrée'?'none':'1px solid var(--glass-border)', cursor:'pointer'}} onClick={()=>setForms({...forms, garage:{...forms.garage, action:'Entrée'}})}>🅿️ ENTRÉE</button>
+                             <button className="inp" style={{flex:1, background: forms.garage.action==='Sortie'?'var(--p)':'rgba(0,0,0,0.5)', color: forms.garage.action==='Sortie'?'#000':'#fff', border: forms.garage.action==='Sortie'?'none':'1px solid var(--glass-border)', cursor:'pointer'}} onClick={()=>setForms({...forms, garage:{...forms.garage, action:'Sortie'}})}>🔑 SORTIE</button>
+                        </div>
                     </div>
-                    <button className="btn-p" style={{marginTop:30}} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER GARAGE</button>
+                    <div style={{marginBottom:30}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:10}}><span>NIVEAU ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
+                        <input type="range" style={{width:'100%', accentColor:'var(--p)', height:8}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                    </div>
+                    <button className="btn-p" onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER ÉTAT</button>
                 </div></div>
               )}
 
               {/* DIRECTORY */}
               {currentTab === 'directory' && (
-                <div className="fade-in">
-                    <h2 style={{fontSize:'2.2rem', fontWeight:950, marginBottom:35}}>Annuaire Interne</h2>
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:25}}>
+                <div>
+                    <h2 style={{fontSize:'3rem', fontWeight:900, marginBottom:40, textShadow:'0 0 30px rgba(0,0,0,0.5)'}}>ANNUAIRE</h2>
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:30}}>
                     {data.employeesFull.map(e => (
-                        <div key={e.id} className="v-card">
-                            <div className="v-card-avatar">{e.name.charAt(0)}</div>
-                            <div className="v-card-name">{e.name}</div>
-                            <div className="v-card-role">{e.role}</div>
-                            <a href={`tel:${e.phone}`} className="v-card-btn">📞 {e.phone}</a>
+                        <div key={e.id} className="v-card" style={{alignItems:'flex-start', background: 'rgba(30,30,30,0.6)'}}>
+                            <div style={{display:'flex', gap:15, alignItems:'center', marginBottom:15}}>
+                                <div className="v-card-avatar" style={{width:50, height:50, fontSize:'1.5rem', margin:0, borderRadius:15}}>{e.name.charAt(0)}</div>
+                                <div>
+                                    <div className="v-card-name" style={{fontSize:'1rem', textAlign:'left'}}>{e.name}</div>
+                                    <div className="v-card-role" style={{margin:0, textAlign:'left'}}>{e.role}</div>
+                                </div>
+                            </div>
+                            <a href={`tel:${e.phone}`} className="v-card-btn" style={{width:'100%', background:'var(--p)', color:'#000', boxShadow: '0 5px 15px var(--p-glow)'}}>📞 {e.phone}</a>
                         </div>
                     ))}
                     </div>
@@ -778,26 +723,26 @@ export default function Home() {
 
               {/* PERFORMANCE */}
               {currentTab === 'performance' && (
-                <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
-                  <div className="card" style={{padding:35, textAlign:'left', alignItems:'stretch'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 TOP C.A</h2>
-                    {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
+                  <div className="form-ui" style={{width:'100%', padding:30}}>
+                    <h2 style={{marginBottom:30, fontWeight:900}}>🏆 MEILLEURS VENDEURS</h2>
+                    {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,8).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
-                           <span>{i+1}. <b>{e.name}</b></span>
+                           <span><span style={{color:'var(--p)', fontWeight:900, marginRight:10}}>#{i+1}</span> {e.name}</span>
                            <b style={{color: i===0 ? 'var(--p)' : '#fff'}}>${Math.round(e.ca).toLocaleString()}</b>
                         </div>
                         <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca / Math.max(...data.employeesFull.map(x=>x.ca)) * 100) + '%'}}></div></div>
                       </div>
                     ))}
                   </div>
-                  <div className="card" style={{padding:35, textAlign:'left', alignItems:'stretch'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>📦 TOP PRODUCTEURS</h2>
-                    {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
+                  <div className="form-ui" style={{width:'100%', padding:30}}>
+                    <h2 style={{marginBottom:30, fontWeight:900}}>🍳 MEILLEURS CUISTOTS</h2>
+                    {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,8).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
-                           <span>{i+1}. <b>{e.name}</b></span>
-                           <b>{e.stock.toLocaleString()}</b>
+                           <span><span style={{color:'var(--success)', fontWeight:900, marginRight:10}}>#{i+1}</span> {e.name}</span>
+                           <b>{e.stock.toLocaleString()} u.</b>
                         </div>
                         <div className="perf-bar" style={{background:'rgba(16,185,129,0.1)'}}><div className="perf-fill" style={{background:'var(--success)', width: (e.stock / Math.max(...data.employeesFull.map(x=>x.stock)) * 100) + '%'}}></div></div>
                       </div>
@@ -809,37 +754,37 @@ export default function Home() {
               {/* PROFILE */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
-                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
-                        <div style={{textAlign:'center'}}>
-                            <div className="v-card-avatar" style={{width:100, height:100, margin:'0 auto 20px'}}>{user.charAt(0)}</div>
-                            <h1 style={{fontSize:'2.5rem', fontWeight:950}}>{user}</h1>
-                            <div style={{color:'var(--p)', fontWeight:800}}>{myProfile.role}</div>
-                        </div>
-                        <div className="profile-grid">
-                            <div className="stat-box">
-                                <div className="stat-label">Chiffre</div>
+                    <div className="form-ui" style={{maxWidth: 600, padding: 50, textAlign:'center'}}>
+                         <div className="v-card-avatar" style={{width:120, height:120, margin:'0 auto 20px', fontSize:'3rem', boxShadow:'0 10px 30px var(--p-glow)'}}>{user.charAt(0)}</div>
+                         <h1 style={{fontSize:'2.5rem', fontWeight:950}}>{user}</h1>
+                         <div style={{color:'var(--p)', fontWeight:800, fontSize:'1.2rem', marginBottom:40}}>{myProfile.role}</div>
+                         
+                         <div className="profile-grid">
+                            <div className="stat-box" style={{background:'rgba(255,152,0,0.1)', borderColor:'var(--p)'}}>
+                                <div className="stat-label" style={{color:'var(--p)'}}>TOTAL VENTES</div>
                                 <div className="stat-value">${Math.round(myProfile.ca).toLocaleString()}</div>
                             </div>
                             <div className="stat-box">
-                                <div className="stat-label">Production</div>
+                                <div className="stat-label">PRODUCTION</div>
                                 <div className="stat-value">{myProfile.stock}</div>
                             </div>
-                        </div>
-                        <div style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(0,0,0,0.3))', border: '1px solid var(--success)', borderRadius: 24, padding: 25, marginTop: 20, textAlign: 'center'}}>
-                            <div className="stat-label" style={{color: 'var(--success)'}}>Salaire estimé</div>
-                            <div style={{fontSize: '3rem', fontWeight: 950}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
-                        </div>
-                   </div>
+                         </div>
+                         <div style={{background: 'rgba(16,185,129,0.1)', border: '1px solid var(--success)', borderRadius: 24, padding: 25, marginTop: 20}}>
+                            <div className="stat-label" style={{color: 'var(--success)'}}>SALAIRE À PERCEVOIR</div>
+                            <div style={{fontSize: '3.5rem', fontWeight: 950, color:'#fff'}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
+                         </div>
+                    </div>
                 </div>
               )}
 
               {/* SUPPORT */}
               {currentTab === 'support' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 ASSISTANCE</h2>
-                    <input className="inp" placeholder="Objet de la demande" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})} />
-                    <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message au patron..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                    <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER TICKET</button>
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🆘 SIGNALEMENT</h2>
+                    <p style={{textAlign:'center', color:'var(--muted)', marginBottom:30}}>Un problème ? Contactez la direction directement.</p>
+                    <input className="inp" placeholder="Sujet (ex: Manque de stock)" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})} />
+                    <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Décrivez le problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                    <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER SIGNALEMENT</button>
                 </div></div>
               )}
             </div>
@@ -848,33 +793,36 @@ export default function Home() {
           {/* PANIER (DOCK DROIT) */}
           {currentTab === 'invoices' && (
             <aside className="cart">
-              <div style={{padding:25, borderBottom:'1px solid var(--glass-border)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                  <h2 style={{fontSize:'1.1rem', fontWeight:900}}>🛒 COMMANDE</h2>
-                  <button onClick={requestClearCart} title="Tout vider" style={{background:'rgba(255,255,255,0.1)', border:'none', width:30, height:30, borderRadius:8, cursor:'pointer'}}>🗑️</button>
+              <div className="cart-header">
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <h2 style={{fontSize:'1.5rem', fontWeight:950}}>PANIER</h2>
+                      <button onClick={requestClearCart} title="Tout vider" style={{background:'transparent', border:'none', fontSize:'1.2rem', cursor:'pointer', opacity:0.6}}>🗑️</button>
+                  </div>
+                  <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', marginTop:20, marginBottom:0, fontSize:'1.1rem', letterSpacing:2, fontWeight:800}} />
               </div>
-              <div style={{padding:20}}>
-                  <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', background:'rgba(0,0,0,0.4)', fontSize:'1.1rem'}} />
-              </div>
-              <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
-                {cart.length === 0 ? <div style={{textAlign:'center', marginTop: 50, opacity: 0.3, fontWeight:600}}>Panier vide</div> : cart.map((i, idx)=>(
-                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
-                    <div style={{flex:1, paddingRight:10}}>
-                        <div style={{fontWeight:700, fontSize:'0.9rem'}}>{i.name}</div>
-                        <div style={{color:'var(--p)', fontSize:'0.75rem', marginTop:2}}>${i.pu}</div>
+              <div style={{flex:1, overflowY:'auto'}}>
+                {cart.length === 0 ? 
+                    <div style={{textAlign:'center', marginTop: 100, opacity: 0.3, fontWeight:800}}>AUCUN ARTICLE</div> : 
+                    cart.map((i, idx)=>(
+                  <div key={idx} className="cart-item">
+                    <div style={{flex:1}}>
+                        <div style={{fontWeight:800, fontSize:'0.95rem'}}>{i.name}</div>
+                        <div style={{color:'var(--p)', fontSize:'0.85rem', fontWeight:700}}>${i.pu * (Number(i.qty)||0)}</div>
                     </div>
-                    <div style={{display:'flex', alignItems:'center', gap:5}}>
-                      <div className="qty-control">
-                          <button className="qty-btn" onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
-                          <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                          <button className="qty-btn" onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
-                      </div>
-                      <button className="qty-btn" style={{background:'rgba(239,68,68,0.2)', color:'#ef4444', marginLeft:5}} onClick={() => removeFromCart(idx)}>×</button>
+                    <div className="qty-control">
+                      <button className="qty-btn" onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n[idx].qty=1; setCart(n);}}>-</button>
+                      <input className="qty-input" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
+                      <button className="qty-btn" onClick={()=>{const n=[...cart]; n[idx].qty=(Number(n[idx].qty)||0)+1; setCart(n);}}>+</button>
                     </div>
+                    <button className="btn-trash" onClick={() => removeCartItem(idx)}>×</button>
                   </div>
                 ))}
               </div>
-              <div style={{padding:25, background:'rgba(0,0,0,0.2)', borderTop:'1px solid var(--glass-border)'}}>
-                <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span style={{fontWeight:800, color:'var(--muted)'}}>TOTAL</span><b style={{fontSize:'2rem', color:'var(--p)', fontWeight:950}}>${total.toLocaleString()}</b></div>
+              <div style={{padding:30, background: 'rgba(0,0,0,0.4)', borderTop:'1px solid var(--glass-border)'}}>
+                <div style={{display:'flex', justifyContent:'space-between', marginBottom:20, alignItems:'flex-end'}}>
+                    <span style={{fontWeight:800, color:'var(--muted)', fontSize:'0.9rem'}}>TOTAL À PAYER</span>
+                    <b style={{fontSize:'2.5rem', color:'var(--p)', fontWeight:950, lineHeight:1}}>${total.toLocaleString()}</b>
+                </div>
                 <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>ENCAISSER</button>
               </div>
             </aside>
@@ -883,9 +831,9 @@ export default function Home() {
       )}
 
       {toast && (
-        <div className="toast" style={{ borderColor: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)')}}>
-          <div style={{ color: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)'), fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: 4 }}>{toast.t}</div>
-          <div style={{ fontSize: '0.9rem', fontWeight:600 }}>{toast.m}</div>
+        <div className="toast" style={{ borderColor: toast.s === 'error' ? 'var(--error)' : 'var(--p)' }}>
+          <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: 5, color: toast.s === 'error' ? 'var(--error)' : 'var(--p)', letterSpacing:1, fontWeight:900 }}>{toast.t}</div>
+          <div style={{ fontSize: '1.1rem' }}>{toast.m}</div>
         </div>
       )}
 
@@ -893,11 +841,11 @@ export default function Home() {
       {confirmModal && (
           <div className="modal-overlay" onClick={()=>setConfirmModal(null)}>
               <div className="modal-box" onClick={e=>e.stopPropagation()}>
-                  <h3 style={{fontSize:'1.4rem', fontWeight:900, marginBottom:10}}>{confirmModal.title}</h3>
-                  <p style={{color:'var(--muted)', marginBottom:25, fontSize:'0.95rem'}}>{confirmModal.msg}</p>
-                  <div style={{display:'flex', gap:12}}>
-                      <button className="btn-p" style={{background:'rgba(255,255,255,0.1)', color:'#fff'}} onClick={()=>setConfirmModal(null)}>Annuler</button>
-                      <button className="btn-p" onClick={confirmModal.action}>Confirmer</button>
+                  <h3 style={{fontSize:'1.8rem', fontWeight:900, marginBottom:10}}>{confirmModal.title}</h3>
+                  <p style={{color:'var(--muted)', marginBottom:30, fontSize:'1.1rem'}}>{confirmModal.msg}</p>
+                  <div style={{display:'flex', gap:15}}>
+                      <button className="btn-p" style={{background:'rgba(255,255,255,0.1)', color:'#fff', boxShadow:'none'}} onClick={()=>setConfirmModal(null)}>ANNULER</button>
+                      <button className="btn-p" onClick={confirmModal.action}>CONFIRMER</button>
                   </div>
               </div>
           </div>
