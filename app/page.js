@@ -180,7 +180,9 @@ export default function Home() {
   useEffect(() => { loadData(); }, []);
 
   const total = useMemo(() => Math.round(cart.reduce((a, b) => a + b.qty * b.pu, 0)), [cart]);
-  const gainEstime = useMemo(() => Math.round(total * 0.45), [total]); // ✅ GAIN 45%
+  // ✅ Gain estimé: 45% du CA (total du ticket)
+  const gainEstime = useMemo(() => Math.round(total * 0.45), [total]);
+
   const myProfile = useMemo(() => data?.employeesFull?.find(e => e.name === user), [data, user]);
 
   const updateCartQty = (idx, val) => {
@@ -318,6 +320,7 @@ export default function Home() {
         
         * { box-sizing: border-box; margin:0; padding:0; outline: none; -webkit-tap-highlight-color: transparent; }
         
+        /* Background Mesh Animation */
         body { 
             background-color: var(--bg);
             background-image: 
@@ -332,6 +335,7 @@ export default function Home() {
 
         .app { display: flex; height: 100vh; width: 100vw; position: relative; }
         
+        /* --- DOCK SIDEBAR --- */
         .dock-container {
             padding: 20px;
             height: 100vh;
@@ -365,7 +369,7 @@ export default function Home() {
         .nav-btn { 
             display: flex; 
             align-items: center; 
-            justify-content: center;
+            justify-content: center; /* Centered by default for icon */
             width: 80%; 
             padding: 14px; 
             margin-bottom: 8px; 
@@ -378,7 +382,7 @@ export default function Home() {
             position: relative;
             overflow: hidden;
         }
-        .dock:hover .nav-btn { justify-content: flex-start; padding-left: 20px; }
+        .dock:hover .nav-btn { justify-content: flex-start; padding-left: 20px; } /* Align left on expand */
 
         .nav-icon { font-size: 1.5rem; transition: 0.3s; z-index: 2; }
         .nav-label { font-size: 0.95rem; font-weight: 700; opacity: 0; transform: translateX(-10px); transition: 0.3s; white-space: nowrap; z-index: 2; display: none; }
@@ -410,10 +414,12 @@ export default function Home() {
         .u-name { font-size: 0.8rem; font-weight: 800; display: block; }
         .u-role { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; }
 
+        /* --- MAIN AREA --- */
         .main { flex: 1; overflow-y: auto; padding: 40px; position: relative; scroll-behavior: smooth; }
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* --- CARDS & GRID --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
         
         .card { 
@@ -451,6 +457,7 @@ export default function Home() {
             box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 10;
         }
 
+        /* --- FORMS --- */
         .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
         .form-ui { 
             width: 100%; max-width: 500px; 
@@ -477,6 +484,7 @@ export default function Home() {
         }
         .inp:focus { border-color: var(--p); box-shadow: 0 0 20px rgba(255, 152, 0, 0.15); background: rgba(0,0,0,0.5); }
         
+        /* STYLE POUR LES SELECT EN NOIR */
         select.inp { background-color: #000 !important; color: #fff; }
         option { background-color: #000; color: #fff; }
 
@@ -491,6 +499,7 @@ export default function Home() {
         .btn-p:active { transform: scale(0.97); }
         .btn-p:disabled { background: #333; color: #666; box-shadow: none; transform: none; cursor: not-allowed; }
 
+        /* --- CART (Digital Ticket) --- */
         .cart-panel { 
             width: 360px; 
             background: #111; 
@@ -528,6 +537,7 @@ export default function Home() {
 
         .cart-footer { padding: 30px; background: #0a0a0a; border-top: 1px dashed #333; }
         
+        /* --- CHIPS --- */
         .chips-container { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 10px; }
         .chip { 
             padding: 10px 24px; border-radius: 100px; 
@@ -538,6 +548,7 @@ export default function Home() {
         .chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .chip.active { background: var(--p); color: #000; border-color: var(--p); box-shadow: 0 5px 20px var(--p-glow); }
 
+        /* --- DASHBOARD WIDGETS --- */
         .stat-card {
             padding: 30px; border-radius: 30px; 
             background: rgba(20,20,20,0.5); border: 1px solid var(--glass-b);
@@ -549,6 +560,7 @@ export default function Home() {
         .stat-label { font-size: 0.8rem; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
         .stat-val { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1; }
         
+        /* --- TOAST & MODAL --- */
         .toast { 
             position: fixed; top: 30px; left: 50%; transform: translateX(-50%); 
             padding: 15px 30px; border-radius: 50px; 
@@ -634,7 +646,7 @@ export default function Home() {
                     </div>
                     <div className="stat-card">
                       <div className="stat-icon" style={{ color: '#10b981' }}>📦</div>
-                      <div><div className="stat-label">Production</div><div className="stat-val">{myProfile?.stock.toLocaleString()}</div></div>
+                      <div><div className="stat-label">Production</div><div className="stat-val">{myProfile?.stock?.toLocaleString?.() ?? myProfile?.stock}</div></div>
                     </div>
                     <div className="stat-card">
                       <div className="stat-icon" style={{ color: '#6366f1' }}>💶</div>
@@ -736,9 +748,7 @@ export default function Home() {
                   <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Stock Cuisine</h2>
                   {forms.stock.map((item, i) => (
                     <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                      <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.product} onChange={e => { const n = [...forms.stock]; n[i].product = e.target.value; setForms({ ...forms, stock: n }); }}>
-                        <option value="">Sélectionner...</option>{data.products.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
+                      <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.product} onChange={e => { const n = [...forms.stock]; n[i].product = e.target.value; setForms({ ...forms, stock: n }); }}><option value="">Sélectionner...</option>{data.products.map(p => <option key={p} value={p}>{p}</option>)}</select>
                       <input type="number" className="inp" style={{ width: 90, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.stock]; n[i].qty = e.target.value; setForms({ ...forms, stock: n }); }} />
                       {forms.stock.length > 1 && (
                         <button className="del-btn" onClick={() => { const n = [...forms.stock]; n.splice(i, 1); setForms({ ...forms, stock: n }); }}>×</button>
@@ -758,9 +768,7 @@ export default function Home() {
                   <div style={{ maxHeight: 300, overflowY: 'auto', paddingRight: 5, marginBottom: 15 }}>
                     {forms.enterprise.items.map((item, i) => (
                       <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                        <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.product} onChange={e => { const n = [...forms.enterprise.items]; n[i].product = e.target.value; setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }}>
-                          <option value="">Produit...</option>{data.products.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                        <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.product} onChange={e => { const n = [...forms.enterprise.items]; n[i].product = e.target.value; setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }}><option value="">Produit...</option>{data.products.map(p => <option key={p} value={p}>{p}</option>)}</select>
                         <input type="number" className="inp" style={{ width: 90, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.enterprise.items]; n[i].qty = e.target.value; setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }} />
                         {forms.enterprise.items.length > 1 && <button className="del-btn" onClick={() => { const n = [...forms.enterprise.items]; n.splice(i, 1); setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }}>×</button>}
                       </div>
@@ -777,29 +785,12 @@ export default function Home() {
                   <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Partenaires</h2>
                   <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
                   <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                    <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => {
-                      const c = e.target.value;
-                      setForms({
-                        ...forms,
-                        partner: {
-                          ...forms.partner,
-                          company: c,
-                          benef: data.partners.companies[c].beneficiaries[0],
-                          items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }]
-                        }
-                      });
-                    }}>
-                      {Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>
-                      {data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                    <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
+                    <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
                   </div>
                   {forms.partner.items.map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                      <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>
-                        {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
-                      </select>
+                      <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
                       <input type="number" className="inp" style={{ width: 80, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
                       {forms.partner.items.length > 1 && (
                         <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
@@ -819,9 +810,7 @@ export default function Home() {
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
                   <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Gestion Flotte</h2>
-                  <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })}>
-                    {data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}
-                  </select>
+                  <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })}>{data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}</select>
                   <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                     <button className="inp" style={{ flex: 1, background: forms.garage.action === 'Entrée' ? 'var(--success)' : '#222', color: forms.garage.action === 'Entrée' ? '#000' : '#fff', border: 'none', cursor: 'pointer' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Entrée' } })}>Entrée 🅿️</button>
                     <button className="inp" style={{ flex: 1, background: forms.garage.action === 'Sortie' ? 'var(--p)' : '#222', color: forms.garage.action === 'Sortie' ? '#000' : '#fff', border: 'none', cursor: 'pointer' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Sortie' } })}>Sortie 🔑</button>
@@ -873,9 +862,7 @@ export default function Home() {
                           </span>
                           <b style={{ color: '#fff' }}>${Math.round(e.ca).toLocaleString()}</b>
                         </div>
-                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', background: i === 0 ? 'var(--p)' : '#555', width: (e.ca / Math.max(...data.employeesFull.map(x => x.ca)) * 100) + '%' }}></div>
-                        </div>
+                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}><div style={{ height: '100%', background: i === 0 ? 'var(--p)' : '#555', width: (e.ca / Math.max(...data.employeesFull.map(x => x.ca)) * 100) + '%' }}></div></div>
                       </div>
                     ))}
                   </div>
@@ -889,9 +876,7 @@ export default function Home() {
                           </span>
                           <b>{e.stock.toLocaleString()}</b>
                         </div>
-                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', background: i === 0 ? 'var(--success)' : '#555', width: (e.stock / Math.max(...data.employeesFull.map(x => x.stock)) * 100) + '%' }}></div>
-                        </div>
+                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}><div style={{ height: '100%', background: i === 0 ? 'var(--success)' : '#555', width: (e.stock / Math.max(...data.employeesFull.map(x => x.stock)) * 100) + '%' }}></div></div>
                       </div>
                     ))}
                   </div>
@@ -976,7 +961,7 @@ export default function Home() {
                   <span className="cart-total-display">${total.toLocaleString()}</span>
                 </div>
 
-                {/* ✅ GAIN ESTIMÉ 45% */}
+                {/* ✅ GAIN ESTIMÉ (45% du CA) */}
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
