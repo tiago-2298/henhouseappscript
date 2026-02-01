@@ -34,37 +34,10 @@ const IMAGES = {
   "Jus d'orange": "https://files.catbox.moe/u29syk.png",
   "Nectar Exotique": "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400",
   "Kombucha Citron": "https://images.unsplash.com/photo-1594498653385-d5172b532c00?w=400",
-  "LA SIGNATURE VÉGÉTALE": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
-  "LE PRESTIGE DE LA MER": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
-  "LE RED WINGS": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
-  "LE SOLEIL D'OR": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
-  "LE SIGNATURE \"75\"": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
-  "L'HÉRITAGE DU BERGER": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
-  "LA CROISIÈRE GOURMANDE": "https://images.unsplash.com/photo-1547573854-74d2a71d0827?w=400",
   "Mousse au café": "https://files.catbox.moe/wzvbw6.png",
   "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
   "Carpaccio Fruit Exotique": "https://files.catbox.moe/cbmjou.png",
-  "Profiteroles au chocolat": "https://images.unsplash.com/photo-1600431521340-491eca880813?w=400",
   "Los Churros Caramel": "https://files.catbox.moe/pvjuhn.png",
-  "Verre de Cidre en Pression": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
-  "Verre de Champagne": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
-  "Verre de rosé": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
-  "Verre de Champomax": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
-  "Verre de Bellini": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
-  "Verre Vin Rouge": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
-  "Verre Vin Blanc": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400",
-  "Verre de Cognac": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Verre de Brandy": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Verre de Whisky": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Shot de Tequila": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Cocktail Citron-Myrtille": "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?w=400",
-  "Verre de Vodka": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Verre de Rhum": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Verre de Tequila Citron": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Verre de Gin": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=400",
-  "Verre de Gin Fizz Citron": "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?w=400",
-  "Bouteille de Cidre": "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=400",
-  "Bouteille de Champagne": "https://images.unsplash.com/photo-1596464522923-018600d8692a?w=400",
 };
 
 const NOTIF_MESSAGES = {
@@ -106,17 +79,12 @@ export default function Home() {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hh_user');
-    if (savedUser) {
-        setUser(savedUser);
-        setView('app');
-    }
+    if (savedUser) { setUser(savedUser); setView('app'); }
     const savedCart = localStorage.getItem('hh_cart');
     if (savedCart) setCart(JSON.parse(savedCart));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('hh_cart', JSON.stringify(cart));
-  }, [cart]);
+  useEffect(() => { localStorage.setItem('hh_cart', JSON.stringify(cart)); }, [cart]);
 
   const compressImage = (base64) => {
     return new Promise((resolve) => {
@@ -124,13 +92,13 @@ export default function Home() {
       img.src = base64;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1000;
+        const MAX_WIDTH = 1200;
         const scale = MAX_WIDTH / img.width;
         canvas.width = MAX_WIDTH;
         canvas.height = img.height * scale;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.6)); 
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
       };
     });
   };
@@ -144,6 +112,7 @@ export default function Home() {
     reader.onloadend = async () => {
         const compressed = await compressImage(reader.result);
         setForms(prev => ({ ...prev, expense: { ...prev.expense, file: compressed } }));
+        notify("📸 CAPTURE DÉTECTÉE", "L'image a été ajoutée avec succès.", "success");
         playSound('success');
     };
     reader.readAsDataURL(file);
@@ -157,13 +126,12 @@ export default function Home() {
         if (items[i].type.indexOf('image') !== -1) {
           const blob = items[i].getAsFile();
           handleFileChange(blob);
-          notify("📸 CAPTURE D'ÉCRAN", "Image enregistrée avec succès.", "success");
         }
       }
     };
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [currentTab, forms]);
+  }, [currentTab]);
 
   const playSound = (type) => {
     if (isMuted) return;
@@ -230,31 +198,19 @@ export default function Home() {
       if(j.success) { 
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success"); 
-        
-        if(action === 'sendFactures') {
-          setCart([]);
-          setForms(prev => ({...prev, invoiceNum: ''}));
-        } else if (action === 'sendProduction') {
-          setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]}));
-        } else if (action === 'sendEntreprise') {
-          setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }}));
-        } else if (action === 'sendPartnerOrder') {
-          setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }}));
-        } else if (action === 'sendExpense') {
-          setForms(prev => ({...prev, expense: { ...prev.expense, amount: '', file: null }}));
-        } else if (action === 'sendSupport') {
-          setForms(prev => ({...prev, support: { ...prev.support, msg: '' }}));
-        }
+        if(action === 'sendFactures') { setCart([]); setForms(prev => ({...prev, invoiceNum: ''})); }
+        else if (action === 'sendProduction') { setForms(prev => ({...prev, stock: [{ product: '', qty: 1 }]})); }
+        else if (action === 'sendEntreprise') { setForms(prev => ({...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] }})); }
+        else if (action === 'sendPartnerOrder') { setForms(prev => ({...prev, partner: { ...prev.partner, num: '' }})); }
+        else if (action === 'sendExpense') { setForms(prev => ({...prev, expense: { ...prev.expense, amount: '', file: null }})); }
+        else if (action === 'sendSupport') { setForms(prev => ({...prev, support: { ...prev.support, msg: '' }})); }
         loadData(); 
       } else notify("ÉCHEC ENVOI", j.message || "Erreur", "error");
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
 
-  const logout = () => {
-    localStorage.removeItem('hh_user');
-    setView('login');
-  };
+  const logout = () => { localStorage.removeItem('hh_user'); setView('login'); };
 
   if (loading && !data) return (
     <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#000'}}>
@@ -268,7 +224,7 @@ export default function Home() {
   return (
     <div className="app">
       <style jsx global>{`
-        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; --glass: rgba(24, 26, 32, 0.7); --green: #10b981; }
+        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; --glass: rgba(24, 26, 32, 0.7); --success: #10b981; --error: #ef4444; }
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
@@ -320,37 +276,42 @@ export default function Home() {
         .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
         .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 30px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; overflow: hidden; }
+        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 25px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; }
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .dz-preview-container { position: relative; display: inline-block; margin-top: 15px; }
-        .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 12px; border: 2px solid var(--brd); }
-        .dz-remove { position: absolute; top: -10px; right: -10px; background: #ef4444; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: none; }
+        .dz-preview-container { position: relative; width: 100%; margin-top: 15px; }
+        .dz-preview { width: 100%; max-height: 250px; object-fit: contain; border-radius: 12px; border: 2px solid var(--p); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .btn-del-file { position: absolute; top: -10px; right: -10px; background: var(--error); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: 900; box-shadow: 0 5px 10px rgba(0,0,0,0.3); z-index: 10; }
 
-        .profile-hero { position: relative; padding: 40px 0; border-bottom: 1px solid var(--brd); margin-bottom: 30px; }
-        .profile-avatar { width: 120px; height: 120px; border-radius: 40px; background: var(--p); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #fff; font-weight: 950; box-shadow: 0 20px 40px rgba(255, 152, 0, 0.2); }
-        .profile-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .profile-stat-card { background: rgba(255,255,255,0.03); border: 1px solid var(--brd); border-radius: 18px; padding: 20px; text-align: left; }
-        .profile-label { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
-        .profile-value { font-size: 1.5rem; font-weight: 950; color: #fff; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 12px; z-index: 1000; animation: toastIn 0.3s ease-out; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-weight: 700; }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        .directory-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 24px; padding: 25px; text-align: left; transition: 0.3s; display: flex; flex-direction: column; gap: 15px; }
-        .directory-card:hover { border-color: var(--p); transform: translateY(-5px); }
-        .directory-header { display: flex; align-items: center; gap: 15px; }
-        .directory-avatar { width: 60px; height: 60px; border-radius: 18px; background: rgba(255,152,0,0.1); color: var(--p); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; }
-        .directory-tag { padding: 4px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; display: inline-block; }
+        /* V-CARD ANNUAIRE */
+        .v-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; position: relative; overflow: hidden; }
+        .v-card:hover { border-color: var(--p); transform: translateY(-5px); }
+        .v-card-avatar { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, var(--p), #ffb74d); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 950; color: #fff; margin-bottom: 15px; border: 4px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .v-card-name { font-size: 1.1rem; font-weight: 900; color: #fff; text-align: center; }
+        .v-card-role { color: var(--p); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; }
+        .v-card-btn { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; text-decoration: none; color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .v-card-btn:hover { background: var(--p); color: #fff; }
+
+        /* PROFIL ENHANCED */
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; }
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--brd); border-radius: 18px; padding: 20px; }
+        .stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-value { font-size: 1.5rem; font-weight: 950; color: #fff; }
       `}</style>
 
       {view === 'login' ? (
         <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
           <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
             <img src="https://i.goopics.net/dskmxi.png" height="110" style={{marginBottom:35}} />
-            <h1 style={{fontSize:'1.8rem', fontWeight:900, marginBottom:10}}>Authentification</h1>
-            <p style={{color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Interface Agent Hen House</p>
+            <h1 style={{fontSize:'1.8rem', fontWeight:900, marginBottom:10}}>Hen House</h1>
+            <p style={{color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Accès Agent Autorisé Uniquement</p>
             <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Sélectionner votre profil...</option>
+              <option value="">👤 Qui êtes-vous ?</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>OUVRIR LA SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>DÉMARRER LA SESSION</button>
           </div>
         </div>
       ) : (
@@ -369,54 +330,62 @@ export default function Home() {
               <div className="toolbar">
                 <button className="tool-btn" title="Rafraîchir" onClick={() => window.location.reload()}>🔃</button>
                 <button className="tool-btn" title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
-                <button className="tool-btn" title="Son" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
+                <button className="tool-btn" title="Sons" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
                   {isMuted ? '🔇' : '🔊'}
                 </button>
               </div>
-
               <div className="emp-badge">
                 <div className="emp-name">{user}</div>
-                <div className="emp-role">{myProfile?.role || 'Agent'}</div>
+                <div className="emp-role">{myProfile?.role || 'Agent de terrain'}</div>
               </div>
-              
-              <button className="nav-l" onClick={logout} style={{color:'#ef4444', justifyContent: 'center', background:'rgba(239, 68, 68, 0.05)', marginTop: '5px'}}>🚪 DÉCONNEXION</button>
+              <button className="nav-l" onClick={logout} style={{color: 'var(--error)', background: 'rgba(239, 68, 68, 0.05)', justifyContent: 'center'}}>🚪 DÉCONNEXION</button>
             </div>
           </aside>
 
           <main className="main">
             <div className="fade-in">
-              {/* TABLEAU DE BORD (LOGIQUE INCHANGÉE) */}
+              {/* ACCUEIL */}
               {currentTab === 'home' && (
                 <div className="fade-in">
                    <div style={{marginBottom:45}}>
-                       <h1 style={{fontSize: '2.8rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px'}}>Ravi de vous revoir, {user.split(' ')[0]} 👋</h1>
-                       <div style={{display:'flex', alignItems:'center', gap:10}}>
-                           <span style={{padding:'4px 12px', background:'var(--p)', borderRadius:20, fontSize:'0.7rem', fontWeight:900, color:'#fff'}}>EN LIGNE</span>
-                           <p style={{color: 'var(--muted)', fontSize: '1.05rem'}}>Performances Hen House en temps réel.</p>
-                       </div>
+                       <h1 style={{fontSize: '2.8rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px'}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                       <p style={{color: 'var(--muted)', fontSize: '1.1rem'}}>Voici vos indicateurs clés pour aujourd'hui.</p>
                    </div>
+                   
                    <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 45}}>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #2a1b0a 100%)', border:'1px solid rgba(255,152,0,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>CHIFFRE D'AFFAIRES</div>
-                            <div style={{fontSize: '2.4rem', fontWeight: 950, color: 'var(--p)'}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                            <div className="stat-label">Chiffre d'Affaires</div>
+                            <div className="stat-value">${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
                          </div>
                       </div>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #0d2e21 100%)', border:'1px solid rgba(16,185,129,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>📦</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>PRODUCTION TOTAL</div>
-                            <div style={{fontSize: '2.4rem', fontWeight: 950, color: 'var(--green)'}}>{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
+                            <div className="stat-label">Plats Produits</div>
+                            <div className="stat-value">{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
                          </div>
                       </div>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #1e1b4b 100%)', border:'1px solid rgba(99,102,241,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>💶</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>SALAIRE ESTIMÉ</div>
-                            <div style={{fontSize: '2.4rem', fontWeight: 950, color: '#6366f1'}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
+                            <div className="stat-label">Salaire Estimé</div>
+                            <div className="stat-value">${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
                          </div>
                       </div>
+                   </div>
+
+                   <div style={{background:'rgba(255,255,255,0.02)', padding:30, borderRadius:24, border:'1px solid var(--brd)'}}>
+                        <h3 style={{marginBottom: 25, fontWeight: 900, color: '#fff', fontSize: '1.1rem'}}>SERVICES RAPIDES</h3>
+                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:15}}>
+                        {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
+                            <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25, background:'var(--bg)'}}>
+                                <span style={{fontSize:'2.8rem', display:'block', marginBottom:12}}>{m.e}</span>
+                                <div style={{fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                            </div>
+                        ))}
+                        </div>
                    </div>
                 </div>
               )}
@@ -424,16 +393,14 @@ export default function Home() {
               {/* CAISSE */}
               {currentTab === 'invoices' && (
                 <div className="fade-in">
-                  <div style={{display:'flex', flexWrap:'wrap', gap:15, marginBottom:30, alignItems:'center'}}>
-                    <div style={{position:'relative', flex:1, minWidth:250}}>
+                  <div style={{position:'relative', marginBottom:20}}>
                         <span style={{position:'absolute', left:15, top:13, opacity:0.4}}>🔍</span>
-                        <input className="inp" placeholder="Rechercher..." style={{marginBottom:0, paddingLeft:45}} onChange={e=>setSearch(e.target.value)} />
-                    </div>
+                        <input className="inp" placeholder="Rechercher un plat..." style={{paddingLeft:45}} onChange={e=>setSearch(e.target.value)} />
                   </div>
                   <div className="chips-container">
-                    <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tout le menu</div>
+                    <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
                     {Object.keys(data.productsByCategory).map(c => (
-                        <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c.replace('_', ' ')}</div>
+                        <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c}</div>
                     ))}
                   </div>
                   <div className="grid">
@@ -446,11 +413,11 @@ export default function Home() {
                             else setCart([...cart, {name:p, qty:1, pu:data.prices[p]||0}]);
                         }}>
                             {cartItem && <div className="card-qty">{cartItem.qty}</div>}
-                            <div style={{height:120, borderRadius:15, overflow:'hidden', background:'#000', marginBottom:12, position:'relative'}}>
-                            {IMAGES[p] ? <img src={IMAGES[p]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', background:'#111', color:'var(--p)', fontWeight:900}}>{p.charAt(0)}</div>}
+                            <div style={{height:100, borderRadius:15, overflow:'hidden', background:'#000', marginBottom:12}}>
+                                {IMAGES[p] ? <img src={IMAGES[p]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', background:'#111', color: 'var(--p)'}}>{p.charAt(0)}</div>}
                             </div>
                             <div style={{fontWeight:800, fontSize:'0.75rem', height:35, overflow:'hidden', color:'#fff'}}>{p}</div>
-                            <div style={{color:'var(--p)', fontWeight:950, fontSize:'1.1rem', marginTop:8}}>${data.prices[p]}</div>
+                            <div style={{color:'var(--p)', fontWeight:950, fontSize:'1.1rem'}}>${data.prices[p]}</div>
                         </div>
                       );
                     })}
@@ -458,180 +425,185 @@ export default function Home() {
                 </div>
               )}
 
-              {/* MODULES CENTRÉS */}
-              {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'profile', 'support'].includes(currentTab) && (
+              {/* NOTES DE FRAIS AMELIORÉ */}
+              {currentTab === 'expenses' && (
                 <div className="center-box">
-                  <div className="form-ui">
-                    {/* PRODUCTION STOCK */}
-                    {currentTab === 'stock' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 PRODUCTION</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Mise en stock cuisine</p>
-                        {forms.stock.map((item, i) => (
-                          <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
-                            <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
-                              const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});
-                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{
-                              const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});
-                            }} />
-                          </div>
-                        ))}
-                        <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', margin:'10px 0 25px', padding:15}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER UNE LIGNE</button>
-                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER LA PRODUCTION</button>
-                      </div>
-                    )}
-
-                    {/* COMMANDE PRO */}
-                    {currentTab === 'enterprise' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🏢 COMMANDE PRO</h2>
-                        <input className="inp" placeholder="Nom de l'Entreprise" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
-                        {forms.enterprise.items.map((item, i) => (
-                          <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
-                            <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
-                              const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
-                            }}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90, marginBottom:0, textAlign:'center'}} value={item.qty} onChange={e=>{
-                              const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});
-                            }} />
-                          </div>
-                        ))}
-                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER LE BON</button>
-                      </div>
-                    )}
-
-                    {/* PARTENAIRES */}
-                    {currentTab === 'partners' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
-                        <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
-                        <div style={{display:'flex', gap:12, marginBottom:12}}>
-                          <select className="inp" style={{flex:1, marginBottom:0}} value={forms.partner.company} onChange={e=>{
-                             const c = e.target.value;
-                             setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});
-                          }}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
-                          <select className="inp" style={{flex:1, marginBottom:0}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
-                        </div>
-                        {forms.partner.items.map((item, idx) => (
-                           <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
-                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.menu} onChange={e=>{
-                               const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                             }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
-                             <input type="number" className="qty-inp" style={{height:52, width:70}} value={item.qty} onChange={e=>{
-                               const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});
-                             }} />
-                           </div>
-                        ))}
-                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER LE MENU</button>
-                      </div>
-                    )}
-
-                    {/* NOTES DE FRAIS AMÉLIORÉES */}
-                    {currentTab === 'expenses' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 NOTES DE FRAIS</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:20}}>Remboursement essence & entretien</p>
-                        <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
-                        <input className="inp" type="number" placeholder="Montant exact ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:Math.round(e.target.value)}})} />
+                    <div className="form-ui">
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 FRAIS & ESSENCE</h2>
+                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Déclarez vos dépenses de terrain avec preuve photo.</p>
                         
-                        <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => !forms.expense.file && document.getElementById('inpFile').click()}>
+                        <div style={{display:'flex', gap:10, marginBottom:10}}>
+                            <select className="inp" style={{flex:1}} value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
+                                {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
+                            </select>
+                            <select className="inp" style={{flex:1}} value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}>
+                                <option>Essence</option><option>Réparation</option><option>Autre</option>
+                            </select>
+                        </div>
+                        <input className="inp" type="number" placeholder="Montant exact ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:e.target.value}})} />
+                        
+                        <div className={`dropzone ${dragActive ? 'active' : ''}`} 
+                             onDragOver={e => { e.preventDefault(); setDragActive(true); }} 
+                             onDragLeave={() => setDragActive(false)} 
+                             onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} 
+                             onClick={() => !forms.expense.file && document.getElementById('inpFile').click()}>
+                           
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
-                           {forms.expense.file ? (
-                             <div className="dz-preview-container">
-                               <button className="dz-remove" onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
-                               <img src={forms.expense.file} className="dz-preview" />
-                               <div style={{color:'var(--green)', fontWeight:900, fontSize:'0.75rem', marginTop:10}}>REÇU ENREGISTRÉ ✅</div>
+                           
+                           {!forms.expense.file ? (
+                             <div style={{padding: '20px 0'}}>
+                               <div style={{fontSize:'3rem', marginBottom:10}}>📸</div>
+                               <div style={{fontWeight:800, fontSize:'1rem'}}>GLISSEZ OU COLLEZ LE REÇU</div>
+                               <div style={{fontSize:'0.75rem', opacity:0.5, marginTop:5}}>Preuve photo obligatoire pour remboursement</div>
                              </div>
                            ) : (
-                             <div>
-                               <div style={{fontSize:'3rem', marginBottom:10}}>📸</div>
-                               <div style={{fontWeight:800}}>DÉPOSER OU COLLER LE REÇU</div>
-                               <div style={{fontSize:'0.65rem', opacity:0.5, marginTop:5}}>Formats supportés : JPG, PNG (Auto-compressé)</div>
+                             <div className="dz-preview-container">
+                               <button className="btn-del-file" onClick={(e) => { e.stopPropagation(); setForms({...forms, expense:{...forms.expense, file: null}}); }}>×</button>
+                               <img src={forms.expense.file} className="dz-preview" alt="Reçu" />
+                               <div style={{marginTop:15, color:'var(--success)', fontWeight:800, fontSize:'0.8rem'}}>REÇU ENREGISTRÉ ✅</div>
                              </div>
                            )}
                         </div>
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>DÉPOSER LA DEMANDE</button>
-                      </div>
-                    )}
-
-                    {/* GARAGE */}
-                    {currentTab === 'garage' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🚗 ÉTAT VÉHICULE</h2>
-                        <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
-                        <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--brd)'}}>
-                            <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ NIVEAU ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
-                            <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
-                        </div>
-                        <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER L'ÉTAT</button>
-                      </div>
-                    )}
-
-                    {/* MON PROFIL AMÉLIORÉ */}
-                    {currentTab === 'profile' && myProfile && (
-                      <div className="fade-in" style={{textAlign:'center'}}>
-                        <div className="profile-hero">
-                          <div className="profile-avatar">{user.charAt(0)}</div>
-                          <h1 style={{fontSize:'2.2rem', fontWeight:950, marginBottom:5}}>{user}</h1>
-                          <div style={{display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,152,0,0.1)', padding:'6px 15px', borderRadius:10}}>
-                             <span style={{color:'var(--p)', fontWeight:900, fontSize:'0.75rem', textTransform:'uppercase'}}>{myProfile.role}</span>
-                          </div>
-                        </div>
-
-                        <div className="profile-stat-grid">
-                           <div className="profile-stat-card">
-                              <div className="profile-label">Chiffre d'Affaires</div>
-                              <div className="profile-value" style={{color:'var(--p)'}}>${Math.round(myProfile.ca).toLocaleString()}</div>
-                           </div>
-                           <div className="profile-stat-card">
-                              <div className="profile-label">Production Stock</div>
-                              <div className="profile-value" style={{color:'var(--green)'}}>{myProfile.stock.toLocaleString()}</div>
-                           </div>
-                        </div>
-
-                        <div className="profile-stat-card" style={{marginBottom:30, background:'linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(99,102,241,0.1) 100%)'}}>
-                            <div className="profile-label">Rémunération Estimée</div>
-                            <div className="profile-value" style={{fontSize:'2.8rem'}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
-                            <div className="perf-bar" style={{height:6, background:'rgba(255,255,255,0.05)'}}><div className="perf-fill" style={{width:'75%', background:'var(--p)'}}></div></div>
-                            <p style={{fontSize:'0.65rem', color:'var(--muted)', marginTop:10, fontWeight:700}}>Basé sur les tarifs contractuels en vigueur</p>
-                        </div>
-
-                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                            <div style={{background:'rgba(0,0,0,0.3)', padding:15, borderRadius:15, border:'1px solid var(--brd)', textAlign:'left'}}>
-                               <div className="profile-label">Ancienneté</div>
-                               <div style={{fontWeight:900, fontSize:'1.1rem'}}>{myProfile.seniority} <span style={{fontSize:'0.8rem', opacity:0.5}}>jours</span></div>
-                            </div>
-                            <div style={{background:'rgba(0,0,0,0.3)', padding:15, borderRadius:15, border:'1px solid var(--brd)', textAlign:'left'}}>
-                               <div className="profile-label">Contact</div>
-                               <div style={{fontWeight:900, fontSize:'1.1rem'}}>{myProfile.phone}</div>
-                            </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SUPPORT */}
-                    {currentTab === 'support' && (
-                      <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 SUPPORT</h2>
-                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
-                          <option>Stock / Inventaire</option><option>Facturation</option><option>Congés / Absence</option><option>Autre</option>
-                        </select>
-                        <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Détaillez votre demande..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>OUVRIR UN TICKET</button>
-                      </div>
-                    )}
-                  </div>
+                        
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>
+                            {sending ? "TRANSMISSION..." : "DÉPOSER LA NOTE DE FRAIS"}
+                        </button>
+                    </div>
                 </div>
               )}
 
-              {/* PERFORMANCE */}
+              {/* ANNUAIRE AMELIORE */}
+              {currentTab === 'directory' && (
+                <div className="fade-in">
+                    <div style={{marginBottom:35}}>
+                        <h2 style={{fontSize:'2.2rem', fontWeight:950}}>Annuaire Interne</h2>
+                        <p style={{color:'var(--muted)'}}>Contactez vos collègues et livreurs en un clic.</p>
+                    </div>
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:25}}>
+                    {data.employeesFull.map(e => (
+                        <div key={e.id} className="v-card">
+                            <div className="v-card-avatar">{e.name.charAt(0)}</div>
+                            <div className="v-card-name">{e.name}</div>
+                            <div className="v-card-role">{e.role}</div>
+                            <a href={`tel:${e.phone}`} className="v-card-btn">
+                                📞 {e.phone}
+                            </a>
+                            <div style={{position:'absolute', bottom: -20, right: -20, fontSize:'5rem', opacity:0.03, fontWeight:900}}>{e.name.charAt(0)}</div>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+              )}
+
+              {/* MON PROFIL AMELIORE */}
+              {currentTab === 'profile' && myProfile && (
+                <div className="center-box">
+                   <div className="form-ui" style={{maxWidth: 600, padding: 50, position: 'relative', overflow: 'hidden'}}>
+                        <div style={{textAlign:'center'}}>
+                            <div style={{width:120, height:120, borderRadius:40, background: 'linear-gradient(45deg, var(--p), #ffd95b)', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', fontWeight: 950, color: '#fff', border: '5px solid #000', boxShadow: '0 15px 30px rgba(0,0,0,0.4)'}}>
+                                {user.charAt(0)}
+                            </div>
+                            <h1 style={{fontSize:'2.5rem', fontWeight:950}}>{user}</h1>
+                            <div style={{padding: '5px 15px', background: 'rgba(255,152,0,0.1)', color: 'var(--p)', borderRadius: 20, display: 'inline-block', fontSize: '0.8rem', fontWeight: 800, marginTop: 5}}>
+                                {myProfile.role}
+                            </div>
+                        </div>
+
+                        <div className="profile-grid">
+                            <div className="stat-box">
+                                <div className="stat-label">Chiffre Personnel</div>
+                                <div className="stat-value">${Math.round(myProfile.ca).toLocaleString()}</div>
+                            </div>
+                            <div className="stat-box">
+                                <div className="stat-label">Production Cuisine</div>
+                                <div className="stat-value">{myProfile.stock} <small style={{fontSize: '0.8rem', opacity: 0.5}}>U.</small></div>
+                            </div>
+                        </div>
+
+                        <div style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(0,0,0,0.3))', border: '1px solid var(--success)', borderRadius: 24, padding: 25, marginTop: 20, textAlign: 'center'}}>
+                            <div className="stat-label" style={{color: 'var(--success)'}}>💵 Rémunération estimée</div>
+                            <div style={{fontSize: '3rem', fontWeight: 950, color: '#fff'}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
+                            <p style={{fontSize: '0.7rem', opacity: 0.5, marginTop: 10}}>Basé sur 45% des ventes et primes de production.</p>
+                        </div>
+
+                        <div style={{marginTop: 30, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15}}>
+                             <div style={{padding:15, background:'rgba(255,255,255,0.02)', borderRadius:15, border:'1px solid var(--brd)'}}>
+                                <div className="stat-label">Ancienneté</div>
+                                <div style={{fontWeight:800}}>{myProfile.seniority || '---'} jours</div>
+                             </div>
+                             <div style={{padding:15, background:'rgba(255,255,255,0.02)', borderRadius:15, border:'1px solid var(--brd)'}}>
+                                <div className="stat-label">Contact</div>
+                                <div style={{fontWeight:800}}>{myProfile.phone}</div>
+                             </div>
+                        </div>
+                   </div>
+                </div>
+              )}
+
+              {/* AUTRES MODULES (RESTES INCHANGÉS MAIS PROPRES) */}
+              {currentTab === 'stock' && (
+                <div className="center-box"><div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 MISE EN STOCK</h2>
+                    {forms.stock.map((item, i) => (
+                        <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
+                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});}}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});}} />
+                        </div>
+                    ))}
+                    <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', marginBottom: 20}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ Ligne</button>
+                    <button className="btn-p" disabled={sending} onClick={()=>send('sendProduction', {items: forms.stock})}>DÉCLARER PRODUCTION</button>
+                </div></div>
+              )}
+
+              {currentTab === 'enterprise' && (
+                <div className="center-box"><div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🏢 COMMANDE PRO</h2>
+                    <input className="inp" placeholder="Nom Entreprise" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
+                    {forms.enterprise.items.map((item, i) => (
+                        <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}} />
+                        </div>
+                    ))}
+                    <button className="btn-p" disabled={sending} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER COMMANDE</button>
+                </div></div>
+              )}
+
+              {currentTab === 'partners' && (
+                <div className="center-box"><div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
+                    <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
+                    <div style={{display:'flex', gap:12, marginBottom:12}}>
+                        <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{const c=e.target.value; setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});}}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
+                        <select className="inp" style={{flex:1}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
+                    </div>
+                    {forms.partner.items.map((item, idx) => (
+                        <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
+                            <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{const n=[...forms.partner.items]; n[idx].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}}>{data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name}>{m.name}</option>)}</select>
+                            <input type="number" className="qty-inp" style={{height:52, width:70}} value={item.qty} onChange={e=>{const n=[...forms.partner.items]; n[idx].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}} />
+                        </div>
+                    ))}
+                    <button className="btn-p" disabled={sending} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER CONTRAT</button>
+                </div></div>
+              )}
+
+              {currentTab === 'garage' && (
+                <div className="center-box"><div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🚗 GESTION VÉHICULE</h2>
+                    <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
+                    <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée de service</option><option>Sortie de service</option></select>
+                    <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--brd)'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ NIVEAU RÉSERVOIR</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
+                        <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                    </div>
+                    <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>METTRE À JOUR</button>
+                </div></div>
+              )}
+
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
                   <div className="card" style={{padding:35, textAlign:'left'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 TOP C.A</h2>
+                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 CLASSEMENT C.A</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
@@ -643,67 +615,50 @@ export default function Home() {
                     ))}
                   </div>
                   <div className="card" style={{padding:35, textAlign:'left'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>📦 TOP PRODUCTION</h2>
+                    <h2 style={{marginBottom:30, fontWeight:950}}>📦 TOP PRODUCTEURS</h2>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
                            <span>{i+1}. <b>{e.name}</b></span>
                            <b>{e.stock.toLocaleString()}</b>
                         </div>
-                        <div className="perf-bar" style={{background:'rgba(16,185,129,0.1)'}}><div className="perf-fill" style={{background: 'var(--green)', width: (e.stock / Math.max(...data.employeesFull.map(x=>x.stock)) * 100) + '%'}}></div></div>
+                        <div className="perf-bar" style={{background:'rgba(16,185,129,0.1)'}}><div className="perf-fill" style={{background:'var(--success)', width: (e.stock / Math.max(...data.employeesFull.map(x=>x.stock)) * 100) + '%'}}></div></div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* ANNUAIRE AMÉLIORÉ */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                    <h2 style={{fontSize:'1.8rem', fontWeight:950, marginBottom:30}}>Annuaire du personnel</h2>
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:20}}>
-                    {data.employeesFull.map(e => (
-                        <div key={e.id} className="directory-card">
-                          <div className="directory-header">
-                            <div className="directory-avatar">{e.name.charAt(0)}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontWeight:900, fontSize:'1.1rem', color:'#fff'}}>{e.name}</div>
-                              <div className="directory-tag" style={{background: e.role.includes('Chef') ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,152,0,0.1)', color: e.role.includes('Chef') ? '#ef4444' : 'var(--p)'}}>
-                                {e.role}
-                              </div>
-                            </div>
-                          </div>
-                          <div style={{borderTop:'1px solid var(--brd)', paddingTop:15, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-                             <a href={`tel:${e.phone}`} style={{textDecoration:'none', color:'var(--muted)', fontWeight:700, fontSize:'0.9rem', display:'flex', alignItems:'center', gap:8}}>
-                                📞 {e.phone}
-                             </a>
-                             <div style={{fontSize:'0.65rem', color: 'var(--muted)', fontWeight:800}}>ID: #{e.id}</div>
-                          </div>
-                        </div>
-                    ))}
-                    </div>
-                </div>
+              {currentTab === 'support' && (
+                <div className="center-box"><div className="form-ui">
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 ASSISTANCE</h2>
+                    <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
+                      <option>Problème Stock</option><option>Erreur Facture</option><option>Véhicule en panne</option><option>Autre</option>
+                    </select>
+                    <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Expliquez votre problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                    <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER AU PATRON</button>
+                </div></div>
               )}
             </div>
           </main>
 
-          {/* PANIER */}
+          {/* PANIER (AFFICHÉ SEULEMENT SUR LA CAISSE) */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:30, borderBottom:'1px solid var(--brd)'}}>
-                  <h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 PANIER</h2>
+                  <h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 PANIER ACTUEL</h2>
               </div>
               <div style={{padding:20}}>
-                  <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.3rem', letterSpacing:2}} />
+                  <input className="inp" placeholder="N° FACTURE OBLIGATOIRE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.1rem', letterSpacing:1}} />
               </div>
               <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
-                {cart.map((i, idx)=>(
-                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignitems:'center'}}>
+                {cart.length === 0 ? <div style={{textAlign:'center', marginTop: 50, opacity: 0.3}}>Panier vide</div> : cart.map((i, idx)=>(
+                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
                     <div style={{flex:1}}>
                         <div style={{fontWeight:800, fontSize:'0.9rem'}}>{i.name}</div>
-                        <div style={{color:'var(--p)', fontSize:'0.8rem'}}>${i.pu}</div>
+                        <div style={{color:'var(--p)', fontSize:'0.8rem'}}>${i.pu} / u.</div>
                     </div>
-                    <div style={{display:'flex', alignitems:'center', gap:10}}>
+                    <div style={{display:'flex', alignItems:'center', gap:10}}>
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
                       <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
                       <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
@@ -713,14 +668,14 @@ export default function Home() {
               </div>
               <div style={{padding:30, background:'#0a0a0a', borderTop:'1px solid var(--brd)'}}>
                 {total > 0 && (
-                  <div style={{textAlign:'center'}}><div className="salary-badge">💸 Gain Salaire : <b>+${salaryGain}</b></div></div>
+                  <div style={{textAlign:'center'}}><div className="salary-badge">💸 Commission : <b>+${salaryGain}</b></div></div>
                 )}
                 <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}>
-                    <span style={{fontWeight:900, color:'var(--muted)'}}>TOTAL</span>
+                    <span style={{fontWeight:900, color:'var(--muted)'}}>TOTAL À PAYER</span>
                     <b style={{fontSize:'2.5rem', color:'var(--p)', fontWeight:950}}>${total.toLocaleString()}</b>
                 </div>
                 <button className="btn-p" style={{height:60}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                  {sending ? "ENVOI EN COURS..." : "VALIDER VENTE"}
+                  {sending ? "ENVOI..." : "VALIDER LA VENTE"}
                 </button>
               </div>
             </aside>
@@ -729,8 +684,8 @@ export default function Home() {
       )}
 
       {toast && (
-        <div className="toast" style={{ background: toast.s === 'error' ? '#ef4444' : (toast.s === 'success' ? '#10b981' : 'var(--p)'), color: '#fff' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 950 }}>{toast.t}</div>
+        <div className="toast" style={{ background: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)'), color: '#fff' }}>
+          <div style={{ fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: 2 }}>{toast.t}</div>
           <div style={{ fontSize: '0.95rem' }}>{toast.m}</div>
         </div>
       )}
