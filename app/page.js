@@ -142,11 +142,11 @@ export default function Home() {
       osc.connect(gain); gain.connect(ctx.destination);
       const now = ctx.currentTime;
       if (type === 'click') {
-        osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.1, now);
+        osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.05, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(); osc.stop(now + 0.1);
       } else if (type === 'success') {
         osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now + 0.1);
-        osc.frequency.setValueAtTime(783, now + 0.2); gain.gain.setValueAtTime(0.1, now);
+        osc.frequency.setValueAtTime(783, now + 0.2); gain.gain.setValueAtTime(0.05, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4); osc.start(); osc.stop(now + 0.4);
       }
     } catch (e) {}
@@ -239,16 +239,13 @@ export default function Home() {
   if (loading && !data) return (
     <div className="app">
          <style jsx>{`
-            .sk-side { width: 260px; height: 100vh; background: #000; border-right: 1px solid #2d333f; padding: 20px; }
-            .sk-main { flex: 1; padding: 40px; background: #0f1115; }
+            .sk-side { width: 90px; height: 95vh; margin: 2.5vh 0 0 20px; background: rgba(0,0,0,0.5); border-radius: 24px; }
+            .sk-main { flex: 1; padding: 40px; }
             .sk-box { background: rgba(255,255,255,0.05); border-radius: 12px; animation: pulse 1.5s infinite; }
             .sk-row { display: flex; gap: 15px; margin-bottom: 20px; }
             @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.6; } 100% { opacity: 0.3; } }
          `}</style>
-         <div className="sk-side">
-            <div className="sk-box" style={{height: 60, width: 60, borderRadius: '50%', margin: '0 auto 40px'}} />
-            {[1,2,3,4,5,6].map(i => <div key={i} className="sk-box" style={{height: 40, width: '100%', marginBottom: 10}} />)}
-         </div>
+         <div className="sk-side"></div>
          <div className="sk-main">
             <div className="sk-box" style={{height: 50, width: 300, marginBottom: 10}} />
             <div className="sk-box" style={{height: 20, width: 200, marginBottom: 40}} />
@@ -267,169 +264,362 @@ export default function Home() {
   return (
     <div className="app">
       <style jsx global>{`
-        :root { --p: #ff9800; --bg: #0f1115; --panel: #181a20; --txt: #f1f5f9; --muted: #94a3b8; --brd: #2d333f; --radius: 16px; --glass: rgba(24, 26, 32, 0.7); --success: #10b981; --error: #ef4444; }
+        :root { 
+            --p: #ff9800; 
+            --p-glow: rgba(255, 152, 0, 0.4);
+            --bg: #050507; 
+            --panel: rgba(20, 20, 24, 0.7); 
+            --txt: #f1f5f9; 
+            --muted: #94a3b8; 
+            --brd: rgba(255,255,255,0.08); 
+            --glass: rgba(255, 255, 255, 0.02);
+            --glass-strong: rgba(18, 18, 20, 0.85);
+            --radius: 24px; 
+            --success: #10b981; 
+            --error: #ef4444; 
+            --ticket-bg: #e6e6e6;
+            --ticket-txt: #1a1a1a;
+        }
+
         * { box-sizing: border-box; margin:0; padding:0; font-family: 'Plus Jakarta Sans', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--p); }
+        ::-webkit-scrollbar { width: 0px; height: 0px; }
 
-        body { background: var(--bg); color: var(--txt); height: 100vh; overflow: hidden; }
-        .app { display: flex; height: 100vh; width: 100vw; }
-        .side { width: 260px; border-right: 1px solid var(--brd); padding: 24px; display: flex; flex-direction: column; background: #000; z-index: 100; }
-        .nav-l { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; border:none; background:transparent; color: var(--muted); cursor: pointer; font-weight: 700; width: 100%; transition: 0.3s; font-size: 0.85rem; margin-bottom: 4px; }
-        .nav-l.active { background: var(--p); color: #fff; box-shadow: 0 8px 20px rgba(255, 152, 0, 0.25); transform: translateX(5px); }
-        .nav-l:hover:not(.active) { background: rgba(255,255,255,0.07); color: #fff; }
-        
-        .main { flex: 1; overflow-y: auto; padding: 40px; position: relative; background: radial-gradient(circle at 0% 0%, #1a1c23 0%, #0b0d11 100%); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 18px; }
-        
-        .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 20px; cursor: pointer; transition: 0.4s; text-align: center; position: relative; overflow: hidden; }
-        .card:hover { border-color: var(--p); transform: translateY(-5px); }
-        .card.sel { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .card-qty { position: absolute; top: 10px; right: 10px; background: var(--p); color: #fff; width: 24px; height: 24px; border-radius: 50%; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid var(--panel); }
+        body { 
+            background: var(--bg); 
+            color: var(--txt); 
+            height: 100vh; 
+            overflow: hidden; 
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 152, 0, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+            animation: bg-move 20s infinite alternate ease-in-out;
+        }
+        @keyframes bg-move {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 10% 10%; }
+        }
 
-        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
-        .form-ui { width: 100%; max-width: 550px; background: var(--glass); backdrop-filter: blur(20px); padding: 40px; border-radius: 32px; border: 1px solid var(--brd); box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
-        
-        .inp { width: 100%; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; transition: 0.2s; }
-        .inp:focus { outline: none; border-color: var(--p); }
-        
-        .btn-p { background: var(--p); color: #fff; border:none; padding: 18px; border-radius: 14px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.3s; }
-        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
-        
-        .cart { width: 340px; border-left: 1px solid var(--brd); background: #000; display: flex; flex-direction: column; }
-        .qty-inp { width: 55px; background: #0b0d11; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 8px; font-weight: 800; padding: 6px 0; font-size: 1rem; }
-        
-        .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 20px; margin-bottom: 10px; scrollbar-width: none; }
-        .chip { padding: 10px 20px; border-radius: 30px; background: var(--panel); border: 1px solid var(--brd); color: var(--muted); cursor: pointer; white-space: nowrap; font-weight: 800; font-size: 0.8rem; transition: 0.3s; }
-        .chip.active { background: var(--p); color: #fff; border-color: var(--p); }
+        .app { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
-        .perf-bar { height: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .perf-fill { height: 100%; background: var(--p); transition: width 1s; }
-
-        .salary-badge { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.2); animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        /* --- NEW FLOATING SIDEBAR --- */
+        .side-container {
+            width: 100px;
+            padding: 20px 0 20px 20px;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        .side { 
+            flex: 1;
+            background: var(--glass-strong);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--brd);
+            border-radius: 30px;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            padding: 25px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transition: width 0.3s;
+        }
         
-        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
-        .tool-btn { background: #1a1a1a; border: 1px solid var(--brd); color: #fff; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
-        .tool-btn:hover { border-color: var(--p); color: var(--p); background: #222; }
+        .nav-l { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 16px; 
+            border: none; 
+            background: transparent; 
+            color: var(--muted); 
+            cursor: pointer; 
+            margin-bottom: 12px; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+        }
+        .nav-l span { font-size: 1.5rem; }
+        .nav-l.active { 
+            background: linear-gradient(135deg, var(--p), #ffb74d); 
+            color: #fff; 
+            box-shadow: 0 5px 20px var(--p-glow); 
+            transform: scale(1.1);
+        }
+        .nav-l:hover:not(.active) { background: rgba(255,255,255,0.07); color: #fff; transform: scale(1.05); }
+        .tooltip { display: none; } /* Tooltips handled by title usually, kept simple for icons */
         
-        .emp-badge { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 16px; border: 1px solid var(--brd); margin-bottom: 10px; }
-        .emp-name { font-weight: 900; color: #fff; font-size: 0.9rem; margin-bottom: 2px; }
-        .emp-role { font-weight: 700; color: var(--p); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .main { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 30px 40px; 
+            position: relative; 
+            scroll-behavior: smooth;
+        }
 
-        .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 20px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px; }
-        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
-        .dz-preview-container { position: relative; width: 100%; max-width: 250px; margin-top: 10px; }
-        .dz-preview { width: 100%; max-height: 180px; object-fit: contain; border-radius: 10px; border: 2px solid var(--brd); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        .btn-del-file { position: absolute; top: -10px; right: -10px; background: var(--error); color: #fff; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-weight: 900; z-index: 5; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        /* --- NEW JUICY CARDS --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 24px; }
+        
+        .card { 
+            background: var(--panel); 
+            border: 1px solid var(--brd); 
+            border-radius: 24px; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            position: relative; 
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover { 
+            border-color: var(--p); 
+            transform: translateY(-8px) scale(1.02); 
+            box-shadow: 0 15px 35px -5px var(--p-glow);
+        }
+        .card:active { transform: scale(0.98); }
+        .card.sel { border-color: var(--p); box-shadow: 0 0 0 2px var(--p) inset; }
+        
+        .card-img-box {
+            width: 100%;
+            height: 120px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: 0.5s;
+        }
+        .card:hover .card-img-box img { transform: scale(1.1); }
+        
+        .card-content { padding: 15px; text-align: left; }
+        
+        .card-qty { 
+            position: absolute; 
+            top: 10px; right: 10px; 
+            background: var(--p); 
+            color: #fff; 
+            width: 28px; height: 28px; 
+            border-radius: 50%; 
+            font-size: 0.8rem; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; 
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
 
-        .v-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; position: relative; overflow: hidden; }
-        .v-card:hover { border-color: var(--p); transform: translateY(-5px); }
-        .v-card-avatar { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, var(--p), #ffb74d); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 950; color: #fff; margin-bottom: 15px; border: 4px solid #000; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .v-card-name { font-size: 1.1rem; font-weight: 900; color: #fff; text-align: center; }
-        .v-card-role { color: var(--p); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; }
-        .v-card-btn { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; text-decoration: none; color: #fff; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .v-card-btn:hover { background: var(--p); color: #fff; }
+        /* --- FORMS GLASSMORPHISM --- */
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; padding-bottom: 50px; }
+        .form-ui { 
+            width: 100%; 
+            max-width: 550px; 
+            background: rgba(20, 20, 25, 0.6); 
+            backdrop-filter: blur(40px); 
+            -webkit-backdrop-filter: blur(40px);
+            padding: 45px; 
+            border-radius: 36px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .inp { 
+            width: 100%; 
+            padding: 16px 20px; 
+            border-radius: 16px; 
+            border: 1px solid var(--brd); 
+            background: rgba(0,0,0,0.3); 
+            color: #fff; 
+            font-weight: 600; 
+            margin-bottom: 15px; 
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+        .inp:focus { outline: none; border-color: var(--p); background: rgba(0,0,0,0.5); box-shadow: 0 0 20px -5px var(--p-glow); }
+        
+        .btn-p { 
+            background: linear-gradient(135deg, var(--p), #fb8c00); 
+            color: #fff; 
+            border:none; 
+            padding: 18px; 
+            border-radius: 16px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            width: 100%; 
+            transition: 0.3s;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            box-shadow: 0 10px 25px -5px var(--p-glow);
+        }
+        .btn-p:hover { transform: translateY(-2px); box-shadow: 0 15px 35px -5px var(--p-glow); filter: brightness(1.1); }
+        .btn-p:active { transform: scale(0.98); }
+        .btn-p:disabled { background: #374151; color: #9ca3af; cursor: not-allowed; opacity: 0.6; box-shadow: none; transform: none; }
+        
+        /* --- RECEIPT STYLE CART --- */
+        .cart-container { width: 360px; padding: 20px 20px 20px 0; display: flex; z-index: 50; }
+        .cart { 
+            width: 100%;
+            background: var(--ticket-bg); 
+            color: var(--ticket-txt);
+            border-radius: 20px;
+            display: flex; 
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            /* Jagged Edge Effect */
+            clip-path: polygon(0% 0%, 100% 0%, 100% calc(100% - 10px), 95% 100%, 90% calc(100% - 10px), 85% 100%, 80% calc(100% - 10px), 75% 100%, 70% calc(100% - 10px), 65% 100%, 60% calc(100% - 10px), 55% 100%, 50% calc(100% - 10px), 45% 100%, 40% calc(100% - 10px), 35% 100%, 30% calc(100% - 10px), 25% 100%, 20% calc(100% - 10px), 15% 100%, 10% calc(100% - 10px), 5% 100%, 0% calc(100% - 10px));
+            animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .qty-inp { width: 40px; background: rgba(0,0,0,0.1); border: none; color: #000; text-align: center; border-radius: 6px; font-weight: 800; padding: 4px 0; font-size: 1rem; }
+        
+        .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 20px; margin-bottom: 10px; scrollbar-width: none; mask-image: linear-gradient(to right, black 90%, transparent 100%); }
+        .chip { padding: 10px 24px; border-radius: 100px; background: rgba(255,255,255,0.05); border: 1px solid var(--brd); color: var(--muted); cursor: pointer; white-space: nowrap; font-weight: 700; font-size: 0.85rem; transition: 0.3s; backdrop-filter: blur(5px); }
+        .chip:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .chip.active { background: var(--p); color: #fff; border-color: var(--p); box-shadow: 0 5px 20px var(--p-glow); }
+
+        .perf-bar { height: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.3); }
+        .perf-fill { height: 100%; background: linear-gradient(90deg, var(--p), #ffcc80); transition: width 1s; box-shadow: 0 0 10px var(--p-glow); }
+
+        .toolbar { display: flex; flex-direction: column; gap: 15px; margin-top: auto; align-items: center; width: 100%; padding-top: 20px; border-top: 1px solid var(--brd); }
+        .tool-btn { background: rgba(255,255,255,0.05); border: none; color: var(--muted); width: 45px; height: 45px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.2s; }
+        .tool-btn:hover { background: #fff; color: #000; transform: scale(1.1); }
+        
+        .emp-badge { display:none; } /* Hidden in sidebar due to space, moved to top right absolute */
+
+        .dropzone { border: 2px dashed rgba(255,255,255,0.2); border-radius: 20px; padding: 30px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 25px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; }
+        .dropzone:hover { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.1); transform: scale(1.02); }
+        
+        .v-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 30px; padding: 30px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; position: relative; overflow: hidden; backdrop-filter: blur(10px); }
+        .v-card:hover { border-color: var(--p); transform: translateY(-8px); box-shadow: 0 15px 40px -10px rgba(0,0,0,0.5); }
+        .v-card-avatar { width: 90px; height: 90px; border-radius: 26px; background: linear-gradient(135deg, var(--p), #ffb74d); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 950; color: #fff; margin-bottom: 20px; border: 4px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px var(--p-glow); }
+        .v-card-name { font-size: 1.2rem; font-weight: 900; color: #fff; text-align: center; }
+        .v-card-role { color: var(--p); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1px; }
+        .v-card-btn { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border-radius: 14px; text-decoration: none; color: #fff; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .v-card-btn:hover { background: #fff; color: #000; transform: scale(1.05); }
 
         .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 25px; }
-        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--brd); border-radius: 18px; padding: 20px; }
-        .stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
-        .stat-value { font-size: 1.5rem; font-weight: 950; color: #fff; }
+        .stat-box { background: rgba(0,0,0,0.2); border: 1px solid var(--brd); border-radius: 20px; padding: 25px; text-align: center; }
+        .stat-label { font-size: 0.7rem; color: var(--muted); font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        .stat-value { font-size: 1.8rem; font-weight: 950; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
 
-        .toast { position: fixed; top: 25px; right: 25px; padding: 15px 25px; border-radius: 12px; z-index: 9999; animation: slideIn 0.4s ease-out; box-shadow: 0 15px 40px rgba(0,0,0,0.6); min-width: 250px; }
+        .toast { position: fixed; top: 40px; right: 40px; padding: 20px 30px; border-radius: 16px; z-index: 9999; animation: slideIn 0.4s ease-out; box-shadow: 0 20px 50px rgba(0,0,0,0.5); min-width: 300px; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
         @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+        @keyframes slideInRight { from { transform: translateX(50px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity:0; } to { transform: translateY(0); opacity:1; } }
 
         /* MODAL STYLES */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
-        .modal-box { background: #1a1a1a; border: 1px solid var(--brd); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); transform: scale(0.9); animation: popIn 0.3s forwards; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { to { transform: scale(1); } }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s; }
+        .modal-box { background: #1a1a1a; border: 1px solid var(--brd); padding: 40px; border-radius: 30px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.8); transform: scale(0.9); animation: popIn 0.3s forwards; }
+        
+        .sparkline { width: 100px; height: 40px; opacity: 0.3; }
+        .sparkline path { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+
       `}</style>
 
       {view === 'login' ? (
-        <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center'}}>
-          <div className="form-ui" style={{textAlign: 'center', maxWidth: 400}}>
-            <img src="https://i.goopics.net/dskmxi.png" height="110" style={{marginBottom:35}} />
-            <h1 style={{fontSize:'1.8rem', fontWeight:900, marginBottom:10}}>Hen House</h1>
-            <p style={{color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Accès Agent Autorisé Uniquement</p>
-            <select className="inp" value={user} onChange={e=>setUser(e.target.value)}>
-              <option value="">👤 Qui êtes-vous ?</option>
+        <div style={{flex:1, display:'flex', alignItems:'center', justifyContent:'center', position:'relative', zIndex:2}}>
+          <div className="form-ui" style={{textAlign: 'center', maxWidth: 420}}>
+            <div style={{width: 120, height: 120, background: '#000', borderRadius: '50%', margin: '0 auto 30px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--p)', boxShadow: '0 0 50px var(--p-glow)'}}>
+                 <img src="https://i.goopics.net/dskmxi.png" height="70" />
+            </div>
+            <h1 style={{fontSize:'2.5rem', fontWeight:900, marginBottom:5}}>Hen House</h1>
+            <p style={{color:'var(--muted)', fontSize:'0.9rem', marginBottom:40, letterSpacing: '2px', textTransform:'uppercase', fontWeight:700}}>Management System</p>
+            <select className="inp" value={user} onChange={e=>setUser(e.target.value)} style={{textAlign:'center', fontSize:'1.1rem'}}>
+              <option value="">👤 SÉLECTIONNER AGENT</option>
               {data?.employees.map(e=><option key={e} value={e}>{e}</option>)}
             </select>
-            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>DÉMARRER LA SESSION</button>
+            <button className="btn-p" onClick={()=>{playSound('success'); localStorage.setItem('hh_user', user); setView('app');}} disabled={!user}>OUVRIR SESSION</button>
           </div>
         </div>
       ) : (
         <>
-          <aside className="side">
-            <div style={{textAlign:'center', marginBottom:45}}><img src="https://i.goopics.net/dskmxi.png" height="55" /></div>
-            <div style={{flex:1, overflowY:'auto', paddingRight:5}}>
-              {MODULES.map(t => (
-                <button key={t.id} className={`nav-l ${currentTab===t.id?'active':''}`} onClick={()=>{playSound('click'); setCurrentTab(t.id);}}>
-                  <span style={{fontSize:'1.3rem'}}>{t.e}</span> {t.l}
-                </button>
-              ))}
-            </div>
-            
-            <div style={{paddingTop: '20px', borderTop: '1px solid var(--brd)'}}>
-              <div className="toolbar">
-                <button className="tool-btn" title="Rafraîchir" onClick={() => window.location.reload()}>🔃</button>
-                <button className="tool-btn" title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
-                <button className="tool-btn" title="Sons" onClick={() => {setIsMuted(!isMuted); playSound('click');}}>
-                  {isMuted ? '🔇' : '🔊'}
-                </button>
-              </div>
-              <div className="emp-badge">
-                <div className="emp-name">{user}</div>
-                <div className="emp-role">{myProfile?.role || 'Agent de terrain'}</div>
-              </div>
-              <button className="nav-l" onClick={requestLogout} style={{color: 'var(--error)', background: 'rgba(239, 68, 68, 0.05)', justifyContent: 'center'}}>🚪 DÉCONNEXION</button>
-            </div>
-          </aside>
+          <div className="side-container">
+              <aside className="side">
+                <div style={{textAlign:'center', marginBottom:30, paddingBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.05)', width:'60%'}}>
+                    <img src="https://i.goopics.net/dskmxi.png" height="40" />
+                </div>
+                <div style={{flex:1, display:'flex', flexDirection:'column', gap:10}}>
+                  {MODULES.map(t => (
+                    <button key={t.id} title={t.l} className={`nav-l ${currentTab===t.id?'active':''}`} onClick={()=>{playSound('click'); setCurrentTab(t.id);}}>
+                      <span>{t.e}</span>
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="toolbar">
+                    <button className="tool-btn" title="Sync Cloud" onClick={() => loadData(true)}>☁️</button>
+                    <button className="tool-btn" title="Sons" onClick={() => {setIsMuted(!isMuted); playSound('click');}} style={{opacity: isMuted ? 0.5 : 1}}>
+                      {isMuted ? '🔇' : '🔊'}
+                    </button>
+                    <button className="tool-btn" title="Déconnexion" onClick={requestLogout} style={{color: 'var(--error)', marginTop: 10}}>🚪</button>
+                </div>
+              </aside>
+          </div>
 
           <main className="main">
-            <div className="fade-in">
+            {/* Header User Info - Absolute */}
+            <div style={{position:'absolute', top: 30, right: 40, display:'flex', alignItems:'center', gap: 15, zIndex: 10}}>
+                <div style={{textAlign:'right'}}>
+                    <div style={{fontWeight:900, fontSize:'1rem'}}>{user}</div>
+                    <div style={{color:'var(--p)', fontSize:'0.75rem', fontWeight:800, textTransform:'uppercase'}}>{myProfile?.role || 'Staff'}</div>
+                </div>
+                <div style={{width: 45, height: 45, background: 'linear-gradient(135deg, var(--p), #fff)', borderRadius: '14px', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, color:'#000', fontSize:'1.2rem', boxShadow:'0 5px 15px var(--p-glow)'}}>
+                    {user.charAt(0)}
+                </div>
+            </div>
+
+            <div className="fade-in" style={{maxWidth: 1200, margin: '0 auto'}}>
               {/* HOME */}
               {currentTab === 'home' && (
-                <div className="fade-in">
-                   <div style={{marginBottom:45}}>
-                       <h1 style={{fontSize: '2.8rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px'}}>Bonjour, {user.split(' ')[0]} 👋</h1>
-                       <p style={{color: 'var(--muted)', fontSize: '1.1rem'}}>Voici vos indicateurs clés pour aujourd'hui.</p>
+                <div style={{animation: 'slideUp 0.6s ease'}}>
+                   <div style={{marginBottom:50, marginTop: 20}}>
+                       <h1 style={{fontSize: '3.5rem', fontWeight: 900, marginBottom: 5, letterSpacing:'-2px', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>Bonjour, {user.split(' ')[0]}</h1>
+                       <p style={{color: 'var(--muted)', fontSize: '1.2rem'}}>Prêt à faire tourner la boutique ?</p>
                    </div>
                    
-                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 45}}>
-                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #2a1b0a 100%)', border:'1px solid rgba(255,152,0,0.2)'}}>
-                         <div style={{fontSize: '3.5rem'}}>💰</div>
+                   <div style={{display:'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 25, marginBottom: 50}}>
+                      {/* CA CARD */}
+                      <div className="card" style={{padding: 30, flexDirection: 'row', alignItems:'center', gap: 20, borderLeft: '4px solid var(--p)'}}>
+                         <div style={{width:60, height:60, borderRadius: 20, background: 'rgba(255, 152, 0, 0.1)', color:'var(--p)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem'}}>💰</div>
                          <div>
                             <div className="stat-label">Chiffre d'Affaires</div>
-                            <div className="stat-value">${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                            <div className="stat-value" style={{color: 'var(--p)'}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
                          </div>
+                         <svg className="sparkline" style={{marginLeft:'auto', color:'var(--p)'}} viewBox="0 0 100 40"><path d="M0 30 Q 20 40, 40 20 T 100 10" /></svg>
                       </div>
-                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #0d2e21 100%)', border:'1px solid rgba(16,185,129,0.2)'}}>
-                         <div style={{fontSize: '3.5rem'}}>📦</div>
+
+                      {/* PROD CARD */}
+                      <div className="card" style={{padding: 30, flexDirection: 'row', alignItems:'center', gap: 20, borderLeft: '4px solid #10b981'}}>
+                         <div style={{width:60, height:60, borderRadius: 20, background: 'rgba(16, 185, 129, 0.1)', color:'#10b981', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem'}}>📦</div>
                          <div>
-                            <div className="stat-label">Plats Produits</div>
-                            <div className="stat-value">{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
+                            <div className="stat-label">Production</div>
+                            <div className="stat-value" style={{color: '#10b981'}}>{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
                          </div>
+                         <svg className="sparkline" style={{marginLeft:'auto', color:'#10b981'}} viewBox="0 0 100 40"><path d="M0 30 L 20 20 L 40 30 L 60 10 L 80 20 L 100 5" /></svg>
                       </div>
-                      <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #1e1b4b 100%)', border:'1px solid rgba(99,102,241,0.2)'}}>
-                         <div style={{fontSize: '3.5rem'}}>💶</div>
+
+                      {/* SALARY CARD */}
+                      <div className="card" style={{padding: 30, flexDirection: 'row', alignItems:'center', gap: 20, borderLeft: '4px solid #6366f1'}}>
+                         <div style={{width:60, height:60, borderRadius: 20, background: 'rgba(99, 102, 241, 0.1)', color:'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem'}}>💶</div>
                          <div>
                             <div className="stat-label">Salaire Estimé</div>
-                            <div className="stat-value">${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
+                            <div className="stat-value" style={{color: '#6366f1'}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
                          </div>
                       </div>
                    </div>
 
-                   <div style={{background:'rgba(255,255,255,0.02)', padding:30, borderRadius:24, border:'1px solid var(--brd)'}}>
-                        <h3 style={{marginBottom: 25, fontWeight: 900, color: '#fff', fontSize: '1.1rem'}}>SERVICES RAPIDES</h3>
-                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:15}}>
+                   <div>
+                        <h3 style={{marginBottom: 25, fontWeight: 900, color: 'var(--muted)', fontSize: '0.9rem', letterSpacing: '1px', textTransform:'uppercase'}}>ACCÈS RAPIDE</h3>
+                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:20}}>
                         {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
-                            <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25, background:'var(--bg)'}}>
-                                <span style={{fontSize:'2.8rem', display:'block', marginBottom:12}}>{m.e}</span>
-                                <div style={{fontSize:'0.9rem', fontWeight:800}}>{m.l}</div>
+                            <div key={m.id} className="card" onClick={()=>setCurrentTab(m.id)} style={{padding: 25, justifyContent:'center', alignItems:'center', gap: 10, background: 'rgba(255,255,255,0.03)'}}>
+                                <span style={{fontSize:'2.5rem'}}>{m.e}</span>
+                                <div style={{fontSize:'0.85rem', fontWeight:700, opacity:0.8}}>{m.l}</div>
                             </div>
                         ))}
                         </div>
@@ -439,17 +629,20 @@ export default function Home() {
 
               {/* INVOICES */}
               {currentTab === 'invoices' && (
-                <div className="fade-in">
-                  <div style={{position:'relative', marginBottom:20}}>
-                        <span style={{position:'absolute', left:15, top:13, opacity:0.4}}>🔍</span>
-                        <input className="inp" placeholder="Rechercher un plat..." style={{paddingLeft:45}} onChange={e=>setSearch(e.target.value)} />
+                <div style={{animation: 'slideUp 0.5s ease'}}>
+                  <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 25}}>
+                       <div style={{position:'relative', width: '40%'}}>
+                            <span style={{position:'absolute', left:18, top:16, opacity:0.5}}>🔍</span>
+                            <input className="inp" placeholder="Chercher un plat..." style={{paddingLeft:50, margin:0, background:'rgba(0,0,0,0.4)', borderColor:'transparent'}} onChange={e=>setSearch(e.target.value)} />
+                       </div>
+                       <div className="chips-container" style={{maxWidth: '55%', margin:0, padding:0}}>
+                            <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
+                            {Object.keys(data.productsByCategory).map(c => (
+                                <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c}</div>
+                            ))}
+                       </div>
                   </div>
-                  <div className="chips-container">
-                    <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tous</div>
-                    {Object.keys(data.productsByCategory).map(c => (
-                        <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c}</div>
-                    ))}
-                  </div>
+
                   <div className="grid">
                     {data.products.filter(p => (catFilter==='Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p=>{
                       const cartItem = cart.find(i=>i.name===p);
@@ -460,11 +653,13 @@ export default function Home() {
                             else setCart([...cart, {name:p, qty:1, pu:data.prices[p]||0}]);
                         }}>
                             {cartItem && <div className="card-qty">{cartItem.qty}</div>}
-                            <div style={{height:100, borderRadius:15, overflow:'hidden', background:'#000', marginBottom:12}}>
-                                {IMAGES[p] ? <img src={IMAGES[p]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', background:'#111', color: 'var(--p)'}}>{p.charAt(0)}</div>}
+                            <div className="card-img-box">
+                                {IMAGES[p] ? <img src={IMAGES[p]} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.5rem', color: 'var(--p)'}}>{p.charAt(0)}</div>}
                             </div>
-                            <div style={{fontWeight:800, fontSize:'0.75rem', height:35, overflow:'hidden', color:'#fff'}}>{p}</div>
-                            <div style={{color:'var(--p)', fontWeight:950, fontSize:'1.1rem'}}>${data.prices[p]}</div>
+                            <div className="card-content">
+                                <div style={{fontWeight:800, fontSize:'0.9rem', lineHeight:'1.2', marginBottom: 5, minHeight: 35}}>{p}</div>
+                                <div style={{color:'var(--p)', fontWeight:900, fontSize:'1.2rem'}}>${data.prices[p]}</div>
+                            </div>
                         </div>
                       );
                     })}
@@ -476,10 +671,10 @@ export default function Home() {
               {currentTab === 'expenses' && (
                 <div className="center-box">
                     <div className="form-ui">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 FRAIS & ESSENCE</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Remplacez la barre par une notificationToast.</p>
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>💳 Frais & Essence</h2>
+                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Déclarez vos frais pour remboursement.</p>
                         
-                        <div style={{display:'flex', gap:10, marginBottom:10}}>
+                        <div style={{display:'flex', gap:15, marginBottom:5}}>
                             <select className="inp" style={{flex:1}} value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>
                                 {data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}
                             </select>
@@ -499,8 +694,9 @@ export default function Home() {
                            
                            {!forms.expense.file ? (
                              <>
-                               <div style={{fontSize:'3rem', marginBottom:10}}>📸</div>
-                               <div style={{fontWeight:800}}>DÉPOSEZ OU COLLEZ (CTRL+V)</div>
+                               <div style={{fontSize:'3.5rem', marginBottom:15, opacity:0.8}}>📸</div>
+                               <div style={{fontWeight:800, fontSize:'0.9rem'}}>GLISSER OU COLLER (CTRL+V)</div>
+                               <div style={{color:'var(--muted)', fontSize:'0.8rem'}}>Preuve obligatoire</div>
                              </>
                            ) : (
                              <div className="dz-preview-container">
@@ -518,14 +714,15 @@ export default function Home() {
               {/* STOCK */}
               {currentTab === 'stock' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 STOCK CUISINE</h2>
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>📦 Stock Cuisine</h2>
+                    <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Déclaration de production.</p>
                     {forms.stock.map((item, i) => (
-                        <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
-                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});}}><option value="">Sélectionner...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});}} />
+                        <div key={i} style={{display:'flex', gap:12, marginBottom:5}}>
+                            <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.stock]; n[i].product=e.target.value; setForms({...forms, stock:n});}}><option value="">Sélectionner produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
+                            <input type="number" className="inp" style={{width:90, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.stock]; n[i].qty=e.target.value; setForms({...forms, stock:n});}} />
                         </div>
                     ))}
-                    <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', marginBottom: 20}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER LIGNE</button>
+                    <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', marginBottom: 25, width:'100%', borderRadius: 16}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER LIGNE</button>
                     <button className="btn-p" onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
                 </div></div>
               )}
@@ -533,46 +730,46 @@ export default function Home() {
               {/* ENTERPRISE */}
               {currentTab === 'enterprise' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🏢 COMMANDE ENTREPRISE</h2>
+                    <h2 style={{marginBottom:30, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🏢 Commande Pro</h2>
                     <input className="inp" placeholder="Nom Société" value={forms.enterprise.name} onChange={e=>setForms({...forms, enterprise:{...forms.enterprise, name:e.target.value}})} />
                     {forms.enterprise.items.map((item, i) => (
-                        <div key={i} style={{display:'flex', gap:10, marginBottom:10}}>
+                        <div key={i} style={{display:'flex', gap:10, marginBottom:5}}>
                             <select className="inp" style={{flex:1}} value={item.product} onChange={e=>{const n=[...forms.enterprise.items]; n[i].product=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}}><option value="">Produit...</option>{data.products.map(p=><option key={p} value={p}>{p}</option>)}</select>
-                            <input type="number" className="inp" style={{width:90}} value={item.qty} onChange={e=>{const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}} />
+                            <input type="number" className="inp" style={{width:90, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.enterprise.items]; n[i].qty=e.target.value; setForms({...forms, enterprise:{...forms.enterprise, items:n}});}} />
                         </div>
                     ))}
-                    <button className="btn-p" onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>TRANSMETTRE COMMANDE</button>
+                    <button className="btn-p" style={{marginTop: 15}} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>TRANSMETTRE COMMANDE</button>
                 </div></div>
               )}
 
               {/* PARTNERS */}
               {currentTab === 'partners' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🤝 PARTENAIRES</h2>
+                    <h2 style={{marginBottom:30, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🤝 Partenaires</h2>
                     <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e=>setForms({...forms, partner:{...forms.partner, num:e.target.value}})} />
-                    <div style={{display:'flex', gap:12, marginBottom:12}}>
+                    <div style={{display:'flex', gap:12, marginBottom:10}}>
                         <select className="inp" style={{flex:1}} value={forms.partner.company} onChange={e=>{const c=e.target.value; setForms({...forms, partner:{...forms.partner, company:c, benef: data.partners.companies[c].beneficiaries[0], items:[{menu:data.partners.companies[c].menus[0].name, qty:1}]}});}}>{Object.keys(data.partners.companies).map(c=><option key={c} value={c}>{c}</option>)}</select>
                         <select className="inp" style={{flex:1}} value={forms.partner.benef} onChange={e=>setForms({...forms, partner:{...forms.partner, benef:e.target.value}})}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b=><option key={b} value={b}>{b}</option>)}</select>
                     </div>
                     {forms.partner.items.map((item, idx) => (
                         <div key={idx} style={{display:'flex', gap:10, marginBottom:10}}>
                             <select className="inp" style={{flex:1}} value={item.menu} onChange={e=>{const n=[...forms.partner.items]; n[idx].menu=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}}>{data.partners.companies[forms.partner.company]?.menus.map(m=><option key={m.name}>{m.name}</option>)}</select>
-                            <input type="number" className="qty-inp" style={{height:52, width:70}} value={item.qty} onChange={e=>{const n=[...forms.partner.items]; n[idx].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}} />
+                            <input type="number" className="inp" style={{width:70, textAlign:'center'}} value={item.qty} onChange={e=>{const n=[...forms.partner.items]; n[idx].qty=e.target.value; setForms({...forms, partner:{...forms.partner, items:n}});}} />
                         </div>
                     ))}
-                    <button className="btn-p" onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
+                    <button className="btn-p" style={{marginTop: 10}} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
                 </div></div>
               )}
 
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🚗 ÉTAT VÉHICULE</h2>
+                    <h2 style={{marginBottom:30, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🚗 État Véhicule</h2>
                     <select className="inp" value={forms.garage.vehicle} onChange={e=>setForms({...forms, garage:{...forms.garage, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
                     <select className="inp" value={forms.garage.action} onChange={e=>setForms({...forms, garage:{...forms.garage, action:e.target.value}})}><option>Entrée</option><option>Sortie</option></select>
-                    <div style={{background:'rgba(0,0,0,0.2)', padding:25, borderRadius:20, marginTop:10, border:'1px solid var(--brd)'}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
-                        <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
+                    <div style={{background:'rgba(0,0,0,0.3)', padding:25, borderRadius:20, marginTop:15, border:'1px solid var(--brd)'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15, fontSize:'0.9rem'}}><span>⛽ NIVEAU D'ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
+                        <input type="range" style={{width:'100%', accentColor:'var(--p)', height: 6}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
                     </div>
                     <button className="btn-p" style={{marginTop:30}} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER GARAGE</button>
                 </div></div>
@@ -581,8 +778,8 @@ export default function Home() {
               {/* DIRECTORY */}
               {currentTab === 'directory' && (
                 <div className="fade-in">
-                    <h2 style={{fontSize:'2.2rem', fontWeight:950, marginBottom:35}}>Annuaire Interne</h2>
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:25}}>
+                    <h2 style={{fontSize:'2.5rem', fontWeight:900, marginBottom:40, textAlign:'center'}}>Annuaire Interne</h2>
+                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:30}}>
                     {data.employeesFull.map(e => (
                         <div key={e.id} className="v-card">
                             <div className="v-card-avatar">{e.name.charAt(0)}</div>
@@ -597,28 +794,28 @@ export default function Home() {
 
               {/* PERFORMANCE */}
               {currentTab === 'performance' && (
-                <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
-                  <div className="card" style={{padding:35, textAlign:'left'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 TOP C.A</h2>
+                <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(450px, 1fr))', gap:40}}>
+                  <div className="card" style={{padding:40, textAlign:'left', cursor:'default'}}>
+                    <h2 style={{marginBottom:30, fontWeight:900, fontSize:'1.5rem'}}>🏆 Classement C.A</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
-                      <div key={i} style={{marginBottom: 20}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
-                           <span>{i+1}. <b>{e.name}</b></span>
-                           <b style={{color: i===0 ? 'var(--p)' : '#fff'}}>${Math.round(e.ca).toLocaleString()}</b>
+                      <div key={i} style={{marginBottom: 25}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:10}}>
+                           <span><span style={{color: 'var(--muted)', width: 20, display:'inline-block'}}>{i+1}.</span> <b>{e.name}</b></span>
+                           <b style={{color: i===0 ? 'var(--p)' : '#fff', textShadow: i===0 ? '0 0 10px var(--p-glow)' : 'none'}}>${Math.round(e.ca).toLocaleString()}</b>
                         </div>
                         <div className="perf-bar"><div className="perf-fill" style={{width: (e.ca / Math.max(...data.employeesFull.map(x=>x.ca)) * 100) + '%'}}></div></div>
                       </div>
                     ))}
                   </div>
-                  <div className="card" style={{padding:35, textAlign:'left'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>📦 TOP PRODUCTEURS</h2>
+                  <div className="card" style={{padding:40, textAlign:'left', cursor:'default'}}>
+                    <h2 style={{marginBottom:30, fontWeight:900, fontSize:'1.5rem'}}>📦 Classement Producteurs</h2>
                     {data.employeesFull.sort((a,b)=>b.stock-a.stock).slice(0,10).map((e,i)=>(
-                      <div key={i} style={{marginBottom: 20}}>
-                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
-                           <span>{i+1}. <b>{e.name}</b></span>
-                           <b>{e.stock.toLocaleString()}</b>
+                      <div key={i} style={{marginBottom: 25}}>
+                        <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:10}}>
+                           <span><span style={{color: 'var(--muted)', width: 20, display:'inline-block'}}>{i+1}.</span> <b>{e.name}</b></span>
+                           <b style={{color: i===0 ? 'var(--success)' : '#fff'}}>{e.stock.toLocaleString()}</b>
                         </div>
-                        <div className="perf-bar" style={{background:'rgba(16,185,129,0.1)'}}><div className="perf-fill" style={{background:'var(--success)', width: (e.stock / Math.max(...data.employeesFull.map(x=>x.stock)) * 100) + '%'}}></div></div>
+                        <div className="perf-bar" style={{background:'rgba(255,255,255,0.05)'}}><div className="perf-fill" style={{background:'#10b981', boxShadow: '0 0 10px rgba(16,185,129,0.4)', width: (e.stock / Math.max(...data.employeesFull.map(x=>x.stock)) * 100) + '%'}}></div></div>
                       </div>
                     ))}
                   </div>
@@ -628,25 +825,25 @@ export default function Home() {
               {/* PROFILE */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
-                   <div className="form-ui" style={{maxWidth: 600, padding: 50}}>
+                   <div className="form-ui" style={{maxWidth: 650, padding: 60}}>
                         <div style={{textAlign:'center'}}>
-                            <div className="v-card-avatar" style={{width:100, height:100, margin:'0 auto 20px'}}>{user.charAt(0)}</div>
-                            <h1 style={{fontSize:'2.5rem', fontWeight:950}}>{user}</h1>
-                            <div style={{color:'var(--p)', fontWeight:800}}>{myProfile.role}</div>
+                            <div className="v-card-avatar" style={{width:120, height:120, margin:'0 auto 25px', fontSize:'3rem'}}>{user.charAt(0)}</div>
+                            <h1 style={{fontSize:'2.8rem', fontWeight:950}}>{user}</h1>
+                            <div style={{color:'var(--p)', fontWeight:800, fontSize:'1.1rem', letterSpacing:'1px', textTransform:'uppercase'}}>{myProfile.role}</div>
                         </div>
                         <div className="profile-grid">
                             <div className="stat-box">
-                                <div className="stat-label">Chiffre</div>
-                                <div className="stat-value">${Math.round(myProfile.ca).toLocaleString()}</div>
+                                <div className="stat-label">Chiffre Total</div>
+                                <div className="stat-value" style={{color:'var(--p)'}}>${Math.round(myProfile.ca).toLocaleString()}</div>
                             </div>
                             <div className="stat-box">
                                 <div className="stat-label">Production</div>
-                                <div className="stat-value">{myProfile.stock}</div>
+                                <div className="stat-value" style={{color:'#10b981'}}>{myProfile.stock}</div>
                             </div>
                         </div>
-                        <div style={{background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(0,0,0,0.3))', border: '1px solid var(--success)', borderRadius: 24, padding: 25, marginTop: 20, textAlign: 'center'}}>
-                            <div className="stat-label" style={{color: 'var(--success)'}}>Salaire estimé</div>
-                            <div style={{fontSize: '3rem', fontWeight: 950}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
+                        <div style={{background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: 30, marginTop: 25, textAlign: 'center', boxShadow:'inset 0 0 20px rgba(0,0,0,0.5)'}}>
+                            <div className="stat-label" style={{marginBottom:5}}>Salaire à percevoir</div>
+                            <div style={{fontSize: '3.5rem', fontWeight: 950, color: '#fff', textShadow: '0 0 20px rgba(255,255,255,0.2)'}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
                         </div>
                    </div>
                 </div>
@@ -655,7 +852,8 @@ export default function Home() {
               {/* SUPPORT */}
               {currentTab === 'support' && (
                 <div className="center-box"><div className="form-ui">
-                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 ASSISTANCE</h2>
+                    <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900, fontSize:'1.8rem'}}>🆘 Assistance</h2>
+                    <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.9rem', marginBottom:35}}>Signalez un problème ou une suggestion.</p>
                     <input className="inp" placeholder="Objet de la demande" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})} />
                     <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message au patron..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
                     <button className="btn-p" onClick={()=>send('sendSupport', forms.support)}>ENVOYER TICKET</button>
@@ -664,39 +862,48 @@ export default function Home() {
             </div>
           </main>
 
-          {/* PANIER */}
+          {/* PANIER (Right Side) */}
           {currentTab === 'invoices' && (
-            <aside className="cart">
-              <div style={{padding:30, borderBottom:'1px solid var(--brd)', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                  <h2 style={{fontSize:'1.2rem', fontWeight:950}}>🛒 PANIER</h2>
-                  <button onClick={requestClearCart} title="Tout vider" style={{background:'transparent', border:'none', fontSize:'1.2rem', cursor:'pointer', opacity:0.6}}>🗑️</button>
-              </div>
-              <div style={{padding:20}}><input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center'}} /></div>
-              <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
-                {cart.length === 0 ? <div style={{textAlign:'center', marginTop: 50, opacity: 0.3}}>Vide</div> : cart.map((i, idx)=>(
-                  <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
-                    <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.9rem'}}>{i.name}</div><div style={{color:'var(--p)', fontSize:'0.8rem'}}>${i.pu}</div></div>
-                    <div style={{display:'flex', alignItems:'center', gap:10}}>
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
-                      <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
-                      <button style={{background:'var(--brd)', border:'none', color:'#fff', width:28, height:28, borderRadius:8, cursor:'pointer'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
-                    </div>
+            <div className="cart-container">
+                <aside className="cart">
+                  <div style={{padding:'25px 20px', borderBottom:'1px dashed #bbb', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                      <h2 style={{fontSize:'1.4rem', fontWeight:950, letterSpacing:'-1px'}}>TICKET CAISSE</h2>
+                      <button onClick={requestClearCart} title="Tout vider" style={{background:'transparent', border:'none', fontSize:'1.2rem', cursor:'pointer', opacity:0.6, color:'#000'}}>🗑️</button>
                   </div>
-                ))}
-              </div>
-              <div style={{padding:30, background:'#0a0a0a', borderTop:'1px solid var(--brd)'}}>
-                <div style={{display:'flex', justifyContent:'space-between', marginBottom:20}}><span style={{fontWeight:900, color:'var(--muted)'}}>TOTAL</span><b style={{fontSize:'2.5rem', color:'var(--p)', fontWeight:950}}>${total.toLocaleString()}</b></div>
-                <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>TRANSMETTRE VENTE</button>
-              </div>
-            </aside>
+                  
+                  <div style={{padding:'15px 20px'}}><input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', background:'#fff', color:'#000', border:'1px solid #ccc', borderRadius: 8, margin:0, fontWeight:800}} /></div>
+                  
+                  <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
+                    {cart.length === 0 ? <div style={{textAlign:'center', marginTop: 80, opacity: 0.4, fontWeight:600, fontSize:'1.1rem'}}>PANIER VIDE</div> : cart.map((i, idx)=>(
+                      <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px dashed #ccc', alignItems:'center'}}>
+                        <div style={{flex:1}}><div style={{fontWeight:800, fontSize:'0.85rem', lineHeight:'1.1'}}>{i.name}</div><div style={{color:'#666', fontSize:'0.75rem', fontWeight:600}}>${i.pu} un.</div></div>
+                        <div style={{display:'flex', alignItems:'center', gap:5}}>
+                          <button style={{background:'#ddd', border:'none', color:'#000', width:24, height:24, borderRadius:6, cursor:'pointer', fontWeight:'bold'}} onClick={()=>{const n=[...cart]; if(n[idx].qty>1) n[idx].qty--; else n.splice(idx,1); setCart(n);}}>-</button>
+                          <input className="qty-inp" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
+                          <button style={{background:'#ddd', border:'none', color:'#000', width:24, height:24, borderRadius:6, cursor:'pointer', fontWeight:'bold'}} onClick={()=>{const n=[...cart]; n[idx].qty++; setCart(n);}}>+</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div style={{padding:'20px 20px 35px 20px', borderTop:'2px solid #000'}}>
+                    <div style={{display:'flex', justifyContent:'space-between', marginBottom:20, alignItems:'flex-end'}}>
+                        <span style={{fontWeight:800, color:'#444', fontSize:'0.9rem'}}>TOTAL À PAYER</span>
+                        <b style={{fontSize:'2.2rem', color:'#000', fontWeight:950, lineHeight:'0.9'}}>${total.toLocaleString()}</b>
+                    </div>
+                    <button className="btn-p" style={{background:'#000', color:'#fff', boxShadow:'none', borderRadius: 12}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>IMPRIMER & ENVOYER</button>
+                    <div style={{textAlign:'center', marginTop:15, fontSize:'0.7rem', opacity:0.6, fontWeight:600}}>MERCI DE VOTRE VISITE</div>
+                  </div>
+                </aside>
+            </div>
           )}
         </>
       )}
 
       {toast && (
-        <div className="toast" style={{ background: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)'), color: '#fff' }}>
-          <div style={{ fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: 2 }}>{toast.t}</div>
-          <div style={{ fontSize: '0.95rem' }}>{toast.m}</div>
+        <div className="toast" style={{ borderColor: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)') }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 4, color: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)') }}>{toast.t}</div>
+          <div style={{ fontSize: '1rem', fontWeight: 600 }}>{toast.m}</div>
         </div>
       )}
 
@@ -704,10 +911,10 @@ export default function Home() {
       {confirmModal && (
           <div className="modal-overlay" onClick={()=>setConfirmModal(null)}>
               <div className="modal-box" onClick={e=>e.stopPropagation()}>
-                  <h3 style={{fontSize:'1.5rem', fontWeight:900, marginBottom:10}}>{confirmModal.title}</h3>
-                  <p style={{color:'var(--muted)', marginBottom:25}}>{confirmModal.msg}</p>
-                  <div style={{display:'flex', gap:10}}>
-                      <button className="btn-p" style={{background:'var(--brd)', color:'#fff'}} onClick={()=>setConfirmModal(null)}>Annuler</button>
+                  <h3 style={{fontSize:'1.8rem', fontWeight:900, marginBottom:15}}>{confirmModal.title}</h3>
+                  <p style={{color:'var(--muted)', marginBottom:35, fontSize:'1.1rem'}}>{confirmModal.msg}</p>
+                  <div style={{display:'flex', gap:15}}>
+                      <button className="btn-p" style={{background:'rgba(255,255,255,0.1)', color:'#fff', boxShadow:'none'}} onClick={()=>setConfirmModal(null)}>Annuler</button>
                       <button className="btn-p" onClick={confirmModal.action}>Confirmer</button>
                   </div>
               </div>
