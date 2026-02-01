@@ -91,6 +91,7 @@ export default function Home() {
   const [catFilter, setCatFilter] = useState('Tous');
   const [cart, setCart] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  const [dirSearch, setDirSearch] = useState('');
 
   const initialForms = {
     invoiceNum: '',
@@ -288,6 +289,10 @@ export default function Home() {
         .card { background: var(--panel); border: 1px solid var(--brd); padding: 15px; border-radius: 20px; cursor: pointer; transition: 0.4s; text-align: center; position: relative; overflow: hidden; }
         .card:hover { border-color: var(--p); transform: translateY(-5px); }
         .card.sel { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .card-qty { position: absolute; top: 10px; right: 10px; background: var(--p); color: #fff; width: 24px; height: 24px; border-radius: 50%; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid var(--panel); }
+
+        .center-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 85%; }
+        .form-ui { width: 100%; max-width: 550px; background: var(--glass); backdrop-filter: blur(20px); padding: 40px; border-radius: 32px; border: 1px solid var(--brd); box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
         
         .inp { width: 100%; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--brd); background: #0b0d11; color: #fff; font-weight: 600; margin-bottom: 12px; transition: 0.2s; }
         .inp:focus { outline: none; border-color: var(--p); }
@@ -298,9 +303,16 @@ export default function Home() {
         .cart { width: 340px; border-left: 1px solid var(--brd); background: #000; display: flex; flex-direction: column; }
         .qty-inp { width: 55px; background: #0b0d11; border: 1px solid var(--brd); color: #fff; text-align: center; border-radius: 8px; font-weight: 800; padding: 6px 0; font-size: 1rem; }
         
+        .chips-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 20px; margin-bottom: 10px; scrollbar-width: none; }
+        .chip { padding: 10px 20px; border-radius: 30px; background: var(--panel); border: 1px solid var(--brd); color: var(--muted); cursor: pointer; white-space: nowrap; font-weight: 800; font-size: 0.8rem; transition: 0.3s; }
+        .chip.active { background: var(--p); color: #fff; border-color: var(--p); }
+
         .perf-bar { height: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
         .perf-fill { height: 100%; background: var(--p); transition: width 1s; }
 
+        .salary-badge { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.2); animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        
         .toolbar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
         .tool-btn { background: #1a1a1a; border: 1px solid var(--brd); color: #fff; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: 0.2s; }
         .tool-btn:hover { border-color: var(--p); color: var(--p); background: #222; }
@@ -311,15 +323,18 @@ export default function Home() {
 
         .dropzone { border: 2px dashed var(--brd); border-radius: 15px; padding: 25px; text-align: center; transition: 0.3s; cursor: pointer; background: rgba(0,0,0,0.2); margin-bottom: 20px; }
         .dropzone.active { border-color: var(--p); background: rgba(255,152,0,0.05); }
+        .dz-preview { width: 100%; max-height: 150px; object-fit: contain; margin-top: 15px; border-radius: 8px; border: 2px solid #fff; }
 
-        /* ANNURAIRE & PROFIL */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; margin-right: 6px; box-shadow: 0 0 8px #10b981; }
-        .profile-stat-card { background: rgba(255,255,255,0.03); border: 1px solid var(--brd); border-radius: 20px; padding: 20px; text-align: center; }
-        .profile-stat-val { font-size: 1.8rem; font-weight: 900; color: #fff; display: block; }
-        .profile-stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; }
-        
-        .salary-badge { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.2); animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        /* NOUVEAUX STYLES ANNUAIRE & PROFIL */
+        .dir-card { background: var(--panel); border: 1px solid var(--brd); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
+        .dir-card:hover { border-color: var(--p); transform: translateY(-3px); }
+        .dir-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(45deg, var(--p), #ffb74d); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; color: #fff; margin-bottom: 15px; box-shadow: 0 10px 20px rgba(255,152,0,0.2); }
+        .dir-call { margin-top: 15px; padding: 10px 20px; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--txt); text-decoration: none; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .dir-call:hover { background: var(--p); color: #fff; }
+
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--brd); padding: 20px; border-radius: 20px; text-align: center; }
+        .stat-val { font-size: 1.8rem; font-weight: 950; color: #fff; margin-bottom: 5px; }
+        .stat-lbl { font-size: 0.65rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
       `}</style>
 
       {view === 'login' ? (
@@ -360,21 +375,19 @@ export default function Home() {
                 <div className="emp-name">{user}</div>
                 <div className="emp-role">{myProfile?.role || 'Agent'}</div>
               </div>
-              
               <button className="nav-l" onClick={logout} style={{color:'#ef4444', justifyContent: 'center', background:'rgba(239, 68, 68, 0.05)', marginTop: '5px'}}>🚪 DÉCONNEXION</button>
             </div>
           </aside>
 
           <main className="main">
             <div className="fade-in">
-              {/* HOME SECTION */}
               {currentTab === 'home' && (
                 <div className="fade-in">
                    <div style={{marginBottom:45}}>
-                       <h1 style={{fontSize: '2.8rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px'}}>Bonjour, {user.split(' ')[0]} 👋</h1>
+                       <h1 style={{fontSize: '2.8rem', fontWeight: 900, marginBottom: 12, letterSpacing:'-1px'}}>Ravi de vous revoir, {user.split(' ')[0]} 👋</h1>
                        <div style={{display:'flex', alignItems:'center', gap:10}}>
                            <span style={{padding:'4px 12px', background:'var(--p)', borderRadius:20, fontSize:'0.7rem', fontWeight:900, color:'#fff'}}>EN LIGNE</span>
-                           <p style={{color: 'var(--muted)', fontSize: '1.05rem'}}>Tableau de bord opérationnel Hen House.</p>
+                           <p style={{color: 'var(--muted)', fontSize: '1.05rem'}}>Performances Hen House en temps réel.</p>
                        </div>
                    </div>
                    
@@ -382,21 +395,21 @@ export default function Home() {
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #2a1b0a 100%)', border:'1px solid rgba(255,152,0,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>💰</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>C.A GLOBAL</div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>CHIFFRE D'AFFAIRES</div>
                             <div style={{fontSize: '2.4rem', fontWeight: 950, color: 'var(--p)'}}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
                          </div>
                       </div>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #0d2e21 100%)', border:'1px solid rgba(16,185,129,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>📦</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>PROD. TOTALE</div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>PRODUCTION TOTAL</div>
                             <div style={{fontSize: '2.4rem', fontWeight: 950, color: '#10b981'}}>{myProfile?.stock.toLocaleString()} <span style={{fontSize:'1rem', opacity:0.6}}>u.</span></div>
                          </div>
                       </div>
                       <div className="card" style={{display:'flex', alignItems:'center', gap:25, padding: 35, textAlign:'left', background: 'linear-gradient(135deg, #181a20 0%, #1e1b4b 100%)', border:'1px solid rgba(99,102,241,0.2)'}}>
                          <div style={{fontSize: '3.5rem'}}>💶</div>
                          <div>
-                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>ESTIMATION PAIE</div>
+                            <div style={{fontSize: '0.75rem', color:'var(--muted)', fontWeight: 800, letterSpacing: 1, marginBottom:5}}>SALAIRE ESTIMÉ</div>
                             <div style={{fontSize: '2.4rem', fontWeight: 950, color: '#6366f1'}}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
                          </div>
                       </div>
@@ -404,7 +417,7 @@ export default function Home() {
 
                    <div style={{background:'rgba(255,255,255,0.02)', padding:30, borderRadius:24, border:'1px solid var(--brd)'}}>
                         <h3 style={{marginBottom: 25, fontWeight: 900, color: '#fff', fontSize: '1.1rem', display:'flex', alignItems:'center', gap:10}}>
-                            <span style={{width:4, height:20, background:'var(--p)', borderRadius:10}}></span> ACCÈS RAPIDE
+                            <span style={{width:4, height:20, background:'var(--p)', borderRadius:10}}></span> SERVICES HEN HOUSE
                         </h3>
                         <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:15}}>
                         {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
@@ -418,112 +431,50 @@ export default function Home() {
                 </div>
               )}
 
-              {/* DIRECTORY SECTION */}
-              {currentTab === 'directory' && (
+              {currentTab === 'invoices' && (
                 <div className="fade-in">
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:30}}>
-                      <div>
-                        <h2 style={{fontSize:'2rem', fontWeight:950}}>Annuaire</h2>
-                        <p style={{color:'var(--muted)'}}>Liste des agents actifs Hen House</p>
-                      </div>
-                      <div style={{padding:'10px 20px', background:'var(--panel)', border:'1px solid var(--brd)', borderRadius:15, fontWeight:900}}>
-                        {data.employeesFull.length} AGENTS
-                      </div>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:15, marginBottom:30, alignItems:'center'}}>
+                    <div style={{position:'relative', flex:1, minWidth:250}}>
+                        <span style={{position:'absolute', left:15, top:13, opacity:0.4}}>🔍</span>
+                        <input className="inp" placeholder="Rechercher..." style={{marginBottom:0, paddingLeft:45}} onChange={e=>setSearch(e.target.value)} />
                     </div>
-                    
-                    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:20}}>
-                    {data.employeesFull.map(e => (
-                        <div key={e.id} className="card" style={{padding:0, textAlign:'left', background:'rgba(255,255,255,0.02)', display:'flex', flexDirection:'column'}}>
-                          <div style={{padding:20, display:'flex', gap:20, alignItems:'center', borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
-                            <div style={{width:60, height:60, borderRadius:18, background:'var(--panel)', border:'1px solid var(--brd)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem', fontWeight:950, color:'var(--p)', position:'relative'}}>
-                              {e.name.charAt(0)}
-                              <div style={{position:'absolute', bottom:-2, right:-2, width:15, height:15, background:'#10b981', border:'3px solid #181a20', borderRadius:'50%'}}></div>
-                            </div>
-                            <div style={{flex:1}}>
-                                <div style={{fontWeight:900, fontSize:'1.1rem', color:'#fff'}}>{e.name}</div>
-                                <div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:800, textTransform:'uppercase'}}>{e.role}</div>
-                            </div>
-                            <a href={`tel:${e.phone}`} className="tool-btn" style={{borderRadius:'50%'}}>📞</a>
-                          </div>
-                          <div style={{padding:'15px 20px', display:'flex', justifyContent:'space-between', background:'rgba(0,0,0,0.1)'}}>
-                             <div><span style={{fontSize:'0.6rem', color:var('--muted'), display:'block'}}>C.A</span><b style={{fontSize:'0.85rem'}}>${Math.round(e.ca).toLocaleString()}</b></div>
-                             <div><span style={{fontSize:'0.6rem', color:var('--muted'), display:'block'}}>UNITÉS</span><b style={{fontSize:'0.85rem'}}>{e.stock}</b></div>
-                             <div style={{textAlign:'right'}}><span style={{fontSize:'0.6rem', color:var('--muted'), display:'block'}}>EXPÉRENCE</span><b style={{fontSize:'0.85rem'}}>{e.seniority}j</b></div>
-                          </div>
-                        </div>
+                  </div>
+                  <div className="chips-container">
+                    <div className={`chip ${catFilter==='Tous'?'active':''}`} onClick={()=>setCatFilter('Tous')}>Tout le menu</div>
+                    {Object.keys(data.productsByCategory).map(c => (
+                        <div key={c} className={`chip ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>{c.replace('_', ' ')}</div>
                     ))}
-                    </div>
-                </div>
-              )}
-
-              {/* PROFILE SECTION */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="fade-in" style={{maxWidth:800, margin:'0 auto'}}>
-                  <div className="form-ui" style={{maxWidth:'100%', padding:0, overflow:'hidden'}}>
-                    {/* Cover Header */}
-                    <div style={{height:150, background:'linear-gradient(45deg, #1a1a1a, #2d333f)', position:'relative'}}>
-                       <div style={{position:'absolute', bottom:-50, left:40, width:120, height:120, borderRadius:35, background:'var(--p)', border:'6px solid #181a20', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'4rem', fontWeight:950, color:'#fff'}}>
-                        {user.charAt(0)}
-                       </div>
-                    </div>
-                    
-                    <div style={{padding:'70px 40px 40px'}}>
-                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:40}}>
-                          <div>
-                            <h1 style={{fontSize:'2.5rem', fontWeight:950, color:'#fff', marginBottom:5}}>{user}</h1>
-                            <div style={{display:'flex', alignItems:'center', gap:15}}>
-                              <span style={{fontWeight:800, color:'var(--p)', fontSize:'0.9rem'}}>{myProfile.role}</span>
-                              <span style={{color:'var(--muted)'}}>•</span>
-                              <span style={{fontSize:'0.85rem', color:'var(--muted)', fontWeight:600}}><span className="status-dot"></span>En service</span>
+                  </div>
+                  <div className="grid">
+                    {data.products.filter(p => (catFilter==='Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p=>{
+                      const cartItem = cart.find(i=>i.name===p);
+                      return (
+                        <div key={p} className={`card ${cartItem?'sel':''}`} onClick={()=>{
+                            playSound('click'); 
+                            if(cartItem) setCart(cart.map(x=>x.name===p?{...x, qty:x.qty+1}:x));
+                            else setCart([...cart, {name:p, qty:1, pu:data.prices[p]||0}]);
+                        }}>
+                            {cartItem && <div className="card-qty">{cartItem.qty}</div>}
+                            <div style={{height:120, borderRadius:15, overflow:'hidden', background:'#000', marginBottom:12, position:'relative'}}>
+                            {IMAGES[p] ? <img src={IMAGES[p]} style={{width:'100%', height:'100%', objectFit:'cover'}} /> : <div style={{height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', background:'#111', color:'var(--p)', fontWeight:900}}>{p.charAt(0)}</div>}
                             </div>
-                          </div>
-                          <div style={{textAlign:'right'}}>
-                             <div style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800, marginBottom:5}}>ANCIENNETÉ</div>
-                             <div style={{fontSize:'1.2rem', fontWeight:900, color:'#fff'}}>{myProfile.seniority} jours</div>
-                          </div>
+                            <div style={{fontWeight:800, fontSize:'0.75rem', height:35, overflow:'hidden', color:'#fff'}}>{p}</div>
+                            <div style={{color:'var(--p)', fontWeight:950, fontSize:'1.1rem', marginTop:8}}>${data.prices[p]}</div>
                         </div>
-
-                        <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:20, marginBottom:40}}>
-                           <div className="profile-stat-card">
-                              <span className="profile-stat-label">Chiffre d'Affaires</span>
-                              <span className="profile-stat-val" style={{color:'var(--p)'}}>${Math.round(myProfile.ca).toLocaleString()}</span>
-                           </div>
-                           <div className="profile-stat-card">
-                              <span className="profile-stat-label">Unités Produits</span>
-                              <span className="profile-stat-val">{myProfile.stock.toLocaleString()}</span>
-                           </div>
-                           <div className="profile-stat-card" style={{border:'1px solid #10b981', background:'rgba(16,185,129,0.05)'}}>
-                              <span className="profile-stat-label" style={{color:'#10b981'}}>Salaire Estimé</span>
-                              <span className="profile-stat-val" style={{color:'#10b981'}}>${Math.round(myProfile.salary).toLocaleString()}</span>
-                           </div>
-                        </div>
-
-                        <div style={{padding:30, background:'rgba(255,255,255,0.02)', borderRadius:24, border:'1px solid var(--brd)'}}>
-                           <h3 style={{fontSize:'1rem', fontWeight:900, marginBottom:20}}>Informations personnelles</h3>
-                           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30}}>
-                              <div>
-                                 <label style={{fontSize:'0.65rem', color:'var(--muted)', fontWeight:800, display:'block', marginBottom:5}}>CONTACT TÉLÉPHONIQUE</label>
-                                 <div style={{fontWeight:700, fontSize:'1.1rem'}}>{myProfile.phone}</div>
-                              </div>
-                              <div>
-                                 <label style={{fontSize:'0.65rem', color:'var(--muted)', fontWeight:800, display:'block', marginBottom:5}}>IDENTIFIANT AGENT</label>
-                                 <div style={{fontWeight:700, fontSize:'1.1rem'}}>#HH-{100 + (myProfile.id || 0)}</div>
-                              </div>
-                           </div>
-                        </div>
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* OTHER MODULES (Stock, Enterprise, etc.) */}
+              {/* AUTRES MODULES STANDARDS */}
               {['stock', 'enterprise', 'partners', 'expenses', 'garage', 'support'].includes(currentTab) && (
                 <div className="center-box">
                   <div className="form-ui">
                     {currentTab === 'stock' && (
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>📦 PRODUCTION</h2>
-                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Déclaration de mise en stock</p>
+                        <p style={{textAlign:'center', color:'var(--muted)', fontSize:'0.85rem', marginBottom:30}}>Mise en stock cuisine</p>
                         {forms.stock.map((item, i) => (
                           <div key={i} style={{display:'flex', gap:12, marginBottom:12}}>
                             <select className="inp" style={{flex:1, marginBottom:0}} value={item.product} onChange={e=>{
@@ -534,8 +485,8 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', margin:'10px 0 25px', padding:15}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ AJOUTER LIGNE</button>
-                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER PRODUCTION</button>
+                        <button className="nav-l" style={{border:'2px dashed var(--brd)', justifyContent:'center', margin:'10px 0 25px', padding:15}} onClick={()=>setForms({...forms, stock:[...forms.stock, {product:'', qty:1}]})}>+ LIGNE</button>
+                        <button className="btn-p" disabled={sending || forms.stock.some(s => !s.product)} onClick={()=>send('sendProduction', {items: forms.stock})}>VALIDER</button>
                       </div>
                     )}
 
@@ -553,7 +504,7 @@ export default function Home() {
                             }} />
                           </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER COMMANDE</button>
+                        <button className="btn-p" disabled={sending || !forms.enterprise.name || forms.enterprise.items.some(s => !s.product)} onClick={()=>send('sendEntreprise', {company: forms.enterprise.name, items: forms.enterprise.items})}>ENVOYER</button>
                       </div>
                     )}
 
@@ -578,26 +529,24 @@ export default function Home() {
                              }} />
                            </div>
                         ))}
-                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER PARTENAIRE</button>
+                        <button className="btn-p" disabled={sending || !forms.partner.num} onClick={()=>send('sendPartnerOrder', forms.partner)}>VALIDER</button>
                       </div>
                     )}
 
                     {currentTab === 'expenses' && (
                       <div className="fade-in">
-                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 NOTES DE FRAIS</h2>
+                        <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>💳 FRAIS</h2>
                         <select className="inp" value={forms.expense.vehicle} onChange={e=>setForms({...forms, expense:{...forms.expense, vehicle:e.target.value}})}>{data.vehicles.map(v=><option key={v} value={v}>{v}</option>)}</select>
-                        <select className="inp" value={forms.expense.kind} onChange={e=>setForms({...forms, expense:{...forms.expense, kind:e.target.value}})}><option>Essence</option><option>Réparation</option></select>
                         <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e=>setForms({...forms, expense:{...forms.expense, amount:Math.round(e.target.value)}})} />
-                        
                         <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => document.getElementById('inpFile').click()}>
                            <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
                            {forms.expense.file ? (
-                             <div><div style={{color:'var(--p)', fontWeight:900, fontSize:'0.75rem'}}>PHOTO CHARGÉE ✅</div><img src={forms.expense.file} className="dz-preview" /></div>
+                             <div><div style={{color:'var(--p)', fontWeight:900}}>✅ PHOTO CHARGÉE</div><img src={forms.expense.file} className="dz-preview" /></div>
                            ) : (
-                             <div><div style={{fontSize:'2rem'}}>📸</div><div style={{fontWeight:800}}>PHOTO DU REÇU</div><div style={{fontSize:'0.65rem', opacity:0.5}}>Cliquez ou Ctrl+V</div></div>
+                             <div><div style={{fontSize:'2rem'}}>📸</div><div style={{fontWeight:800}}>PHOTO DU REÇU</div></div>
                            )}
                         </div>
-                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>DÉPOSER NOTE DE FRAIS</button>
+                        <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={()=>send('sendExpense', forms.expense)}>ENVOYER</button>
                       </div>
                     )}
 
@@ -610,29 +559,101 @@ export default function Home() {
                             <div style={{display:'flex', justifyContent:'space-between', fontWeight:900, marginBottom:15}}><span>⛽ ESSENCE</span><span style={{color:'var(--p)'}}>{forms.garage.fuel}%</span></div>
                             <input type="range" style={{width:'100%', accentColor:'var(--p)'}} value={forms.garage.fuel} onChange={e=>setForms({...forms, garage:{...forms.garage, fuel:e.target.value}})} />
                         </div>
-                        <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER ÉTAT</button>
+                        <button className="btn-p" style={{marginTop:30}} disabled={sending} onClick={()=>send('sendGarage', forms.garage)}>ACTUALISER</button>
                       </div>
                     )}
 
                     {currentTab === 'support' && (
                       <div className="fade-in">
                         <h2 style={{marginBottom:10, textAlign:'center', fontWeight:900}}>🆘 SUPPORT</h2>
-                        <select className="inp" value={forms.support.sub} onChange={e=>setForms({...forms, support:{...forms.support, sub:e.target.value}})}>
-                          <option>Problème Stock</option><option>Erreur Facture</option><option>Demande Absence</option><option>Autre</option>
-                        </select>
-                        <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Détails du problème..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
-                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER TICKET</button>
+                        <textarea className="inp" style={{height:150, resize:'none'}} placeholder="Message..." value={forms.support.msg} onChange={e=>setForms({...forms, support:{...forms.support, msg:e.target.value}})}></textarea>
+                        <button className="btn-p" disabled={sending || !forms.support.msg} onClick={()=>send('sendSupport', forms.support)}>ENVOYER</button>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* PERFORMANCE SECTION */}
+              {/* AMÉLIORATION : PROFIL */}
+              {currentTab === 'profile' && myProfile && (
+                <div className="fade-in" style={{maxWidth:900, margin:'0 auto'}}>
+                    <div style={{background:'var(--panel)', border:'1px solid var(--brd)', borderRadius:30, padding:50, position:'relative', overflow:'hidden', marginBottom:30}}>
+                        <div style={{position:'absolute', top:0, right:0, width:300, height:300, background:'radial-gradient(circle, rgba(255,152,0,0.05) 0%, transparent 70%)', pointerEvents:'none'}}></div>
+                        
+                        <div style={{display:'flex', alignItems:'center', gap:40, marginBottom:50}}>
+                            <div className="dir-avatar" style={{width:160, height:160, fontSize:'4.5rem', marginBottom:0}}>{user.charAt(0)}</div>
+                            <div>
+                                <h1 style={{fontSize:'3.5rem', fontWeight:950, marginBottom:5}}>{user}</h1>
+                                <div style={{display:'flex', gap:10, alignItems:'center'}}>
+                                    <span style={{padding:'6px 15px', background:'rgba(255,152,0,0.1)', color:'var(--p)', borderRadius:30, fontSize:'0.8rem', fontWeight:900, textTransform:'uppercase'}}>{myProfile.role}</span>
+                                    <span style={{color:'var(--muted)', fontSize:'0.9rem', fontWeight:600}}>Agent depuis {myProfile.seniority || 0} jours</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:20}}>
+                            <div className="stat-box">
+                                <div className="stat-val">${Math.round(myProfile.ca || 0).toLocaleString()}</div>
+                                <div className="stat-lbl">Chiffre d'Affaires</div>
+                            </div>
+                            <div className="stat-box">
+                                <div className="stat-val">{myProfile.stock || 0}</div>
+                                <div className="stat-lbl">Unités Produites</div>
+                            </div>
+                            <div className="stat-box" style={{borderColor:'var(--p)', background:'rgba(255,152,0,0.05)'}}>
+                                <div className="stat-val" style={{color:'var(--p)'}}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
+                                <div className="stat-lbl">Salaire Actuel</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:30}}>
+                        <div className="card" style={{textAlign:'left', padding:30}}>
+                            <h3 style={{fontSize:'1.1rem', fontWeight:900, marginBottom:20, display:'flex', alignItems:'center', gap:10}}>📌 Informations de contact</h3>
+                            <div style={{display:'flex', flexDirection:'column', gap:15}}>
+                                <div><div style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>TÉLÉPHONE</div><div style={{fontWeight:700}}>{myProfile.phone}</div></div>
+                                <div><div style={{fontSize:'0.7rem', color:'var(--muted)', fontWeight:800}}>IDENTIFIANT</div><div style={{fontWeight:700}}>HH-{myProfile.id || 'XXXX'}</div></div>
+                            </div>
+                        </div>
+                        <div className="card" style={{textAlign:'left', padding:30}}>
+                            <h3 style={{fontSize:'1.1rem', fontWeight:900, marginBottom:20}}>🛡️ Sécurité de session</h3>
+                            <p style={{fontSize:'0.85rem', color:'var(--muted)', marginBottom:20}}>Votre session est active. Pensez à vous déconnecter en fin de service.</p>
+                            <button className="btn-p" style={{background:'rgba(239, 68, 68, 0.1)', color:'#ef4444'}} onClick={logout}>DÉCONNEXION IMMÉDIATE</button>
+                        </div>
+                    </div>
+                </div>
+              )}
+
+              {/* AMÉLIORATION : ANNUAIRE */}
+              {currentTab === 'directory' && (
+                <div className="fade-in">
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:40}}>
+                        <div>
+                            <h2 style={{fontSize:'2.5rem', fontWeight:950}}>Annuaire</h2>
+                            <p style={{color:'var(--muted)', fontWeight:600}}>{data.employeesFull.length} collaborateurs actifs chez Hen House</p>
+                        </div>
+                        <div style={{width:400}}>
+                            <input className="inp" placeholder="Rechercher un collègue..." value={dirSearch} onChange={e=>setDirSearch(e.target.value)} style={{marginBottom:0}} />
+                        </div>
+                    </div>
+
+                    <div className="grid" style={{gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))'}}>
+                    {data.employeesFull.filter(e => e.name.toLowerCase().includes(dirSearch.toLowerCase()) || e.role.toLowerCase().includes(dirSearch.toLowerCase())).map(e => (
+                        <div key={e.id} className="dir-card">
+                            <div className="dir-avatar">{e.name.charAt(0)}</div>
+                            <div style={{fontSize:'1.2rem', fontWeight:900, color:'#fff'}}>{e.name}</div>
+                            <div style={{fontSize:'0.7rem', color:'var(--p)', fontWeight:800, textTransform:'uppercase', marginTop:4}}>{e.role}</div>
+                            <a href={`tel:${e.phone}`} className="dir-call"><span>📞</span> {e.phone}</a>
+                        </div>
+                    ))}
+                    </div>
+                </div>
+              )}
+
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
                   <div className="card" style={{padding:35, textAlign:'left'}}>
-                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 TOP CHIFFRE D'AFFAIRES</h2>
+                    <h2 style={{marginBottom:30, fontWeight:950}}>🏆 TOP C.A</h2>
                     {data.employeesFull.sort((a,b)=>b.ca-a.ca).slice(0,10).map((e,i)=>(
                       <div key={i} style={{marginBottom: 20}}>
                         <div style={{display:'flex', justifyContent:'space-between', fontSize: '0.95rem', marginBottom:8}}>
@@ -660,7 +681,7 @@ export default function Home() {
             </div>
           </main>
 
-          {/* SIDE CART */}
+          {/* PANIER */}
           {currentTab === 'invoices' && (
             <aside className="cart">
               <div style={{padding:30, borderBottom:'1px solid var(--brd)'}}>
@@ -670,9 +691,7 @@ export default function Home() {
                   <input className="inp" placeholder="N° FACTURE" value={forms.invoiceNum} onChange={e=>setForms({...forms, invoiceNum:e.target.value})} style={{textAlign:'center', fontSize:'1.3rem', letterSpacing:2}} />
               </div>
               <div style={{flex:1, overflowY:'auto', padding:'0 20px'}}>
-                {cart.length === 0 ? (
-                  <div style={{textAlign:'center', padding:40, opacity:0.3}}>Panier vide</div>
-                ) : cart.map((i, idx)=>(
+                {cart.map((i, idx)=>(
                   <div key={idx} style={{display:'flex', justifyContent:'space-between', padding:'15px 0', borderBottom:'1px solid rgba(255,255,255,0.05)', alignItems:'center'}}>
                     <div style={{flex:1}}>
                         <div style={{fontWeight:800, fontSize:'0.9rem'}}>{i.name}</div>
@@ -695,7 +714,7 @@ export default function Home() {
                     <b style={{fontSize:'2.5rem', color:'var(--p)', fontWeight:950}}>${total.toLocaleString()}</b>
                 </div>
                 <button className="btn-p" style={{height:60}} disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={()=>send('sendFactures', {invoiceNumber: forms.invoiceNum, items: cart.map(x=>({desc:x.name, qty:x.qty}))})}>
-                  {sending ? "TRANSMISSION..." : "VALIDER VENTE"}
+                  {sending ? "ENVOI..." : "VALIDER VENTE"}
                 </button>
               </div>
             </aside>
