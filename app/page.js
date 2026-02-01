@@ -223,7 +223,28 @@ export default function Home() {
     } catch (e) { notify("ERREUR", "Serveur injoignable", "error"); }
     finally { setSending(false); }
   };
-
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("📋 COPIÉ", `Numéro copié : ${text}`, "success");
+    } catch (e) {
+      // Fallback si clipboard API bloquée (permissions / http)
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        notify("📋 COPIÉ", `Numéro copié : ${text}`, "success");
+      } catch {
+        notify("ERREUR", "Impossible de copier", "error");
+      }
+    }
+  };
   const requestLogout = () => {
     setConfirmModal({
         title: "DÉCONNEXION",
@@ -796,8 +817,7 @@ export default function Home() {
                     <button className="btn-p" style={{marginTop:30}} onClick={()=>send('sendGarage', forms.garage)}>Valider Mouvement</button>
                 </div></div>
               )}
-              
-              {/* DIRECTORY */}
+             {/* DIRECTORY */}
               {currentTab === 'directory' && (
                 <div className="fade-in">
                     <h2 style={{fontSize:'2.5rem', fontWeight:900, marginBottom:30}}>Annuaire</h2>
@@ -807,13 +827,21 @@ export default function Home() {
                             <div style={{width:80, height:80, borderRadius:'50%', background:'linear-gradient(45deg, #333, #000)', border:'2px solid var(--glass-b)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem', fontWeight:900, marginBottom:15}}>{e.name.charAt(0)}</div>
                             <div style={{fontWeight:800, fontSize:'1.1rem'}}>{e.name}</div>
                             <div style={{color:'var(--p)', fontSize:'0.8rem', fontWeight:700, textTransform:'uppercase', marginBottom:15}}>{e.role}</div>
-                            <a href={`tel:${e.phone}`} className="btn-p" style={{padding:'10px', fontSize:'0.9rem', width:'100%'}}>📞 {e.phone}</a>
+
+                            <button
+                              type="button"
+                              className="btn-p"
+                              style={{padding:'10px', fontSize:'0.9rem', width:'100%', background:'#222', color:'#fff'}}
+                              onClick={() => copyToClipboard(e.phone)}
+                            >
+                              📋 Copier {e.phone}
+                            </button>
+
                         </div>
                     ))}
                     </div>
                 </div>
               )}
-
               {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 <div className="fade-in" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(400px, 1fr))', gap:30}}>
@@ -958,3 +986,4 @@ export default function Home() {
     </div>
   );
 }
+
