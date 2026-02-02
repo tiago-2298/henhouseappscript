@@ -980,7 +980,7 @@ export default function Home() {
                     fontSize: '0.75rem',
                     letterSpacing: '1px'
                   }}>
-                    Gain estimé (45%)
+                    Gain estimé 
                   </span>
                   <span style={{ fontWeight: 950, color: '#10b981', fontSize: '1.2rem' }}>
                     ${gainEstime.toLocaleString()}
@@ -1027,3 +1027,4 @@ export default function Home() {
     </div>
   );
 }
+
