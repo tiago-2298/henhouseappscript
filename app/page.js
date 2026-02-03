@@ -779,109 +779,37 @@ export default function Home() {
                 </div></div>
               )}
 
-{/* PARTNERS */}
-              {currentTab === 'partners' && (
-                <div className="center-box">
-                  <div className="form-ui">
-                    <h2 style={{ marginBottom: 20, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>PARTENAIRES</h2>
-                    
-                    {/* --- LOGIQUE DE CALCUL DES QUOTAS --- */}
-                    {(() => {
-                        const selectedCompany = forms.partner.company;
-                        const selectedBenef = forms.partner.benef;
-                        const limits = data.partners.companies[selectedCompany]?.limits;
+// --- RENDU INTELLIGENT ---
+                        const Gauge = ({ label, taken, max }) => {
+                            // Si pas de max défini pour cette jauge, on n'affiche rien (cas Biogood jour)
+                            if (!max) return null;
 
-                        // 1. Cas VIP (Pas de limite)
-                        if (!limits) {
-                             return <div style={{textAlign:'center', padding:15, background:'rgba(255,215,0,0.1)', border:'1px solid gold', borderRadius:15, color:'gold', fontWeight:800, marginBottom:20}}>✨ CLIENT VIP - ILLIMITÉ</div>;
-                        }
-
-                        // 2. Calcul des consommations
-                        const logs = data.partnerLogs || [];
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        
-                        // Fonction Semaine (Lundi au Dimanche)
-                        const isSameWeek = (d1Str) => {
-                            const dateLog = new Date(d1Str);
-                            const now = new Date();
-                            
-                            // On décale "Maintenant" au Lundi précédent (ou ce jour si Lundi)
-                            // getDay(): Dim=0, Lun=1... Sam=6. On veut Lun=1... Dim=7
-                            const dayOfWeek = now.getDay() || 7; 
-                            if(dayOfWeek !== 1) now.setHours(-24 * (dayOfWeek - 1)); 
-                            
-                            // Début de semaine (Lundi 00:00)
-                            const startOfWeek = new Date(now.toISOString().split('T')[0]);
-                            
-                            // On compare
-                            return dateLog >= startOfWeek;
-                        };
-
-                        let takenDay = 0;
-                        let takenWeek = 0;
-
-                        logs.forEach(row => {
-                            // Structure Sheet: A=Date[0], B=Comp[1], C=Benef[2], D=Menu[3], E=Qty[4]
-                            if (row[1] === selectedCompany && row[2] === selectedBenef) {
-                                // ✅ CORRECTION : On lit la colonne E (index 4) pour la quantité
-                                const qty = parseInt(row[4]) || 0; 
-                                
-                                if (row[0] === todayStr) takenDay += qty;
-                                if (isSameWeek(row[0])) takenWeek += qty;
-                            }
-                        });
-
-                        // Quantité en cours de saisie
-                        const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
-                        
-                        // Limites
-                        const maxDay = limits.day; 
-                        const maxWeek = limits.week; // Null pour SASP
-
-                        // Calcul du Reste
-                        const remainingDay = maxDay ? (maxDay - takenDay) : 9999;
-                        const remainingWeek = maxWeek ? (maxWeek - takenWeek) : 9999;
-
-                        // Vérification Blocage
-                        const isBlockedDay = maxDay && (takenDay + currentQtyInForm > maxDay);
-                        const isBlockedWeek = maxWeek && (takenWeek + currentQtyInForm > maxWeek);
-                        const isOverLimit = isBlockedDay || isBlockedWeek;
-
-                        // --- COMPOSANT JAUGE ---
-                        const Gauge = ({ label, taken, max, isUnlimited }) => {
-                            let pct = 0;
+                            const pct = Math.min(100, (taken / max) * 100);
                             let color = '#10b981';
+                            if (pct >= 100) color = '#ef4444';
+                            else if (pct >= 75) color = '#f59e0b';
 
-                            if (!isUnlimited) {
-                                pct = Math.min(100, (taken / max) * 100);
-                                if (pct >= 100) color = '#ef4444';
-                                else if (pct >= 75) color = '#f59e0b';
-                            } else {
-                                color = '#FFD700'; // Or
-                                pct = 100; 
-                            }
-
-                            const reste = isUnlimited ? '∞' : Math.max(0, max - taken);
+                            const reste = Math.max(0, max - taken);
 
                             return (
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
                                     <div style={{ 
-                                        width: 80, height: 80, borderRadius: '50%', 
+                                        width: 90, height: 90, borderRadius: '50%', 
                                         background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: `0 0 15px ${color}30`, marginBottom: 10
+                                        boxShadow: `0 0 20px ${color}30`, marginBottom: 10
                                     }}>
                                         <div style={{ 
-                                            width: 68, height: 68, borderRadius: '50%', background: '#161616', 
+                                            width: 76, height: 76, borderRadius: '50%', background: '#161616', 
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column'
                                         }}>
-                                            <span style={{ fontSize: isUnlimited ? '2rem' : '1.6rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{reste}</span>
-                                            <span style={{ fontSize: '0.55rem', color: '#777', textTransform:'uppercase', marginTop:2 }}>RESTANT</span>
+                                            <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{reste}</span>
+                                            <span style={{ fontSize: '0.6rem', color: '#777', textTransform:'uppercase', marginTop:2 }}>RESTANT</span>
                                         </div>
                                     </div>
                                     <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ddd', textTransform:'uppercase' }}>{label}</div>
-                                    <div style={{ fontSize:'0.75rem', color: isUnlimited ? '#FFD700' : '#888', marginTop: 2 }}>
-                                        {isUnlimited ? "Illimité" : `Pris: ${taken} / ${max}`}
+                                    <div style={{ fontSize:'0.75rem', color: '#888', marginTop: 2 }}>
+                                        {taken} / {max}
                                     </div>
                                 </div>
                             );
@@ -889,66 +817,29 @@ export default function Home() {
 
                         return (
                             <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'20px 0', borderRadius:24, border:'1px solid var(--glass-b)' }}>
-                                <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
-                                    <Gauge label="JOURNALIER" taken={takenDay} max={maxDay} isUnlimited={!maxDay} />
-                                    <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>
-                                    <Gauge label="HEBDOMADAIRE" taken={takenWeek} max={maxWeek} isUnlimited={!maxWeek} />
+                                <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap: 20 }}>
+                                    
+                                    {/* Jauge JOUR : On l'affiche seulement si une limite jour existe (Pas pour Biogood) */}
+                                    {maxDay && <Gauge label="JOURNALIER" taken={takenDay} max={maxDay} />}
+                                    
+                                    {/* Séparateur si on a les deux jauges */}
+                                    {maxDay && maxWeek && <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)' }}></div>}
+
+                                    {/* Jauge SEMAINE : On l'affiche seulement si limite hebdo existe */}
+                                    {maxWeek && <Gauge label="HEBDOMADAIRE" taken={takenWeek} max={maxWeek} />}
+
                                 </div>
                                 
                                 {isOverLimit && (
                                     <div style={{ marginTop: 15, marginInline: 20, background:'rgba(239, 68, 68, 0.15)', border:'1px solid var(--error)', padding:'10px', borderRadius:12, color: '#ffaaaa', fontWeight: 700, textAlign:'center', fontSize:'0.85rem', display:'flex', alignItems:'center', justifyContent:'center', gap:8, animation:'pulse 1.5s infinite' }}>
                                         <span>⛔</span> 
-                                        <span>Quota {isBlockedDay ? "Journalier" : "Hebdo"} Atteint !</span>
+                                        <span>Quota Atteint !</span>
                                     </div>
                                 )}
                                 
                                 <div id="limit-flag" data-blocked={isOverLimit ? "true" : "false"} style={{display:'none'}}></div>
                             </div>
                         );
-                    })()}
-
-                    <input className="inp" placeholder="N° Facture (Requis)" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
-                    
-                    <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                      <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
-                      <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                    </div>
-
-                    <div style={{ maxHeight: 250, overflowY:'auto', paddingRight:5, marginBottom: 10 }}>
-                        {forms.partner.items.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                            <select className="inp" style={{ flex: 1, marginBottom: 0, fontSize:'0.85rem' }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
-                            <input type="number" className="inp" style={{ width: 70, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
-                            {forms.partner.items.length > 1 && (
-                              <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-
-                    <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer', padding: 10, fontSize:'0.85rem' }} onClick={() => {
-                      const currentMenus = data.partners.companies[forms.partner.company]?.menus;
-                      const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
-                      setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                    }}>+ Ajouter un menu</button>
-                    
-                    <button 
-                        className="btn-p" 
-                        style={{ marginTop: 20 }} 
-                        disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
-                        onClick={() => {
-                            if(document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true') {
-                                notify("QUOTA ATTEINT", "Limite dépassée pour ce client.", "error");
-                                return;
-                            }
-                            send('sendPartnerOrder', forms.partner);
-                        }}
-                    >
-                        VALIDER (1$ / MENU)
-                    </button>
-                  </div>
-                </div>
-              )}
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
@@ -1170,6 +1061,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
