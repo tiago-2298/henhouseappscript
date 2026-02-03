@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.02.04-SHEET-FIX-V2';
+const APP_VERSION = '2026.02.04-BIOGOOD-DYNAMIC';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -79,7 +79,8 @@ const PRICE_LIST = {
 const PARTNERS = {
   companies: {
     'Biogood': {
-      limits: { day: 5, week: 35 }, 
+      // ✅ 5/j, 35/sem + Flag "dynamicRule" pour la logique Lundi/Mardi vs Reste
+      limits: { day: 5, week: 35, dynamicRule: true }, 
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
@@ -96,8 +97,8 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
     'SASP Nord': {
-      // 5 par jour, NULL pour illimité par semaine
-      limits: null, 
+      // ✅ 5/j, NULL pour illimité/semaine
+      limits: { day: 5, week: null }, 
       beneficiaries: [ 'Agent SASP NORD' ],
       menus: [
         { name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 },
@@ -124,106 +125,55 @@ function cleanEnv(v) {
 
 async function getAuthSheets() {
   console.log("DEBUG: 1. Entrée dans getAuthSheets (NO-BASE64)");
-
   const privateKeyInput = cleanEnv(process.env.GOOGLE_PRIVATE_KEY);
   const clientEmail = cleanEnv(process.env.GOOGLE_CLIENT_EMAIL);
   const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
 
-  if (!privateKeyInput || !clientEmail || !sheetId) {
-    throw new Error("Variables d'environnement manquantes: GOOGLE_PRIVATE_KEY / GOOGLE_CLIENT_EMAIL / GOOGLE_SHEET_ID");
-  }
+  if (!privateKeyInput || !clientEmail || !sheetId) throw new Error("Missing Env");
 
   const privateKey = privateKeyInput.replace(/\\n/g, '\n');
+  const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
 
-  console.log("DEBUG: KEY BEGIN =", privateKey.includes("BEGIN PRIVATE KEY"));
-  console.log("DEBUG: EMAIL =", clientEmail);
-
-  const auth = new google.auth.JWT(
-    clientEmail,
-    null,
-    privateKey,
-    ['https://www.googleapis.com/auth/spreadsheets']
-  );
-
-  const sheets = google.sheets({ version: 'v4', auth });
-  console.log("DEBUG: 3. Authentification configurée.");
-  return sheets;
+  return google.sheets({ version: 'v4', auth });
 }
 
 async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   if (!url) return;
-
   try {
     if (fileBase64) {
       const formData = new FormData();
-
       const base64Data = String(fileBase64).split(',')[1] || '';
       const buffer = Buffer.from(base64Data, 'base64');
       const blob = new Blob([buffer], { type: 'image/jpeg' });
-
       formData.append('file', blob, 'preuve.jpg');
       formData.append('payload_json', JSON.stringify(payload));
-
       await fetch(url, { method: 'POST', body: formData });
     } else {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     }
-  } catch (e) {
-    console.error("Webhook error:", e?.message || e);
-  }
+  } catch (e) { console.error("Webhook error:", e); }
 }
 
 async function updateEmployeeStats(employeeName, amount, type) {
   try {
-    console.log(`DEBUG: Update stats pour ${employeeName}`);
-    if (!employeeName || !amount || Number(amount) <= 0) return;
-
     const sheets = await getAuthSheets();
     const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
-
-    const resList = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: "'Employés'!B2:B200"
-    });
-
+    const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = resList.data.values || [];
-    const rowIndex = rows.findIndex(r =>
-      r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase()
-    );
-
+    const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
     if (rowIndex === -1) return;
-
     const realRow = rowIndex + 2;
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
-
-    const currentValRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: sheetId,
-      range: targetRange,
-      valueRenderOption: 'UNFORMATTED_VALUE'
-    });
-
+    const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' });
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: targetRange,
-      valueInputOption: 'RAW',
-      requestBody: { values: [[currentVal + Number(amount)]] }
-    });
-  } catch (e) {
-    console.error("DEBUG: Erreur updateEmployeeStats:", e?.message || e);
-  }
+    await sheets.spreadsheets.values.update({ spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW', requestBody: { values: [[currentVal + Number(amount)]] } });
+  } catch (e) { console.error("Stats error", e); }
 }
 
 // ================= API =================
 export async function POST(request) {
-  console.log("DEBUG: --- NOUVELLE REQUÊTE POST ---");
-
+  console.log("DEBUG: --- REQUÊTE ---");
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
@@ -233,9 +183,6 @@ export async function POST(request) {
       const sheets = await getAuthSheets();
       const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
 
-      console.log("DEBUG: 5. Tentative de lecture onglet 'Employés'...");
-
-      // 1. Récupération Employés
       const resFull = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
         range: "'Employés'!A2:I200",
@@ -254,18 +201,15 @@ export async function POST(request) {
         seniority: Number(r[5] ?? 0)
       }));
 
-      // 2. Récupération Logs Partenaires (Pour les jauges)
+      // ✅ LECTURE LOGS (COLONNE A à E)
       let partnerLogs = [];
       try {
-        // ✅ CORRECTION ICI : On lit jusqu'à la colonne E (A:E)
         const resLogs = await sheets.spreadsheets.values.get({
           spreadsheetId: sheetId,
-          range: "'Partenaires_Logs'!A2:E2000", // A=Date, B=Company, C=Benef, D=Menu, E=Qty
+          range: "'Partenaires_Logs'!A2:E2000", 
         });
         partnerLogs = resLogs.data.values || [];
-      } catch (e) {
-        console.warn("DEBUG: Feuille 'Partenaires_Logs' introuvable ou vide.");
-      }
+      } catch (e) { console.warn("Logs partner empty/error"); }
 
       return NextResponse.json({
         success: true,
@@ -276,7 +220,7 @@ export async function POST(request) {
         productsByCategory: PRODUCTS_CAT,
         prices: PRICE_LIST,
         partners: PARTNERS,
-        partnerLogs: partnerLogs, // ✅ Envoi des logs au front
+        partnerLogs: partnerLogs, 
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
@@ -288,83 +232,48 @@ export async function POST(request) {
     };
 
     switch (action) {
-      case 'sendFactures': {
-        const totalFact = data.items?.reduce(
-          (a, i) => a + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)),
-          0
-        );
-
+      case 'sendFactures':
+        const totalFact = data.items?.reduce((a, i) => a + (Number(i.qty) * (PRICE_LIST[i.desc] || 0)), 0);
         embed.title = `📑 Vente de ${data.employee}`;
         embed.fields = [
           { name: '🧾 Facture n°', value: `\`${data.invoiceNumber}\``, inline: true },
           { name: '💰 Total', value: `**${totalFact}${CURRENCY.symbol}**`, inline: true },
           { name: '📋 Articles', value: data.items?.map(i => `🔸 x${i.qty} ${i.desc}`).join('\n') || '—' }
         ];
-
         await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalFact, 'CA');
         break;
-      }
 
-      case 'sendProduction': {
+      case 'sendProduction':
         const tProd = data.items?.reduce((s, i) => s + Number(i.qty), 0);
-
         embed.title = `📦 Production de ${data.employee}`;
-        embed.fields = [
-          { name: '📊 Total', value: `**${tProd}** unités`, inline: true },
-          { name: '🍳 Liste', value: data.items?.map(i => `🍳 x${i.qty} ${i.product}`).join('\n') || '—' }
-        ];
-
+        embed.fields = [{ name: '📊 Total', value: `**${tProd}** unités`, inline: true }, { name: '🍳 Liste', value: data.items?.map(i => `🍳 x${i.qty} ${i.product}`).join('\n') }];
         await sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] });
         await updateEmployeeStats(data.employee, tProd, 'STOCK');
         break;
-      }
 
-      case 'sendEntreprise': {
+      case 'sendEntreprise':
         embed.title = `🚚 Livraison Pro de ${data.employee}`;
-        embed.fields = [
-          { name: '🏢 Client', value: `**${data.company}**`, inline: true },
-          { name: '📋 Détails', value: data.items?.map(i => `🏢 x${i.qty} ${i.product}`).join('\n') || '—' }
-        ];
-
-        // ✅ un seul webhook entreprise
+        embed.fields = [{ name: '🏢 Client', value: `**${data.company}**`, inline: true }, { name: '📋 Détails', value: data.items?.map(i => `🏢 x${i.qty} ${i.product}`).join('\n') }];
         await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
         break;
-      }
 
-      case 'sendExpense': {
+      case 'sendExpense':
         embed.title = `💳 Frais déclaré par ${data.employee}`;
-        embed.fields = [
-          { name: '🛠️ Type', value: data.kind || '—', inline: true },
-          { name: '🚗 Véhicule', value: data.vehicle || 'N/A', inline: true },
-          { name: '💵 Montant', value: `**${data.amount}${CURRENCY.symbol}**` }
-        ];
-
+        embed.fields = [{ name: '🛠️ Type', value: data.kind, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '💵 Montant', value: `**${data.amount}$**` }];
         if (data.file) embed.image = { url: 'attachment://preuve.jpg' };
-        await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file || null);
+        await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file);
         break;
-      }
 
-      case 'sendGarage': {
-        embed.title = data.action === 'Sortie'
-          ? `🔑 Sortie par ${data.employee}`
-          : `🅿️ Entrée par ${data.employee}`;
-
+      case 'sendGarage':
+        embed.title = data.action === 'Sortie' ? `🔑 Sortie par ${data.employee}` : `🅿️ Entrée par ${data.employee}`;
         embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
-        embed.fields = [
-          { name: '🚗 Véhicule', value: `**${data.vehicle}**`, inline: true },
-          { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
-        ];
-
+        embed.fields = [{ name: '🚗 Véhicule', value: `**${data.vehicle}**`, inline: true }, { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }];
         await sendDiscordWebhook(WEBHOOKS.garage, { embeds: [embed] });
         break;
-      }
 
-      case 'sendPartnerOrder': {
-        // Calcul du total d'articles
+      case 'sendPartnerOrder':
         const totalQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
-        
-        // Création du string détail pour la colonne D
         const menuDetail = data.items?.map(i => `${i.qty}x ${i.menu}`).join(', ');
 
         embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
@@ -372,51 +281,36 @@ export async function POST(request) {
           { name: '🏢 Entreprise', value: data.company || '—', inline: true },
           { name: '🔑 Client', value: data.benef || '—', inline: true },
           { name: '🧾 Facture', value: `\`${data.num}\`` },
-          { name: '💰 Tarif', value: `**1$** / Menu (Dans la limite des stocks)`, inline: false },
+          { name: '💰 Tarif', value: `**1$** / Menu`, inline: false },
           { name: '🍱 Détail', value: data.items?.map(i => `🍱 x${i.qty} ${i.menu}`).join('\n') || '—' }
         ];
 
         const pW = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
         await sendDiscordWebhook(pW, { embeds: [embed] });
 
-        // ✅ CORRECTION ÉCRITURE GOOGLE SHEETS
+        // ✅ ECRITURE LOGS (A:E)
         try {
             const sheets = await getAuthSheets();
             const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
             const todayISO = new Date().toISOString().split('T')[0];
-            
-            // On écrit : Date, Entreprise, Bénéficiaire, Détail Menu (D), Quantité (E)
             await sheets.spreadsheets.values.append({
                 spreadsheetId: sheetId,
                 range: "'Partenaires_Logs'!A:E",
                 valueInputOption: 'USER_ENTERED',
-                requestBody: {
-                    values: [[ todayISO, data.company, data.benef, menuDetail, totalQty ]]
-                }
+                requestBody: { values: [[ todayISO, data.company, data.benef, menuDetail, totalQty ]] }
             });
-        } catch(e) {
-            console.error("ERREUR Log Partenaire:", e);
-        }
-
+        } catch(e) { console.error("Log error", e); }
         break;
-      }
 
-      case 'sendSupport': {
+      case 'sendSupport':
         embed.title = `🆘 Ticket de ${data.employee}`;
-        embed.fields = [{ name: '📌 Sujet', value: data.sub || '—' }];
-        embed.description = `**Message :**\n${data.msg || '—'}`;
+        embed.fields = [{ name: '📌 Sujet', value: data.sub }];
+        embed.description = `**Message :**\n${data.msg}`;
         await sendDiscordWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
-      }
 
-      default:
-        return NextResponse.json({ success: false, error: 'Action inconnue' }, { status: 400 });
+      default: return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
     }
-
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("DEBUG: ERREUR GLOBALE ->", err?.message || err);
-    return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
-  }
+  } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
-
