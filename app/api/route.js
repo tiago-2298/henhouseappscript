@@ -1,13 +1,3 @@
-Voici le fichier `route.js` complet avec les modifications intégrées.
-
-**Ce qui a changé :**
-
-1. **Configuration** : Ajout des objets `limits: { day: X, week: Y }` dans la constante `PARTNERS`.
-2. **Lecture (getMeta)** : Le système lit désormais une feuille Google Sheet nommée `'Partenaires_Logs'` pour récupérer l'historique et l'envoyer au frontend (pour le calcul des jauges).
-3. **Écriture (sendPartnerOrder)** : Lors de la validation d'une commande partenaire, elle est sauvegardée dans `'Partenaires_Logs'` (Date, Entreprise, Bénéficiaire, Quantité totale) pour déduire les quotas futurs.
-4. **Webhook** : Le message Discord indique désormais le tarif spécial (1$/Menu).
-
-```javascript
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -430,3 +420,4 @@ export async function POST(request) {
 }
 
 ```
+
