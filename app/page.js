@@ -779,7 +779,7 @@ export default function Home() {
                 </div></div>
               )}
 
-              {/* PARTNERS */}
+             {/* PARTNERS */}
               {currentTab === 'partners' && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -919,6 +919,50 @@ export default function Home() {
                             </div>
                         );
                     })()}
+
+                    {/* --- RESTE DU FORMULAIRE --- */}
+                    <input className="inp" placeholder="N° Facture (Requis)" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
+                    
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                      <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
+                      <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
+                    </div>
+
+                    <div style={{ maxHeight: 250, overflowY:'auto', paddingRight:5, marginBottom: 10 }}>
+                        {forms.partner.items.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+                            <select className="inp" style={{ flex: 1, marginBottom: 0, fontSize:'0.85rem' }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
+                            <input type="number" className="inp" style={{ width: 70, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
+                            {forms.partner.items.length > 1 && (
+                              <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+
+                    <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer', padding: 10, fontSize:'0.85rem' }} onClick={() => {
+                      const currentMenus = data.partners.companies[forms.partner.company]?.menus;
+                      const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
+                      setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
+                    }}>+ Ajouter un menu</button>
+                    
+                    <button 
+                        className="btn-p" 
+                        style={{ marginTop: 20 }} 
+                        disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
+                        onClick={() => {
+                            if(document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true') {
+                                notify("QUOTA ATTEINT", "Limite dépassée pour ce client.", "error");
+                                return;
+                            }
+                            send('sendPartnerOrder', forms.partner);
+                        }}
+                    >
+                        VALIDER (1$ / MENU)
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* GARAGE */}
               {currentTab === 'garage' && (
@@ -1141,3 +1185,4 @@ export default function Home() {
     </div>
   );
 }
+
