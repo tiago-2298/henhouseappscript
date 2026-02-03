@@ -79,7 +79,8 @@ const PRICE_LIST = {
 const PARTNERS = {
   companies: {
     'Biogood': {
-      limits: { day: 5, week: 35 }, // 5 par jour, 35 par semaine
+      // 5 par jour, 35 par semaine
+      limits: { day: 5, week: 35 }, 
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
@@ -96,7 +97,8 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
     'SASP Nord': {
-      limits: null, // Illimité
+      // 5 par jour, NULL pour illimité par semaine
+      limits: { day: 5, week: null }, 
       beneficiaries: [ 'Agent SASP NORD' ],
       menus: [
         { name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 },
@@ -105,7 +107,7 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
     },
     'Esthétique Paleto': {
-      limits: { day: 2, week: 10 }, // Exemple
+      limits: { day: 2, week: 10 },
       beneficiaries: [ 'Patronne','Manager','Expérimenté','Stagiaire'],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
@@ -121,7 +123,6 @@ function cleanEnv(v) {
   return (v || '').trim().replace(/^['"]|['"]$/g, '');
 }
 
-// ✅ NO BASE64 + nettoyage env + \n -> newlines
 async function getAuthSheets() {
   console.log("DEBUG: 1. Entrée dans getAuthSheets (NO-BASE64)");
 
@@ -135,7 +136,6 @@ async function getAuthSheets() {
 
   const privateKey = privateKeyInput.replace(/\\n/g, '\n');
 
-  // Debug safe (sans afficher la clé complète)
   console.log("DEBUG: KEY BEGIN =", privateKey.includes("BEGIN PRIVATE KEY"));
   console.log("DEBUG: EMAIL =", clientEmail);
 
@@ -151,7 +151,6 @@ async function getAuthSheets() {
   return sheets;
 }
 
-// ✅ FIX NODE: atob casse sur Vercel, Buffer marche partout
 async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   if (!url) return;
 
@@ -265,7 +264,7 @@ export async function POST(request) {
         });
         partnerLogs = resLogs.data.values || [];
       } catch (e) {
-        console.warn("DEBUG: Feuille 'Partenaires_Logs' introuvable ou vide. Création nécessaire si première utilisation.");
+        console.warn("DEBUG: Feuille 'Partenaires_Logs' introuvable ou vide.");
       }
 
       return NextResponse.json({
@@ -378,7 +377,6 @@ export async function POST(request) {
         await sendDiscordWebhook(pW, { embeds: [embed] });
 
         // ✅ SAUVEGARDE DANS GOOGLE SHEETS "Partenaires_Logs"
-        // Ceci permet de garder une trace pour le calcul des quotas
         try {
             const sheets = await getAuthSheets();
             const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
@@ -418,6 +416,3 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
   }
 }
-
-```
-
