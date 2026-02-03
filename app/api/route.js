@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.02.04-PARTNER-LIMITS';
+const APP_VERSION = '2026.02.04-SHEET-FIX-V2';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -75,11 +75,10 @@ const PRICE_LIST = {
   'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
-// ✅ CONFIGURATION DES LIMITES PARTENAIRES ICI
+// ✅ CONFIGURATION DES LIMITES PARTENAIRES
 const PARTNERS = {
   companies: {
     'Biogood': {
-      // 5 par jour, 35 par semaine
       limits: { day: 5, week: 35 }, 
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
@@ -255,12 +254,13 @@ export async function POST(request) {
         seniority: Number(r[5] ?? 0)
       }));
 
-      // 2. Récupération Historique Partenaires (Pour les jauges)
+      // 2. Récupération Logs Partenaires (Pour les jauges)
       let partnerLogs = [];
       try {
+        // ✅ CORRECTION ICI : On lit jusqu'à la colonne E (A:E)
         const resLogs = await sheets.spreadsheets.values.get({
           spreadsheetId: sheetId,
-          range: "'Partenaires_Logs'!A2:D2000", // A=Date, B=Company, C=Benef, D=Qty
+          range: "'Partenaires_Logs'!A2:E2000", // A=Date, B=Company, C=Benef, D=Menu, E=Qty
         });
         partnerLogs = resLogs.data.values || [];
       } catch (e) {
@@ -361,8 +361,11 @@ export async function POST(request) {
       }
 
       case 'sendPartnerOrder': {
-        // Calcul du total d'articles pour l'enregistrement
+        // Calcul du total d'articles
         const totalQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
+        
+        // Création du string détail pour la colonne D
+        const menuDetail = data.items?.map(i => `${i.qty}x ${i.menu}`).join(', ');
 
         embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
         embed.fields = [
@@ -376,23 +379,23 @@ export async function POST(request) {
         const pW = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
         await sendDiscordWebhook(pW, { embeds: [embed] });
 
-        // ✅ SAUVEGARDE DANS GOOGLE SHEETS "Partenaires_Logs"
+        // ✅ CORRECTION ÉCRITURE GOOGLE SHEETS
         try {
             const sheets = await getAuthSheets();
             const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
-            const todayISO = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+            const todayISO = new Date().toISOString().split('T')[0];
             
-            // On ajoute une ligne: [Date, Entreprise, Bénéficiaire, Quantité]
+            // On écrit : Date, Entreprise, Bénéficiaire, Détail Menu (D), Quantité (E)
             await sheets.spreadsheets.values.append({
                 spreadsheetId: sheetId,
-                range: "'Partenaires_Logs'!A:D",
+                range: "'Partenaires_Logs'!A:E",
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
-                    values: [[ todayISO, data.company, data.benef, totalQty ]]
+                    values: [[ todayISO, data.company, data.benef, menuDetail, totalQty ]]
                 }
             });
         } catch(e) {
-            console.error("ERREUR lors de la sauvegarde du log partenaire:", e);
+            console.error("ERREUR Log Partenaire:", e);
         }
 
         break;
