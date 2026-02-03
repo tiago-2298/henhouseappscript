@@ -785,38 +785,47 @@ export default function Home() {
                   <div className="form-ui">
                     <h2 style={{ marginBottom: 20, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>PARTENAIRES</h2>
                     
-                    {/* --- LOGIQUE DE CALCUL --- */}
+                    {/* --- LOGIQUE DE CALCUL DES QUOTAS --- */}
                     {(() => {
                         const selectedCompany = forms.partner.company;
                         const selectedBenef = forms.partner.benef;
                         const limits = data.partners.companies[selectedCompany]?.limits;
 
-                        // 1. Cas VIP (Aucune limite configurée du tout)
+                        // 1. Cas VIP (Pas de limite)
                         if (!limits) {
                              return <div style={{textAlign:'center', padding:15, background:'rgba(255,215,0,0.1)', border:'1px solid gold', borderRadius:15, color:'gold', fontWeight:800, marginBottom:20}}>✨ CLIENT VIP - ILLIMITÉ</div>;
                         }
 
-                        // 2. Calcul des consommations via les logs
+                        // 2. Calcul des consommations
                         const logs = data.partnerLogs || [];
                         const todayStr = new Date().toISOString().split('T')[0];
                         
-                        // Fonction pour vérifier la semaine (Lundi au Dimanche)
+                        // Fonction Semaine (Lundi au Dimanche)
                         const isSameWeek = (d1Str) => {
-                            const d1 = new Date(d1Str);
+                            const dateLog = new Date(d1Str);
                             const now = new Date();
-                            const day = now.getDay() || 7; // Dimanche=7
-                            if(day !== 1) now.setHours(-24 * (day - 1)); 
+                            
+                            // On décale "Maintenant" au Lundi précédent (ou ce jour si Lundi)
+                            // getDay(): Dim=0, Lun=1... Sam=6. On veut Lun=1... Dim=7
+                            const dayOfWeek = now.getDay() || 7; 
+                            if(dayOfWeek !== 1) now.setHours(-24 * (dayOfWeek - 1)); 
+                            
+                            // Début de semaine (Lundi 00:00)
                             const startOfWeek = new Date(now.toISOString().split('T')[0]);
-                            return new Date(d1Str) >= startOfWeek;
+                            
+                            // On compare
+                            return dateLog >= startOfWeek;
                         };
 
                         let takenDay = 0;
                         let takenWeek = 0;
 
                         logs.forEach(row => {
-                            // row[1]=Company, row[2]=Benef, row[0]=Date, row[3]=Qty
+                            // Structure Sheet: A=Date[0], B=Comp[1], C=Benef[2], D=Menu[3], E=Qty[4]
                             if (row[1] === selectedCompany && row[2] === selectedBenef) {
-                                const qty = parseInt(row[3]) || 0;
+                                // ✅ CORRECTION : On lit la colonne E (index 4) pour la quantité
+                                const qty = parseInt(row[4]) || 0; 
+                                
                                 if (row[0] === todayStr) takenDay += qty;
                                 if (isSameWeek(row[0])) takenWeek += qty;
                             }
@@ -825,66 +834,52 @@ export default function Home() {
                         // Quantité en cours de saisie
                         const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
                         
-                        // Configuration des limites (Si null = Illimité)
+                        // Limites
                         const maxDay = limits.day; 
-                        const maxWeek = limits.week; // Sera null pour SASP
+                        const maxWeek = limits.week; // Null pour SASP
 
                         // Calcul du Reste
                         const remainingDay = maxDay ? (maxDay - takenDay) : 9999;
                         const remainingWeek = maxWeek ? (maxWeek - takenWeek) : 9999;
 
-                        // Vérification Blocage (Est-ce qu'on dépasse ?)
+                        // Vérification Blocage
                         const isBlockedDay = maxDay && (takenDay + currentQtyInForm > maxDay);
                         const isBlockedWeek = maxWeek && (takenWeek + currentQtyInForm > maxWeek);
                         const isOverLimit = isBlockedDay || isBlockedWeek;
 
-                        // --- COMPOSANT JAUGE CIRCULAIRE ---
+                        // --- COMPOSANT JAUGE ---
                         const Gauge = ({ label, taken, max, isUnlimited }) => {
-                            // Calcul pourcentage pour le cercle
                             let pct = 0;
-                            let color = '#10b981'; // Vert par défaut
+                            let color = '#10b981';
 
                             if (!isUnlimited) {
                                 pct = Math.min(100, (taken / max) * 100);
-                                if (pct >= 100) color = '#ef4444'; // Rouge
-                                else if (pct >= 75) color = '#f59e0b'; // Orange
+                                if (pct >= 100) color = '#ef4444';
+                                else if (pct >= 75) color = '#f59e0b';
                             } else {
-                                color = '#FFD700'; // Or pour illimité
+                                color = '#FFD700'; // Or
                                 pct = 100; 
                             }
 
-                            // Reste à afficher
                             const reste = isUnlimited ? '∞' : Math.max(0, max - taken);
 
                             return (
-                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1, position:'relative' }}>
-                                    {/* Le Cercle */}
+                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
                                     <div style={{ 
                                         width: 80, height: 80, borderRadius: '50%', 
-                                        // Astuce CSS pour faire un anneau de progression
                                         background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: `0 0 15px ${color}30`,
-                                        marginBottom: 10
+                                        boxShadow: `0 0 15px ${color}30`, marginBottom: 10
                                     }}>
-                                        {/* Le Trou du donut (Fond noir) */}
                                         <div style={{ 
                                             width: 68, height: 68, borderRadius: '50%', background: '#161616', 
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column'
                                         }}>
-                                            <span style={{ fontSize: isUnlimited ? '2rem' : '1.6rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-                                                {reste}
-                                            </span>
+                                            <span style={{ fontSize: isUnlimited ? '2rem' : '1.6rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{reste}</span>
                                             <span style={{ fontSize: '0.55rem', color: '#777', textTransform:'uppercase', marginTop:2 }}>RESTANT</span>
                                         </div>
                                     </div>
-
-                                    {/* Labels sous le cercle */}
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ddd', textTransform:'uppercase', letterSpacing:'0.5px' }}>
-                                        {label}
-                                    </div>
-                                    
-                                    {/* Détail Pris / Max */}
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ddd', textTransform:'uppercase' }}>{label}</div>
                                     <div style={{ fontSize:'0.75rem', color: isUnlimited ? '#FFD700' : '#888', marginTop: 2 }}>
                                         {isUnlimited ? "Illimité" : `Pris: ${taken} / ${max}`}
                                     </div>
@@ -895,17 +890,11 @@ export default function Home() {
                         return (
                             <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'20px 0', borderRadius:24, border:'1px solid var(--glass-b)' }}>
                                 <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
-                                    {/* Jauge JOUR (Toujours là si maxDay existe) */}
                                     <Gauge label="JOURNALIER" taken={takenDay} max={maxDay} isUnlimited={!maxDay} />
-                                    
-                                    {/* Séparateur vertical */}
                                     <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>
-
-                                    {/* Jauge SEMAINE (Spécifique Biogood ou Illimité SASP) */}
                                     <Gauge label="HEBDOMADAIRE" taken={takenWeek} max={maxWeek} isUnlimited={!maxWeek} />
                                 </div>
                                 
-                                {/* Message d'erreur si bloqué */}
                                 {isOverLimit && (
                                     <div style={{ marginTop: 15, marginInline: 20, background:'rgba(239, 68, 68, 0.15)', border:'1px solid var(--error)', padding:'10px', borderRadius:12, color: '#ffaaaa', fontWeight: 700, textAlign:'center', fontSize:'0.85rem', display:'flex', alignItems:'center', justifyContent:'center', gap:8, animation:'pulse 1.5s infinite' }}>
                                         <span>⛔</span> 
@@ -913,13 +902,11 @@ export default function Home() {
                                     </div>
                                 )}
                                 
-                                {/* Balise cachée pour bloquer le bouton Valider */}
                                 <div id="limit-flag" data-blocked={isOverLimit ? "true" : "false"} style={{display:'none'}}></div>
                             </div>
                         );
                     })()}
 
-                    {/* --- RESTE DU FORMULAIRE --- */}
                     <input className="inp" placeholder="N° Facture (Requis)" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
                     
                     <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
@@ -948,7 +935,6 @@ export default function Home() {
                     <button 
                         className="btn-p" 
                         style={{ marginTop: 20 }} 
-                        // Bloque le bouton si flag true ou pas de facture
                         disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
                         onClick={() => {
                             if(document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true') {
@@ -1184,6 +1170,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
