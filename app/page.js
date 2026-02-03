@@ -779,46 +779,41 @@ export default function Home() {
                 </div></div>
               )}
 
-              {/* PARTNERS */}
+             {/* PARTNERS */}
               {currentTab === 'partners' && (
                 <div className="center-box">
                   <div className="form-ui">
                     <h2 style={{ marginBottom: 20, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>PARTENAIRES</h2>
                     
-                    {/* --- LOGIQUE INTELLIGENTE (Biogood & Co) --- */}
+                    {/* --- LOGIQUE DE CALCUL (AVEC GESTION BIOGOOD LUN/MAR) --- */}
                     {(() => {
                         const selectedCompany = forms.partner.company;
                         const selectedBenef = forms.partner.benef;
-                        // On récupère les limites de base depuis la config
-                        const baseLimits = data.partners.companies[selectedCompany]?.limits;
+                        const limits = data.partners.companies[selectedCompany]?.limits;
 
-                        // 1. Cas VIP (SASP ou autres sans limites du tout)
-                        if (!baseLimits) {
+                        if (!limits) {
                              return <div style={{textAlign:'center', padding:15, background:'rgba(255,215,0,0.1)', border:'1px solid gold', borderRadius:15, color:'gold', fontWeight:800, marginBottom:20}}>✨ CLIENT VIP - ILLIMITÉ</div>;
                         }
 
-                        // --- DÉTECTION DATE & SEMAINE ---
+                        const logs = data.partnerLogs || [];
+                        const todayStr = new Date().toISOString().split('T')[0];
                         const now = new Date();
-                        const todayStr = now.toISOString().split('T')[0];
-                        const dayIndex = now.getDay(); // 0=Dim, 1=Lun, 2=Mar, 3=Mer...
+                        const currentDayIndex = now.getDay(); // 0=Dim, 1=Lun, 2=Mar, 3=Mer...
                         
-                        // Fonction pour vérifier si une date est dans la semaine actuelle (Lundi -> Dimanche)
                         const isSameWeek = (d1Str) => {
-                            const d1 = new Date(d1Str);
-                            const current = new Date();
-                            const d = current.getDay() || 7; 
-                            if(d !== 1) current.setHours(-24 * (d - 1)); 
-                            const startOfWeek = new Date(current.toISOString().split('T')[0]);
-                            return new Date(d1Str) >= startOfWeek;
+                            const dateLog = new Date(d1Str);
+                            const tempNow = new Date();
+                            const dayOfWeek = tempNow.getDay() || 7; 
+                            if(dayOfWeek !== 1) tempNow.setHours(-24 * (dayOfWeek - 1)); 
+                            const startOfWeek = new Date(tempNow.toISOString().split('T')[0]);
+                            return dateLog >= startOfWeek;
                         };
 
-                        // --- CALCUL CONSOMMATION ---
-                        const logs = data.partnerLogs || [];
                         let takenDay = 0;
                         let takenWeek = 0;
 
                         logs.forEach(row => {
-                            // Sheet: A=Date[0], B=Comp[1], C=Benef[2], D=Menu[3], E=Qty[4]
+                            // Lecture Colonne E (Index 4)
                             if (row[1] === selectedCompany && row[2] === selectedBenef) {
                                 const qty = parseInt(row[4]) || 0; 
                                 if (row[0] === todayStr) takenDay += qty;
@@ -826,90 +821,66 @@ export default function Home() {
                             }
                         });
 
-                        // --- APPLICATION DES RÈGLES SPÉCIALES ---
-                        let maxDay = baseLimits.day;
-                        let maxWeek = baseLimits.week;
-
-                        // ⚡ RÈGLE SPÉCIALE BIOGOOD
-                        if (selectedCompany === 'Biogood') {
-                            if (dayIndex === 1 || dayIndex === 2) { 
-                                // Lundi (1) ou Mardi (2) -> Limite forcée à 5
-                                maxDay = 5; 
-                            } else {
-                                // Mercredi à Dimanche -> Pas de limite jour, ils prennent le reste de la semaine
-                                maxDay = null; 
-                            }
-                        }
-
-                        // --- CALCUL DU RESTANT ---
                         const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
                         
-                        // Combien il reste sur la semaine ?
-                        const remainingWeek = maxWeek ? (maxWeek - takenWeek) : 9999;
-                        
-                        // Combien il reste aujourd'hui ?
-                        // Si limite jour existe : min(limiteJour - prisJour, resteSemaine)
-                        // Sinon : resteSemaine
-                        let remainingDayCalc = 9999;
-                        if (maxDay !== null) {
-                            remainingDayCalc = Math.min(maxDay - takenDay, remainingWeek);
-                        } else {
-                            remainingDayCalc = remainingWeek;
+                        // --- LOGIQUE DYNAMIQUE BIOGOOD ---
+                        let maxDay = limits.day;
+                        const maxWeek = limits.week; // null si illimité (SASP)
+
+                        if (limits.dynamicRule) {
+                            // Si Lundi (1) ou Mardi (2) -> Limite jour fixée à 5
+                            if (currentDayIndex === 1 || currentDayIndex === 2) {
+                                maxDay = 5;
+                            } else {
+                                // Mercredi à Dimanche -> La limite jour devient le reste de la semaine
+                                maxDay = maxWeek ? (maxWeek - takenWeek) : 9999;
+                            }
                         }
+
+                        // Calcul restants
+                        const remainingDay = maxDay ? (maxDay - takenDay) : 9999;
                         
-                        // On s'assure qu'on n'affiche pas de négatif
-                        const displayRemainingDay = Math.max(0, remainingDayCalc);
-                        const displayRemainingWeek = Math.max(0, remainingWeek);
+                        // Vérification Blocage
+                        const isBlockedDay = maxDay && (takenDay + currentQtyInForm > maxDay);
+                        const isBlockedWeek = maxWeek && (takenWeek + currentQtyInForm > maxWeek);
+                        const isOverLimit = isBlockedDay || isBlockedWeek;
 
-                        // --- VÉRIFICATION BLOCAGE ---
-                        // Bloqué si : (Jour limité ET dépassé) OU (Semaine limitée ET dépassée)
-                        // Note: On vérifie aussi que la semaine n'est pas DEJA dépassée
-                        const isBlockedDay = (maxDay !== null) && (takenDay + currentQtyInForm > maxDay);
-                        const isBlockedWeek = (maxWeek !== null) && (takenWeek + currentQtyInForm > maxWeek);
-                        
-                        // Bloquage ultime : Si ce qu'on veut ajouter dépasse ce qu'il reste globalement
-                        const isOverLimit = isBlockedDay || isBlockedWeek || (currentQtyInForm > displayRemainingWeek);
+                        const Gauge = ({ label, taken, max, isUnlimited }) => {
+                            if (!max && !isUnlimited) return null; // Cache si pas pertinent
 
-                        // --- COMPOSANT JAUGE ---
-                        const Gauge = ({ label, remaining, total, isUnlimited }) => {
-                            // Calcul pourcentage (Inverse : combien il reste en %)
-                            // Si total est null (infini) -> 100%
-                            if (!total && !isUnlimited) return null; // Sécurité
+                            let pct = 0;
+                            let color = '#10b981';
 
-                            let pct = 100;
-                            if (!isUnlimited && total > 0) {
-                                // On affiche le pourcentage de ce qui a été PRIS pour la couleur
-                                const taken = total - remaining;
-                                pct = Math.min(100, (taken / total) * 100);
+                            if (!isUnlimited) {
+                                pct = Math.min(100, (taken / max) * 100);
+                                if (pct >= 100) color = '#ef4444';
+                                else if (pct >= 75) color = '#f59e0b';
+                            } else {
+                                color = '#FFD700';
+                                pct = 100; 
                             }
 
-                            // Couleur basée sur l'utilisation
-                            let color = '#10b981'; // Vert
-                            if (pct >= 100) color = '#ef4444'; // Rouge
-                            else if (pct >= 75) color = '#f59e0b'; // Orange
-                            if (isUnlimited) color = '#FFD700'; // Or
+                            const reste = isUnlimited ? '∞' : Math.max(0, max - taken);
 
                             return (
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
                                     <div style={{ 
-                                        width: 90, height: 90, borderRadius: '50%', 
+                                        width: 80, height: 80, borderRadius: '50%', 
                                         background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: `0 0 20px ${color}30`, marginBottom: 10
+                                        boxShadow: `0 0 15px ${color}30`, marginBottom: 10
                                     }}>
                                         <div style={{ 
-                                            width: 76, height: 76, borderRadius: '50%', background: '#161616', 
+                                            width: 68, height: 68, borderRadius: '50%', background: '#161616', 
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column'
                                         }}>
-                                            <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
-                                                {isUnlimited ? '∞' : remaining}
-                                            </span>
-                                            <span style={{ fontSize: '0.6rem', color: '#777', textTransform:'uppercase', marginTop:2 }}>RESTANT</span>
+                                            <span style={{ fontSize: isUnlimited ? '2rem' : '1.6rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{reste}</span>
+                                            <span style={{ fontSize: '0.55rem', color: '#777', textTransform:'uppercase', marginTop:2 }}>RESTANT</span>
                                         </div>
                                     </div>
                                     <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ddd', textTransform:'uppercase' }}>{label}</div>
-                                    <div style={{ fontSize:'0.75rem', color: '#888', marginTop: 2 }}>
-                                        {isUnlimited ? 'Illimité' : `Total: ${total}`}
+                                    <div style={{ fontSize:'0.75rem', color: isUnlimited ? '#FFD700' : '#888', marginTop: 2 }}>
+                                        {isUnlimited ? "Illimité" : `Pris: ${taken} / ${max}`}
                                     </div>
                                 </div>
                             );
@@ -917,27 +888,23 @@ export default function Home() {
 
                         return (
                             <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'20px 0', borderRadius:24, border:'1px solid var(--glass-b)' }}>
-                                <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap: 20 }}>
+                                <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
                                     
-                                    {/* Jauge JOUR : Affichée seulement si maxDay est défini (Lun/Mar pour Biogood) */}
-                                    {maxDay !== null && (
-                                        <Gauge label="JOURNALIER" remaining={displayRemainingDay} total={maxDay} isUnlimited={false} />
-                                    )}
+                                    {/* Affiche Jauge Jour (Si limite définie) */}
+                                    <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "RESTANT SEMAINE" : "JOURNALIER"} taken={takenDay} max={maxDay} isUnlimited={!maxDay} />
                                     
-                                    {/* Séparateur */}
-                                    {maxDay !== null && maxWeek !== null && <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)' }}></div>}
+                                    {/* Séparateur si on affiche Hebdo en plus (Sauf si dynamique mercredi+) */}
+                                    {(!limits.dynamicRule || currentDayIndex <= 2) && <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>}
 
-                                    {/* Jauge SEMAINE : Toujours affichée si limite hebdo existe */}
-                                    {maxWeek !== null && (
-                                        <Gauge label="HEBDOMADAIRE" remaining={displayRemainingWeek} total={maxWeek} isUnlimited={false} />
-                                    )}
-
+                                    {/* Affiche Jauge Semaine (Sauf si dynamique Mercredi+ car redondant) */}
+                                    {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="HEBDOMADAIRE" taken={takenWeek} max={maxWeek} isUnlimited={!maxWeek} />}
+                                    
                                 </div>
                                 
                                 {isOverLimit && (
                                     <div style={{ marginTop: 15, marginInline: 20, background:'rgba(239, 68, 68, 0.15)', border:'1px solid var(--error)', padding:'10px', borderRadius:12, color: '#ffaaaa', fontWeight: 700, textAlign:'center', fontSize:'0.85rem', display:'flex', alignItems:'center', justifyContent:'center', gap:8, animation:'pulse 1.5s infinite' }}>
                                         <span>⛔</span> 
-                                        <span>Quota {isBlockedDay ? "Journalier" : "Hebdo"} Atteint !</span>
+                                        <span>Quota Atteint !</span>
                                     </div>
                                 )}
                                 
@@ -1210,3 +1177,4 @@ export default function Home() {
     </div>
   );
 }
+
