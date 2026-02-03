@@ -785,7 +785,7 @@ export default function Home() {
                   <div className="form-ui">
                     <h2 style={{ marginBottom: 20, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>PARTENAIRES</h2>
                     
-                    {/* --- LOGIQUE DE CALCUL (AVEC GESTION BIOGOOD LUN/MAR) --- */}
+                    {/* --- LOGIQUE DE CALCUL --- */}
                     {(() => {
                         const selectedCompany = forms.partner.company;
                         const selectedBenef = forms.partner.benef;
@@ -797,9 +797,13 @@ export default function Home() {
 
                         const logs = data.partnerLogs || [];
                         const todayStr = new Date().toISOString().split('T')[0];
-                        const now = new Date();
-                        const currentDayIndex = now.getDay(); // 0=Dim, 1=Lun, 2=Mar, 3=Mer...
                         
+                        // ✅ CORRECTION DATE : On force l'heure de Paris pour le calcul du jour
+                        // Sinon à 00h30 le Mercredi, le code croit qu'on est encore Mardi
+                        const now = new Date();
+                        const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
+                        const currentDayIndex = parisTime.getDay(); // 0=Dim, 1=Lun, 2=Mar, 3=Mer...
+
                         const isSameWeek = (d1Str) => {
                             const dateLog = new Date(d1Str);
                             const tempNow = new Date();
@@ -813,7 +817,6 @@ export default function Home() {
                         let takenWeek = 0;
 
                         logs.forEach(row => {
-                            // Lecture Colonne E (Index 4)
                             if (row[1] === selectedCompany && row[2] === selectedBenef) {
                                 const qty = parseInt(row[4]) || 0; 
                                 if (row[0] === todayStr) takenDay += qty;
@@ -823,21 +826,25 @@ export default function Home() {
 
                         const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
                         
-                        // --- LOGIQUE DYNAMIQUE BIOGOOD ---
+                        // --- LOGIQUE DYNAMIQUE BIOGOOD CORRIGÉE ---
                         let maxDay = limits.day;
-                        const maxWeek = limits.week; // null si illimité (SASP)
+                        const maxWeek = limits.week; 
 
                         if (limits.dynamicRule) {
-                            // Si Lundi (1) ou Mardi (2) -> Limite jour fixée à 5
+                            // Lundi (1) ou Mardi (2) -> Limite stricte à 5
                             if (currentDayIndex === 1 || currentDayIndex === 2) {
                                 maxDay = 5;
                             } else {
-                                // Mercredi à Dimanche -> La limite jour devient le reste de la semaine
-                                maxDay = maxWeek ? (maxWeek - takenWeek) : 9999;
+                                // Mercredi (3) à Dimanche (0) -> La limite du jour devient tout ce qu'il reste de la semaine
+                                // Ex: Droit à 35, pris 15 -> Reste 20 pour aujourd'hui
+                                maxDay = maxWeek ? Math.max(0, maxWeek - takenWeek + takenDay) : 9999;
+                                // Note: on ajoute takenDay car takenWeek inclut déjà ce qu'on a pris aujourd'hui, 
+                                // or maxDay représente le CAPACITÉ TOTALE du jour, pas le restant.
                             }
                         }
 
-                        // Calcul restants
+                        // Calcul du Reste à afficher
+                        // Si on est mercredi et qu'on a droit à 20, et qu'on a pris 0 aujourd'hui -> Reste 20.
                         const remainingDay = maxDay ? (maxDay - takenDay) : 9999;
                         
                         // Vérification Blocage
@@ -846,7 +853,7 @@ export default function Home() {
                         const isOverLimit = isBlockedDay || isBlockedWeek;
 
                         const Gauge = ({ label, taken, max, isUnlimited }) => {
-                            if (!max && !isUnlimited) return null; // Cache si pas pertinent
+                            if (!max && !isUnlimited) return null;
 
                             let pct = 0;
                             let color = '#10b981';
@@ -860,6 +867,7 @@ export default function Home() {
                                 pct = 100; 
                             }
 
+                            // Affichage intelligent du reste
                             const reste = isUnlimited ? '∞' : Math.max(0, max - taken);
 
                             return (
@@ -885,18 +893,18 @@ export default function Home() {
                                 </div>
                             );
                         };
+                        
+                        // Label dynamique
+                        const labelJauge = (limits.dynamicRule && currentDayIndex > 2) ? "SOLDE SEMAINE" : "JOURNALIER";
 
                         return (
                             <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'20px 0', borderRadius:24, border:'1px solid var(--glass-b)' }}>
                                 <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
                                     
-                                    {/* Affiche Jauge Jour (Si limite définie) */}
-                                    <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "RESTANT SEMAINE" : "JOURNALIER"} taken={takenDay} max={maxDay} isUnlimited={!maxDay} />
+                                    <Gauge label={labelJauge} taken={takenDay} max={maxDay} isUnlimited={!maxDay} />
                                     
-                                    {/* Séparateur si on affiche Hebdo en plus (Sauf si dynamique mercredi+) */}
                                     {(!limits.dynamicRule || currentDayIndex <= 2) && <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>}
 
-                                    {/* Affiche Jauge Semaine (Sauf si dynamique Mercredi+ car redondant) */}
                                     {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="HEBDOMADAIRE" taken={takenWeek} max={maxWeek} isUnlimited={!maxWeek} />}
                                     
                                 </div>
@@ -907,55 +915,10 @@ export default function Home() {
                                         <span>Quota Atteint !</span>
                                     </div>
                                 )}
-                                
                                 <div id="limit-flag" data-blocked={isOverLimit ? "true" : "false"} style={{display:'none'}}></div>
                             </div>
                         );
                     })()}
-
-                    {/* --- RESTE DU FORMULAIRE --- */}
-                    <input className="inp" placeholder="N° Facture (Requis)" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
-                    
-                    <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                      <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
-                      <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                    </div>
-
-                    <div style={{ maxHeight: 250, overflowY:'auto', paddingRight:5, marginBottom: 10 }}>
-                        {forms.partner.items.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                            <select className="inp" style={{ flex: 1, marginBottom: 0, fontSize:'0.85rem' }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
-                            <input type="number" className="inp" style={{ width: 70, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
-                            {forms.partner.items.length > 1 && (
-                              <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-
-                    <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer', padding: 10, fontSize:'0.85rem' }} onClick={() => {
-                      const currentMenus = data.partners.companies[forms.partner.company]?.menus;
-                      const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
-                      setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                    }}>+ Ajouter un menu</button>
-                    
-                    <button 
-                        className="btn-p" 
-                        style={{ marginTop: 20 }} 
-                        disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
-                        onClick={() => {
-                            if(document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true') {
-                                notify("QUOTA ATTEINT", "Limite dépassée pour ce client.", "error");
-                                return;
-                            }
-                            send('sendPartnerOrder', forms.partner);
-                        }}
-                    >
-                        VALIDER (1$ / MENU)
-                    </button>
-                  </div>
-                </div>
-              )}
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
@@ -1177,4 +1140,5 @@ export default function Home() {
     </div>
   );
 }
+
 
