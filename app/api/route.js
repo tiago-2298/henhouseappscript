@@ -97,7 +97,7 @@ const PARTNERS = {
     },
     'SASP Nord': {
       // 5 par jour, NULL pour illimité par semaine
-      limits: { day: 5, week: null }, 
+      limits: null, 
       beneficiaries: [ 'Agent SASP NORD' ],
       menus: [
         { name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 },
@@ -419,3 +419,4 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
   }
 }
+
