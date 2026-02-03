@@ -779,33 +779,123 @@ export default function Home() {
                 </div></div>
               )}
 
-              {/* PARTNERS */}
+            {/* PARTNERS */}
               {currentTab === 'partners' && (
-                <div className="center-box"><div className="form-ui">
-                  <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Partenaires</h2>
-                  <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
-                  <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                    <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
-                    <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                  </div>
-                  {forms.partner.items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                      <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
-                      <input type="number" className="inp" style={{ width: 80, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
-                      {forms.partner.items.length > 1 && (
-                        <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
-                      )}
-                    </div>
-                  ))}
-                  <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer', padding: 10 }} onClick={() => {
-                    const currentMenus = data.partners.companies[forms.partner.company]?.menus;
-                    const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
-                    setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                  }}>+ Ajouter Ligne</button>
-                  <button className="btn-p" style={{ marginTop: 20 }} onClick={() => send('sendPartnerOrder', forms.partner)}>Valider</button>
-                </div></div>
-              )}
+                <div className="center-box">
+                  <div className="form-ui">
+                    <h2 style={{ marginBottom: 10, textAlign: 'center', fontWeight: 900 }}>Partenaires</h2>
+                    
+                    {/* Logique de calcul des quotas */}
+                    {(() => {
+                        const selectedCompany = forms.partner.company;
+                        const selectedBenef = forms.partner.benef;
+                        const limits = data.partners.companies[selectedCompany]?.limits;
+                        
+                        // Si illimité (SASP)
+                        if (!limits) {
+                            return (
+                                <div style={{textAlign:'center', marginBottom:20, color: 'var(--success)', fontWeight:800, fontSize:'0.9rem', background:'rgba(16,185,129,0.1)', padding:10, borderRadius:15}}>
+                                    ✨ CONTRAT ILLIMITÉ - 1$ / MENU
+                                </div>
+                            );
+                        }
 
+                        // Calculs pour Biogood/Esthétique
+                        const logs = data.partnerLogs || [];
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        
+                        // Fonction pour vérifier si une date est dans la semaine actuelle (Lun-Dim)
+                        const isSameWeek = (d1Str) => {
+                            const d1 = new Date(d1Str);
+                            const now = new Date();
+                            // Ajuster pour que la semaine commence le Lundi (1)
+                            const day = now.getDay() || 7; 
+                            if(day !== 1) now.setHours(-24 * (day - 1)); 
+                            const startOfWeek = new Date(now.toISOString().split('T')[0]); // Lundi matin 00:00 UTC approx
+                            
+                            return new Date(d1Str) >= startOfWeek;
+                        };
+
+                        let countDay = 0;
+                        let countWeek = 0;
+
+                        logs.forEach(row => {
+                            // row[1] = Company, row[2] = Benef, row[0] = Date, row[3] = Qty
+                            if (row[1] === selectedCompany && row[2] === selectedBenef) {
+                                const qty = parseInt(row[3]) || 0;
+                                if (row[0] === todayStr) countDay += qty;
+                                if (isSameWeek(row[0])) countWeek += qty;
+                            }
+                        });
+
+                        const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
+                        const leftDay = limits.day - countDay;
+                        const leftWeek = limits.week - countWeek;
+                        
+                        const isOverLimit = (countDay + currentQtyInForm > limits.day) || (countWeek + currentQtyInForm > limits.week);
+
+                        return (
+                            <div style={{ marginBottom: 20 }}>
+                                <div style={{ display:'flex', gap:10, marginBottom:10 }}>
+                                    <div style={{ flex:1, background: leftDay <= 0 ? 'var(--error)' : '#222', padding:10, borderRadius:15, textAlign:'center', border: '1px solid var(--glass-b)' }}>
+                                        <div style={{ fontSize:'0.7rem', color:'#aaa', textTransform:'uppercase' }}>Journalier</div>
+                                        <div style={{ fontWeight:900, fontSize:'1.1rem' }}>{Math.max(0, leftDay)} / {limits.day}</div>
+                                    </div>
+                                    <div style={{ flex:1, background: leftWeek <= 0 ? 'var(--error)' : '#222', padding:10, borderRadius:15, textAlign:'center', border: '1px solid var(--glass-b)' }}>
+                                        <div style={{ fontSize:'0.7rem', color:'#aaa', textTransform:'uppercase' }}>Hebdo</div>
+                                        <div style={{ fontWeight:900, fontSize:'1.1rem' }}>{Math.max(0, leftWeek)} / {limits.week}</div>
+                                    </div>
+                                </div>
+                                {isOverLimit && (
+                                    <div style={{ color: 'var(--error)', fontWeight: 800, textAlign:'center', fontSize:'0.85rem', animation: 'pulse 1s infinite' }}>
+                                        ⚠️ LIMITE DÉPASSÉE ! Impossible de valider.
+                                    </div>
+                                )}
+                                {/* On stocke l'état bloquant dans un attribut data caché ou on gère via le bouton */}
+                                <div id="limit-flag" data-blocked={isOverLimit ? "true" : "false"} style={{display:'none'}}></div>
+                            </div>
+                        );
+                    })()}
+
+                    <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                      <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
+                      <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
+                    </div>
+                    {forms.partner.items.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+                        <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
+                        <input type="number" className="inp" style={{ width: 80, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
+                        {forms.partner.items.length > 1 && (
+                          <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
+                        )}
+                      </div>
+                    ))}
+                    <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer', padding: 10 }} onClick={() => {
+                      const currentMenus = data.partners.companies[forms.partner.company]?.menus;
+                      const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
+                      setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
+                    }}>+ Ajouter Ligne</button>
+                    
+                    <button 
+                        className="btn-p" 
+                        style={{ marginTop: 20 }} 
+                        // On bloque le bouton si la div cachée #limit-flag indique "true" ou si pas de numéro de facture
+                        disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
+                        onClick={() => {
+                            // Double vérification sécurité simple
+                            if(document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true') {
+                                notify("QUOTA ATTEINT", "Ce client ne peut plus commander.", "error");
+                                return;
+                            }
+                            send('sendPartnerOrder', forms.partner);
+                        }}
+                    >
+                        Valider (1$ / Menu)
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
@@ -1027,4 +1117,5 @@ export default function Home() {
     </div>
   );
 }
+
 
