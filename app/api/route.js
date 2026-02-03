@@ -1,3 +1,13 @@
+Voici le fichier `route.js` complet avec les modifications intégrées.
+
+**Ce qui a changé :**
+
+1. **Configuration** : Ajout des objets `limits: { day: X, week: Y }` dans la constante `PARTNERS`.
+2. **Lecture (getMeta)** : Le système lit désormais une feuille Google Sheet nommée `'Partenaires_Logs'` pour récupérer l'historique et l'envoyer au frontend (pour le calcul des jauges).
+3. **Écriture (sendPartnerOrder)** : Lors de la validation d'une commande partenaire, elle est sauvegardée dans `'Partenaires_Logs'` (Date, Entreprise, Bénéficiaire, Quantité totale) pour déduire les quotas futurs.
+4. **Webhook** : Le message Discord indique désormais le tarif spécial (1$/Menu).
+
+```javascript
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -5,7 +15,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.01.29-NO-BASE64-FIX';
+const APP_VERSION = '2026.02.04-PARTNER-LIMITS';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -75,9 +85,11 @@ const PRICE_LIST = {
   'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
+// ✅ CONFIGURATION DES LIMITES PARTENAIRES ICI
 const PARTNERS = {
   companies: {
     'Biogood': {
+      limits: { day: 5, week: 35 }, // 5 par jour, 35 par semaine
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
@@ -94,6 +106,7 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
     'SASP Nord': {
+      limits: null, // Illimité
       beneficiaries: [ 'Agent SASP NORD' ],
       menus: [
         { name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 },
@@ -102,6 +115,7 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
     },
     'Esthétique Paleto': {
+      limits: { day: 2, week: 10 }, // Exemple
       beneficiaries: [ 'Patronne','Manager','Expérimenté','Stagiaire'],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
@@ -233,6 +247,7 @@ export async function POST(request) {
 
       console.log("DEBUG: 5. Tentative de lecture onglet 'Employés'...");
 
+      // 1. Récupération Employés
       const resFull = await sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
         range: "'Employés'!A2:I200",
@@ -251,6 +266,18 @@ export async function POST(request) {
         seniority: Number(r[5] ?? 0)
       }));
 
+      // 2. Récupération Historique Partenaires (Pour les jauges)
+      let partnerLogs = [];
+      try {
+        const resLogs = await sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: "'Partenaires_Logs'!A2:D2000", // A=Date, B=Company, C=Benef, D=Qty
+        });
+        partnerLogs = resLogs.data.values || [];
+      } catch (e) {
+        console.warn("DEBUG: Feuille 'Partenaires_Logs' introuvable ou vide. Création nécessaire si première utilisation.");
+      }
+
       return NextResponse.json({
         success: true,
         version: APP_VERSION,
@@ -260,6 +287,7 @@ export async function POST(request) {
         productsByCategory: PRODUCTS_CAT,
         prices: PRICE_LIST,
         partners: PARTNERS,
+        partnerLogs: partnerLogs, // ✅ Envoi des logs au front
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
@@ -344,16 +372,41 @@ export async function POST(request) {
       }
 
       case 'sendPartnerOrder': {
+        // Calcul du total d'articles pour l'enregistrement
+        const totalQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
+
         embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
         embed.fields = [
           { name: '🏢 Entreprise', value: data.company || '—', inline: true },
           { name: '🔑 Client', value: data.benef || '—', inline: true },
           { name: '🧾 Facture', value: `\`${data.num}\`` },
+          { name: '💰 Tarif', value: `**1$** / Menu (Dans la limite des stocks)`, inline: false },
           { name: '🍱 Détail', value: data.items?.map(i => `🍱 x${i.qty} ${i.menu}`).join('\n') || '—' }
         ];
 
         const pW = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
         await sendDiscordWebhook(pW, { embeds: [embed] });
+
+        // ✅ SAUVEGARDE DANS GOOGLE SHEETS "Partenaires_Logs"
+        // Ceci permet de garder une trace pour le calcul des quotas
+        try {
+            const sheets = await getAuthSheets();
+            const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
+            const todayISO = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+            
+            // On ajoute une ligne: [Date, Entreprise, Bénéficiaire, Quantité]
+            await sheets.spreadsheets.values.append({
+                spreadsheetId: sheetId,
+                range: "'Partenaires_Logs'!A:D",
+                valueInputOption: 'USER_ENTERED',
+                requestBody: {
+                    values: [[ todayISO, data.company, data.benef, totalQty ]]
+                }
+            });
+        } catch(e) {
+            console.error("ERREUR lors de la sauvegarde du log partenaire:", e);
+        }
+
         break;
       }
 
@@ -375,3 +428,5 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
   }
 }
+
+```
