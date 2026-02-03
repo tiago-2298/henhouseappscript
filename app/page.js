@@ -779,7 +779,7 @@ export default function Home() {
                 </div></div>
               )}
 
-             {/* PARTNERS */}
+              {/* PARTNERS */}
               {currentTab === 'partners' && (
                 <div className="center-box">
                   <div className="form-ui">
@@ -919,6 +919,7 @@ export default function Home() {
                             </div>
                         );
                     })()}
+
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
@@ -1140,5 +1141,3 @@ export default function Home() {
     </div>
   );
 }
-
-
