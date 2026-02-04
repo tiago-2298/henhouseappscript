@@ -944,12 +944,13 @@ export default function Home() {
                             onClick={() => send('sendPartnerOrder', forms.partner)}
                         >
                             VALIDER COMMANDE (1$)
-                        </button>
+                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* GARAGE */}
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
@@ -1171,6 +1172,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
