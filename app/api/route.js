@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.02.04-BIOGOOD-DYNAMIC';
+const APP_VERSION = '2026.02.04-FINAL-FIX';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
@@ -53,17 +53,13 @@ const PRICE_LIST = {
   'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45,
   'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65,
   'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
-
   'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30,
   'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
-
   'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
   "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
-
   'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
   "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120,
   'LA CROISIÈRE GOURMANDE': 120,
-
   'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20,
   'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25,
   'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40,
@@ -71,15 +67,12 @@ const PRICE_LIST = {
   'Verre de Vodka': 45, 'Verre de Rhum': 45, 'Verre de Tequila Citron': 50,
   'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50,
   'Bouteille de Champagne': 125,
-
   'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
-// ✅ CONFIGURATION DES LIMITES PARTENAIRES
 const PARTNERS = {
   companies: {
     'Biogood': {
-      // ✅ 5/j, 35/sem + Flag "dynamicRule" pour la logique Lundi/Mardi vs Reste
       limits: { day: 5, week: 35, dynamicRule: true }, 
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
@@ -97,8 +90,7 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
     },
     'SASP Nord': {
-      // ✅ 5/j, NULL pour illimité/semaine
-      limits: { day: null, week: null }, 
+      limits: null, 
       beneficiaries: [ 'Agent SASP NORD' ],
       menus: [
         { name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 },
@@ -124,16 +116,12 @@ function cleanEnv(v) {
 }
 
 async function getAuthSheets() {
-  console.log("DEBUG: 1. Entrée dans getAuthSheets (NO-BASE64)");
   const privateKeyInput = cleanEnv(process.env.GOOGLE_PRIVATE_KEY);
   const clientEmail = cleanEnv(process.env.GOOGLE_CLIENT_EMAIL);
-  const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
-
-  if (!privateKeyInput || !clientEmail || !sheetId) throw new Error("Missing Env");
+  if (!privateKeyInput || !clientEmail) throw new Error("Missing Env");
 
   const privateKey = privateKeyInput.replace(/\\n/g, '\n');
   const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
-
   return google.sheets({ version: 'v4', auth });
 }
 
@@ -142,10 +130,8 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   try {
     if (fileBase64) {
       const formData = new FormData();
-      const base64Data = String(fileBase64).split(',')[1] || '';
-      const buffer = Buffer.from(base64Data, 'base64');
-      const blob = new Blob([buffer], { type: 'image/jpeg' });
-      formData.append('file', blob, 'preuve.jpg');
+      const buffer = Buffer.from(String(fileBase64).split(',')[1] || '', 'base64');
+      formData.append('file', new Blob([buffer], { type: 'image/jpeg' }), 'preuve.jpg');
       formData.append('payload_json', JSON.stringify(payload));
       await fetch(url, { method: 'POST', body: formData });
     } else {
@@ -173,63 +159,37 @@ async function updateEmployeeStats(employeeName, amount, type) {
 
 // ================= API =================
 export async function POST(request) {
-  console.log("DEBUG: --- REQUÊTE ---");
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
+    const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
 
-    // META
+    // META & SYNC
     if (!action || action === 'getMeta' || action === 'syncData') {
       const sheets = await getAuthSheets();
-      const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
-
-      const resFull = await sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: "'Employés'!A2:I200",
-        valueRenderOption: 'UNFORMATTED_VALUE'
-      });
-
+      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' });
       const rows = resFull.data.values || [];
       const employeesFull = rows.filter(r => r[1]).map(r => ({
-        id: String(r[0] ?? ''),
-        name: String(r[1] ?? '').trim(),
-        role: String(r[2] ?? ''),
-        phone: String(r[3] ?? ''),
-        ca: Number(r[6] ?? 0),
-        stock: Number(r[7] ?? 0),
-        salary: Number(r[8] ?? 0),
-        seniority: Number(r[5] ?? 0)
+        id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
+        phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
+        salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
       }));
 
-      // ✅ LECTURE LOGS (COLONNE A à E)
       let partnerLogs = [];
       try {
-        const resLogs = await sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: "'Partenaires_Logs'!A2:E2000", 
-        });
+        const resLogs = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Partenaires_Logs'!A2:E2000" });
         partnerLogs = resLogs.data.values || [];
-      } catch (e) { console.warn("Logs partner empty/error"); }
+      } catch (e) { console.warn("Logs partner empty"); }
 
       return NextResponse.json({
-        success: true,
-        version: APP_VERSION,
-        employees: employeesFull.map(e => e.name),
-        employeesFull,
-        products: Object.values(PRODUCTS_CAT).flat(),
-        productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST,
-        partners: PARTNERS,
-        partnerLogs: partnerLogs, 
+        success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
+        employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
 
-    let embed = {
-      timestamp: new Date().toISOString(),
-      footer: { text: `Hen House Management v${APP_VERSION}` },
-      color: 0xff9800
-    };
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
     switch (action) {
       case 'sendFactures':
@@ -253,13 +213,40 @@ export async function POST(request) {
         break;
 
       case 'sendEntreprise':
+        const proDetail = data.items?.map(i => `${i.qty}x ${i.product}`).join(', ');
+        const totalProQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
         embed.title = `🚚 Livraison Pro de ${data.employee}`;
-        embed.fields = [{ name: '🏢 Client', value: `**${data.company}**`, inline: true }, { name: '📋 Détails', value: data.items?.map(i => `🏢 x${i.qty} ${i.product}`).join('\n') }];
+        embed.fields = [{ name: '🏢 Client', value: `**${data.company}**`, inline: true }, { name: '📋 Détails', value: proDetail }];
         await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
+        
+        // Sauvegarde Google Sheets Commandes_Pro
+        try {
+          const sheets = await getAuthSheets();
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Commandes_Pro'!A:D", valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, proDetail, totalProQty ]] }
+          });
+        } catch (e) { console.error("Pro Logs Error", e); }
+        break;
+
+      case 'sendPartnerOrder':
+        const totalQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
+        const menuDetail = data.items?.map(i => `${i.qty}x ${i.menu}`).join(', ');
+        embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
+        embed.fields = [{ name: '🏢 Entreprise', value: data.company, inline: true }, { name: '🔑 Client', value: data.benef, inline: true }, { name: '🧾 Facture', value: `\`${data.num}\`` }, { name: '💰 Tarif', value: `**1$** / Menu` }, { name: '🍱 Détail', value: menuDetail }];
+        await sendDiscordWebhook(PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures, { embeds: [embed] });
+
+        try {
+          const sheets = await getAuthSheets();
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Partenaires_Logs'!A:E", valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, data.benef, menuDetail, totalQty ]] }
+          });
+        } catch(e) { console.error("Partner Logs Error", e); }
         break;
 
       case 'sendExpense':
-        embed.title = `💳 Frais déclaré par ${data.employee}`;
+        embed.title = `💳 Frais de ${data.employee}`;
         embed.fields = [{ name: '🛠️ Type', value: data.kind, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '💵 Montant', value: `**${data.amount}$**` }];
         if (data.file) embed.image = { url: 'attachment://preuve.jpg' };
         await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file);
@@ -270,36 +257,6 @@ export async function POST(request) {
         embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
         embed.fields = [{ name: '🚗 Véhicule', value: `**${data.vehicle}**`, inline: true }, { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }];
         await sendDiscordWebhook(WEBHOOKS.garage, { embeds: [embed] });
-        break;
-
-      case 'sendPartnerOrder':
-        const totalQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
-        const menuDetail = data.items?.map(i => `${i.qty}x ${i.menu}`).join(', ');
-
-        embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
-        embed.fields = [
-          { name: '🏢 Entreprise', value: data.company || '—', inline: true },
-          { name: '🔑 Client', value: data.benef || '—', inline: true },
-          { name: '🧾 Facture', value: `\`${data.num}\`` },
-          { name: '💰 Tarif', value: `**1$** / Menu`, inline: false },
-          { name: '🍱 Détail', value: data.items?.map(i => `🍱 x${i.qty} ${i.menu}`).join('\n') || '—' }
-        ];
-
-        const pW = PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures;
-        await sendDiscordWebhook(pW, { embeds: [embed] });
-
-        // ✅ ECRITURE LOGS (A:E)
-        try {
-            const sheets = await getAuthSheets();
-            const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
-            const todayISO = new Date().toISOString().split('T')[0];
-            await sheets.spreadsheets.values.append({
-                spreadsheetId: sheetId,
-                range: "'Partenaires_Logs'!A:E",
-                valueInputOption: 'USER_ENTERED',
-                requestBody: { values: [[ todayISO, data.company, data.benef, menuDetail, totalQty ]] }
-            });
-        } catch(e) { console.error("Log error", e); }
         break;
 
       case 'sendSupport':
@@ -314,4 +271,3 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
-
