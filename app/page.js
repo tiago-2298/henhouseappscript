@@ -791,7 +791,6 @@ export default function Home() {
                         const selectedBenef = forms.partner.benef;
                         const limits = data.partners.companies[selectedCompany]?.limits;
 
-                        // 1. Cas Bypass / VIP (Si limits est null ou non défini)
                         if (!limits) {
                              return (
                                 <div style={{textAlign:'center', padding:20, background:'rgba(255,215,0,0.1)', border:'1px solid gold', borderRadius:20, color:'gold', marginBottom:25, boxShadow:'0 0 20px rgba(255,215,0,0.15)'}}>
@@ -802,12 +801,11 @@ export default function Home() {
                              );
                         }
 
-                        // 2. Préparation des dates (Fuseau Paris pour éviter les bugs à minuit)
                         const logs = data.partnerLogs || [];
                         const now = new Date();
                         const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
                         const todayStr = parisTime.toISOString().split('T')[0];
-                        const currentDayIndex = parisTime.getDay(); // 0=Dim, 1=Lun, 2=Mar, 3=Mer...
+                        const currentDayIndex = parisTime.getDay(); 
 
                         const isSameWeek = (dateStr) => {
                             const dateLog = new Date(dateStr);
@@ -818,12 +816,10 @@ export default function Home() {
                             return dateLog >= startOfWeek;
                         };
 
-                        // 3. Calcul des consommations réelles
                         let takenDay = 0;
                         let takenWeek = 0;
 
                         logs.forEach(row => {
-                            // row[1]=Comp, row[2]=Benef, row[0]=Date, row[4]=Qty (Colonne E)
                             if (row[1] === selectedCompany && row[2] === selectedBenef) {
                                 const qty = parseInt(row[4]) || 0; 
                                 if (row[0] === todayStr) takenDay += qty;
@@ -832,123 +828,152 @@ export default function Home() {
                         });
 
                         const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
-                        
-                        // 4. Application de la règle dynamique (Biogood)
                         let maxDay = limits.day;
                         const maxWeek = limits.week; 
 
                         if (limits.dynamicRule) {
-                            // Lundi(1) ou Mardi(2) -> Limite 5
                             if (currentDayIndex === 1 || currentDayIndex === 2) {
                                 maxDay = 5;
                             } else {
-                                // Mercredi à Dimanche -> Accès au solde total de la semaine
-                                // On recalcule maxDay comme étant : (Total Semaine - Ce qui a été pris avant aujourd'hui)
                                 const takenBeforeToday = takenWeek - takenDay;
                                 maxDay = maxWeek ? Math.max(0, maxWeek - takenBeforeToday) : 9999;
                             }
                         }
 
-                        // Vérification Blocage
                         const isBlockedDay = maxDay && (takenDay + currentQtyInForm > maxDay);
                         const isBlockedWeek = maxWeek && (takenWeek + currentQtyInForm > maxWeek);
                         const isOverLimit = isBlockedDay || isBlockedWeek;
 
-                        // --- COMPOSANT JAUGE ---
                         const Gauge = ({ label, taken, max }) => {
                             if (!max) return null;
                             const pct = Math.min(100, (taken / max) * 100);
-                            let color = '#10b981'; // Vert
-                            if (pct >= 100) color = '#ef4444'; // Rouge
-                            else if (pct >= 75) color = '#f59e0b'; // Orange
-
+                            let color = pct >= 100 ? '#ef4444' : (pct >= 75 ? '#f59e0b' : '#10b981');
                             return (
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
-                                    <div style={{ 
-                                        width: 85, height: 85, borderRadius: '50%', 
-                                        background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        boxShadow: `0 0 15px ${color}25`, marginBottom: 10
-                                    }}>
+                                    <div style={{ width: 85, height: 85, borderRadius: '50%', background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
                                         <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#161616', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column' }}>
                                             <span style={{ fontSize: '1.7rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{Math.max(0, max - taken)}</span>
-                                            <span style={{ fontSize: '0.55rem', color: '#777', textTransform:'uppercase', fontWeight:700 }}>Reste</span>
+                                            <span style={{ fontSize: '0.55rem', color: '#777' }}>Reste</span>
                                         </div>
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#bbb', textTransform:'uppercase', letterSpacing:'0.5px' }}>{label}</div>
-                                    <div style={{ fontSize:'0.7rem', color: '#666', marginTop: 2 }}>{taken} / {max}</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 800 }}>{label}</div>
                                 </div>
                             );
                         };
 
                         return (
                             <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.25)', padding:'22px 0', borderRadius:24, border:'1px solid var(--glass-b)' }}>
-                                <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
-                                    
-                                    {/* Jauge Gauche (Jour ou Solde Hebdo si Mercredi+) */}
-                                    <Gauge 
-                                        label={limits.dynamicRule && currentDayIndex > 2 ? "Solde Hebdo" : "Journalier"} 
-                                        taken={takenDay} 
-                                        max={maxDay} 
-                                    />
-                                    
-                                    {/* Séparateur (Affiché seulement si on a deux jauges distinctes) */}
-                                    {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && <div style={{ width:1, height:60, background:'rgba(255,255,255,0.1)', marginTop: 12 }}></div>}
-
-                                    {/* Jauge Droite (Hebdomadaire classique) */}
-                                    {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="Hebdomadaire" taken={takenWeek} max={maxWeek} />}
-                                    
+                                <div style={{ display:'flex', justifyContent:'space-evenly' }}>
+                                    <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "Solde Hebdo" : "Journalier"} taken={takenDay} max={maxDay} />
+                                    {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && <Gauge label="Hebdomadaire" taken={takenWeek} max={maxWeek} />}
                                 </div>
-                                
-                                {isOverLimit && (
-                                    <div style={{ marginTop: 15, marginInline: 20, background:'rgba(239, 68, 68, 0.1)', border:'1px solid #ef444450', padding:'10px', borderRadius:12, color: '#ff8888', fontWeight: 700, textAlign:'center', fontSize:'0.8rem', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                                        <span>⛔</span> QUOTA DÉPASSÉ
-                                    </div>
-                                )}
+                                {isOverLimit && <div style={{ textAlign:'center', color: 'var(--error)', marginTop: 10, fontWeight: 800 }}>⛔ QUOTA DÉPASSÉ</div>}
                                 <div id="limit-flag" data-blocked={isOverLimit ? "true" : "false"} style={{display:'none'}}></div>
                             </div>
                         );
                     })()}
 
-                    {/* --- FORMULAIRE --- */}
-                    <div style={{display:'flex', flexDirection:'column', gap:10}}>
-                        <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
-                        
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
-                          <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
-                        </div>
-
-                        <div style={{ maxHeight: 200, overflowY:'auto', paddingRight:5 }}>
-                            {forms.partner.items.map((item, idx) => (
-                              <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                                <select className="inp" style={{ flex: 1, marginBottom:0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
-                                <input type="number" className="inp" style={{ width: 65, textAlign:'center', marginBottom:0 }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
-                                {forms.partner.items.length > 1 && (
-                                  <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
-                                )}
-                              </div>
-                            ))}
-                        </div>
-
-                        <button className="inp" style={{ background: 'rgba(255,255,255,0.05)', border: '1px dashed #444', color: '#888', cursor: 'pointer', padding: 8, fontSize:'0.8rem' }} onClick={() => {
-                          const currentMenus = data.partners.companies[forms.partner.company]?.menus;
-                          const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
-                          setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                        }}>+ Ajouter un menu</button>
-                        
-                        <button 
-                            className="btn-p" 
-                            style={{ marginTop: 10 }} 
-                            disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
-                            onClick={() => send('sendPartnerOrder', forms.partner)}
-                        >
-                            VALIDER COMMANDE (1$)
-                        </button>
+                    <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <select className="inp" value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>{Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}</select>
+                      <select className="inp" value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>{data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}</select>
                     </div>
+                    {forms.partner.items.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                        <select className="inp" style={{ flex: 1 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>{data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}</select>
+                        <input type="number" className="inp" style={{ width: 65 }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
+                      </div>
+                    ))}
+                    <button className="btn-p" disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num} onClick={() => send('sendPartnerOrder', forms.partner)}>Valider (1$)</button>
                   </div>
                 </div>
               )}
+
+              {currentTab === 'garage' && (
+                <div className="center-box"><div className="form-ui">
+                  <h2 style={{ marginBottom: 30 }}>Gestion Flotte</h2>
+                  <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })}>{data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}</select>
+                  <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                    <button className="inp" style={{ background: forms.garage.action === 'Entrée' ? 'var(--success)' : '#222' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Entrée' } })}>Entrée 🅿️</button>
+                    <button className="inp" style={{ background: forms.garage.action === 'Sortie' ? 'var(--p)' : '#222' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Sortie' } })}>Sortie 🔑</button>
+                  </div>
+                  <input type="range" style={{ width: '100%' }} value={forms.garage.fuel} onChange={e => setForms({ ...forms, garage: { ...forms.garage, fuel: e.target.value } })} />
+                  <div style={{ textAlign: 'center', marginTop: 10 }}>Essence: {forms.garage.fuel}%</div>
+                  <button className="btn-p" onClick={() => send('sendGarage', forms.garage)}>Valider</button>
+                </div></div>
+              )}
+
+              {currentTab === 'support' && (
+                <div className="center-box"><div className="form-ui">
+                  <h2 style={{ marginBottom: 10 }}>Ticket Support</h2>
+                  <input className="inp" placeholder="Sujet" value={forms.support.sub} onChange={e => setForms({ ...forms, support: { ...forms.support, sub: e.target.value } })} />
+                  <textarea className="inp" style={{ height: 150 }} placeholder="Message..." value={forms.support.msg} onChange={e => setForms({ ...forms, support: { ...forms.support, msg: e.target.value } })}></textarea>
+                  <button className="btn-p" onClick={() => send('sendSupport', forms.support)}>Envoyer</button>
+                </div></div>
+              )}
+
+              {currentTab === 'performance' && (
+                <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 30 }}>
+                  <div className="form-ui" style={{ maxWidth: '100%', padding: 30 }}>
+                    <h2 style={{ marginBottom: 30 }}>🏆 TOP VENDEURS</h2>
+                    {data.employeesFull.sort((a, b) => b.ca - a.ca).slice(0, 10).map((e, i) => (
+                      <div key={i} style={{ marginBottom: 15, display:'flex', justifyContent:'space-between' }}>
+                        <span>{e.name}</span><b>${Math.round(e.ca).toLocaleString()}</b>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </main>
+
+          {currentTab === 'invoices' && (
+            <aside className="cart-panel">
+              <div style={{ padding: 30, textAlign: 'center' }}>
+                <h2 className="cart-title">Ticket Client</h2>
+                <div className="cart-total-display">${total.toLocaleString()}</div>
+                <div style={{ color: 'var(--success)', fontWeight: 800 }}>Gain estimé: ${gainEstime.toLocaleString()}</div>
+              </div>
+              <div style={{ padding: '0 20px 20px' }}>
+                <input className="inp" placeholder="N° FACTURE (Requis)" value={forms.invoiceNum} onChange={e => setForms({ ...forms, invoiceNum: e.target.value })} style={{ textAlign: 'center' }} />
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
+                {cart.map((i, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, background: '#181818', padding: 10, borderRadius: 10 }}>
+                    <div>{i.name} (x{i.qty})</div>
+                    <button onClick={() => removeFromCart(idx)} style={{ color: 'var(--error)', background:'none', border:'none', cursor:'pointer' }}>🗑️</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: 20 }}>
+                <button className="btn-p" disabled={sending || !forms.invoiceNum || cart.length === 0} onClick={() => send('sendFactures', { invoiceNumber: forms.invoiceNum, items: cart.map(x => ({ desc: x.name, qty: x.qty })) })}>ENCAISSER 💵</button>
+              </div>
+            </aside>
+          )}
+        </>
+      )}
+
+      {toast && (
+        <div className="toast" style={{ background: toast.s === 'error' ? 'var(--error)' : 'var(--p)', color: '#000' }}>
+          <b>{toast.t}:</b> {toast.m}
+        </div>
+      )}
+
+      {confirmModal && (
+        <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 10 }}>{confirmModal.title}</h3>
+            <p style={{ marginBottom: 30 }}>{confirmModal.msg}</p>
+            <div style={{ display: 'flex', gap: 15 }}>
+              <button className="btn-p" style={{ background: '#333', color:'#fff' }} onClick={() => setConfirmModal(null)}>Annuler</button>
+              <button className="btn-p" onClick={confirmModal.action}>Confirmer</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
               {/* GARAGE */}
               {currentTab === 'garage' && (
@@ -1171,3 +1196,4 @@ export default function Home() {
     </div>
   );
 }
+
