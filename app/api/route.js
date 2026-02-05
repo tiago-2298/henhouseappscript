@@ -5,15 +5,38 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
 // ================= CONFIGURATION =================
-const APP_VERSION = '2026.02.05-STABILITY-FIX';
+const APP_VERSION = '2026.02.04-FINAL-FIX';
 const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
-  plats_principaux: ['Lasagne aux légumes', 'Saumon grillé', 'Crousti-Douce', 'Paella Méditerranéenne', "Steak 'Potatoes", 'Ribs', 'Filet Mignon', 'Poulet Rôti', 'Wings Epicé', 'Effiloché de Mouton', 'Burger Gourmet au Foie Gras'],
-  desserts: ['Mousse au café', 'Tiramisu Fraise', 'Carpaccio Fruit Exotique', 'Profiteroles au chocolat', 'Los Churros Caramel'],
-  boissons: ['Café', 'Jus de raisin Rouge', 'Berry Fizz', "Jus d'orange", 'Nectar Exotique', 'Kombucha Citron'],
-  menus: ['LA SIGNATURE VÉGÉTALE', 'LE PRESTIGE DE LA MER', 'LE RED WINGS', "LE SOLEIL D'OR", 'LE SIGNATURE "75"', "L'HÉRITAGE DU BERGER", 'LA CROISIÈRE GOURMANDE'],
-  alcools: ['Verre de Cidre en Pression', 'Verre de Champagne', 'Verre de rosé', 'Verre de Champomax', 'Verre de Bellini', 'Verre Vin Rouge', 'Verre Vin Blanc', 'Verre de Cognac', 'Verre de Brandy', 'Verre de Whisky', 'Shot de Tequila', 'Cocktail Citron-Myrtille', 'Verre de Vodka', 'Verre de Rhum', 'Verre de Tequila Citron', 'Verre de Gin', 'Verre de Gin Fizz Citron', 'Bouteille de Cidre', 'Bouteille de Champagne']
+  plats_principaux: [
+    'Lasagne aux légumes', 'Saumon grillé', 'Crousti-Douce',
+    'Paella Méditerranéenne', "Steak 'Potatoes", 'Ribs',
+    'Filet Mignon', 'Poulet Rôti', 'Wings Epicé',
+    'Effiloché de Mouton', 'Burger Gourmet au Foie Gras'
+  ],
+  desserts: [
+    'Mousse au café', 'Tiramisu Fraise', 'Carpaccio Fruit Exotique',
+    'Profiteroles au chocolat', 'Los Churros Caramel'
+  ],
+  boissons: [
+    'Café', 'Jus de raisin Rouge', 'Berry Fizz',
+    "Jus d'orange", 'Nectar Exotique', 'Kombucha Citron'
+  ],
+  menus: [
+    'LA SIGNATURE VÉGÉTALE', 'LE PRESTIGE DE LA MER', 'LE RED WINGS',
+    "LE SOLEIL D'OR", 'LE SIGNATURE "75"', "L'HÉRITAGE DU BERGER",
+    'LA CROISIÈRE GOURMANDE'
+  ],
+  alcools: [
+    'Verre de Cidre en Pression', 'Verre de Champagne', 'Verre de rosé',
+    'Verre de Champomax', 'Verre de Bellini', 'Verre Vin Rouge',
+    'Verre Vin Blanc', 'Verre de Cognac', 'Verre de Brandy',
+    'Verre de Whisky', 'Shot de Tequila', 'Cocktail Citron-Myrtille',
+    'Verre de Vodka', 'Verre de Rhum', 'Verre de Tequila Citron',
+    'Verre de Gin', 'Verre de Gin Fizz Citron', 'Bouteille de Cidre',
+    'Bouteille de Champagne'
+  ]
 };
 
 const WEBHOOKS = {
@@ -26,15 +49,65 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
-  'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65, 'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45, 'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65, 'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75, 'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30, 'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35, 'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30, "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40, 'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110, "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120, 'LA CROISIÈRE GOURMANDE': 120, 'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20, 'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25, 'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40, 'Verre de Whisky': 40, 'Shot de Tequila': 40, 'Cocktail Citron-Myrtille': 40, 'Verre de Vodka': 45, 'Verre de Rhum': 45, 'Verre de Tequila Citron': 50, 'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50, 'Bouteille de Champagne': 125, 'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
+  'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65,
+  'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45,
+  'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65,
+  'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
+  'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30,
+  'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
+  'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
+  "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
+  'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
+  "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120,
+  'LA CROISIÈRE GOURMANDE': 120,
+  'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20,
+  'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25,
+  'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40,
+  'Verre de Whisky': 40, 'Shot de Tequila': 40, 'Cocktail Citron-Myrtille': 40,
+  'Verre de Vodka': 45, 'Verre de Rhum': 45, 'Verre de Tequila Citron': 50,
+  'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50,
+  'Bouteille de Champagne': 125,
+  'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
 const PARTNERS = {
   companies: {
-    'Biogood': { limits: { day: 5, week: 35, dynamicRule: true }, beneficiaries: ['PDG - Hunt Aaron', 'CO-PDG - Hernández Andres', 'RH - Cohman Tiago', 'RH - Jefferson Patt', 'RH - DUGGAN Edward', 'RE - Gonzales Malya', 'RE - DJOUDI Toufik', 'C - Gilmore Jaden', 'C - Delgado Madison', 'C - Léon Dawson ', 'C - Eider Aldana', 'C - Aldana Jaïa', 'C - Pearce Asap Jr ', 'C - Rojas Diozelina'], menus: [{ name: 'Burger Gourmet + Kombucha Citron', catalog: 75 }, { name: 'Ribs + Jus d’orange', catalog: 65 }, { name: 'Wings épicé + Berry Fizz', catalog: 65 }, { name: 'Paella ou Crousti + Nectar Exotique', catalog: 75 }], webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO' },
-    'SASP Nord': { limits: null, beneficiaries: ['Agent SASP NORD'], menus: [{ name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 }, { name: 'Ribs + Berry Fizz', catalog: 65 }], webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU' },
-    'Esthétique Paleto': { limits: { day: 2, week: 10 }, beneficiaries: ['Patronne', 'Manager', 'Expérimenté', 'Stagiaire'], menus: [{ name: 'Menu L’Héritage du Berger', catalog: 80 }, { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }], webhook: 'https://discord.com/api/webhooks/1467273894800134495/plSAmYgMbUmc5wI_wvpEYOKHluejsvm6sLcvseqrMH5lF5O-L0CxG3eXkeNki2LNsUCO' },
-  }
+    'Biogood': {
+      limits: { day: 5, week: 35, dynamicRule: true }, 
+      beneficiaries: [
+        'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
+        'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
+        'RE - DJOUDI Toufik','C - Gilmore Jaden','C - Delgado Madison',
+        'C - Léon Dawson ','C - Eider Aldana','C - Aldana Jaïa',
+        'C - Pearce Asap Jr ','C - Rojas Diozelina',
+      ],
+      menus: [
+        { name: 'Burger Gourmet + Kombucha Citron', catalog: 75 },
+        { name: 'Ribs + Jus d’orange', catalog: 65 },
+        { name: 'Wings épicé + Berry Fizz', catalog: 65 },
+        { name: 'Paella ou Crousti + Nectar Exotique', catalog: 75 }
+      ],
+      webhook: 'https://discord.com/api/webhooks/1424556848840704114/GO76yfiBv4UtJqxasHFIfiOXyDjOyf4lUjf4V4KywoS4J8skkYYiOW_I-9BS-Gw_lVcO'
+    },
+    'SASP Nord': {
+      limits: null, 
+      beneficiaries: [ 'Agent SASP NORD' ],
+      menus: [
+        { name: 'Steak Potatoes + Jus de raisin Blanc', catalog: 65 },
+        { name: 'Ribs + Berry Fizz', catalog: 65 }
+      ],
+      webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
+    },
+    'Esthétique Paleto': {
+      limits: { day: 2, week: 10 },
+      beneficiaries: [ 'Patronne','Manager','Expérimenté','Stagiaire'],
+      menus: [
+        { name: 'Menu L’Héritage du Berger', catalog: 80 },
+        { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }
+      ],
+      webhook: 'https://discord.com/api/webhooks/1467273894800134495/plSAmYgMbUmc5wI_wvpEYOKHluejsvm6sLcvseqrMH5lF5O-L0CxG3eXkeNki2LNsUCO'
+    },
+  },
 };
 
 // ================= UTILS =================
@@ -64,67 +137,59 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
     } else {
       await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     }
-  } catch (e) { console.error("Discord error:", e); }
+  } catch (e) { console.error("Webhook error:", e); }
 }
 
-async function updateEmployeeStats(sheets, sheetId, employeeName, amount, type) {
+async function updateEmployeeStats(employeeName, amount, type) {
   try {
+    const sheets = await getAuthSheets();
+    const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
     const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = resList.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
-    
     if (rowIndex === -1) return;
-
     const realRow = rowIndex + 2;
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
-
     const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' });
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: sheetId,
-      range: targetRange,
-      valueInputOption: 'RAW',
-      requestBody: { values: [[currentVal + Number(amount)]] }
-    });
-  } catch (e) { console.error("Stats error:", e); }
+    await sheets.spreadsheets.values.update({ spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW', requestBody: { values: [[currentVal + Number(amount)]] } });
+  } catch (e) { console.error("Stats error", e); }
 }
 
 // ================= API =================
 export async function POST(request) {
-  const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
-  let sheets;
-
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
-    
-    // 1. Connexion unique pour tout le processus
-    sheets = await getAuthSheets();
+    const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
 
     // META & SYNC
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const [resFull, resLogs] = await Promise.all([
-        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' }),
-        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Partenaires_Logs'!A2:E2000" }).catch(() => ({ data: { values: [] } }))
-      ]);
-
-      const employeesFull = (resFull.data.values || []).filter(r => r[1]).map(r => ({
+      const sheets = await getAuthSheets();
+      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' });
+      const rows = resFull.data.values || [];
+      const employeesFull = rows.filter(r => r[1]).map(r => ({
         id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
         phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
         salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
       }));
 
+      let partnerLogs = [];
+      try {
+        const resLogs = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Partenaires_Logs'!A2:E2000" });
+        partnerLogs = resLogs.data.values || [];
+      } catch (e) { console.warn("Logs partner empty"); }
+
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, partners: PARTNERS, partnerLogs: resLogs.data.values || [],
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
 
-    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` }, color: 0xff9800 };
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
     switch (action) {
       case 'sendFactures':
@@ -135,21 +200,16 @@ export async function POST(request) {
           { name: '💰 Total', value: `**${totalFact}${CURRENCY.symbol}**`, inline: true },
           { name: '📋 Articles', value: data.items?.map(i => `🔸 x${i.qty} ${i.desc}`).join('\n') || '—' }
         ];
-        // 🚀 Exécution parallèle (Discord + Google Sheets)
-        await Promise.all([
-            sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] }),
-            updateEmployeeStats(sheets, sheetId, data.employee, totalFact, 'CA')
-        ]);
+        await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
+        await updateEmployeeStats(data.employee, totalFact, 'CA');
         break;
 
       case 'sendProduction':
         const tProd = data.items?.reduce((s, i) => s + Number(i.qty), 0);
         embed.title = `📦 Production de ${data.employee}`;
         embed.fields = [{ name: '📊 Total', value: `**${tProd}** unités`, inline: true }, { name: '🍳 Liste', value: data.items?.map(i => `🍳 x${i.qty} ${i.product}`).join('\n') }];
-        await Promise.all([
-            sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] }),
-            updateEmployeeStats(sheets, sheetId, data.employee, tProd, 'STOCK')
-        ]);
+        await sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] });
+        await updateEmployeeStats(data.employee, tProd, 'STOCK');
         break;
 
       case 'sendEntreprise':
@@ -157,14 +217,16 @@ export async function POST(request) {
         const totalProQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
         embed.title = `🚚 Livraison Pro de ${data.employee}`;
         embed.fields = [{ name: '🏢 Client', value: `**${data.company}**`, inline: true }, { name: '📋 Détails', value: proDetail }];
+        await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
         
-        await Promise.all([
-            sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] }),
-            sheets.spreadsheets.values.append({
-                spreadsheetId: sheetId, range: "'Commandes_Pro'!A:D", valueInputOption: 'USER_ENTERED',
-                requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, proDetail, totalProQty ]] }
-            })
-        ]);
+        // Sauvegarde Google Sheets Commandes_Pro
+        try {
+          const sheets = await getAuthSheets();
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Commandes_Pro'!A:D", valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, proDetail, totalProQty ]] }
+          });
+        } catch (e) { console.error("Pro Logs Error", e); }
         break;
 
       case 'sendPartnerOrder':
@@ -172,14 +234,15 @@ export async function POST(request) {
         const menuDetail = data.items?.map(i => `${i.qty}x ${i.menu}`).join(', ');
         embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
         embed.fields = [{ name: '🏢 Entreprise', value: data.company, inline: true }, { name: '🔑 Client', value: data.benef, inline: true }, { name: '🧾 Facture', value: `\`${data.num}\`` }, { name: '💰 Tarif', value: `**1$** / Menu` }, { name: '🍱 Détail', value: menuDetail }];
-        
-        await Promise.all([
-            sendDiscordWebhook(PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures, { embeds: [embed] }),
-            sheets.spreadsheets.values.append({
-                spreadsheetId: sheetId, range: "'Partenaires_Logs'!A:E", valueInputOption: 'USER_ENTERED',
-                requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, data.benef, menuDetail, totalQty ]] }
-            })
-        ]);
+        await sendDiscordWebhook(PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures, { embeds: [embed] });
+
+        try {
+          const sheets = await getAuthSheets();
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Partenaires_Logs'!A:E", valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, data.benef, menuDetail, totalQty ]] }
+          });
+        } catch(e) { console.error("Partner Logs Error", e); }
         break;
 
       case 'sendExpense':
@@ -205,11 +268,6 @@ export async function POST(request) {
 
       default: return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
     }
-
     return NextResponse.json({ success: true });
-
-  } catch (err) {
-    console.error("Critical Error:", err);
-    return NextResponse.json({ success: false, error: "Délai dépassé ou erreur Google. Réessayez." }, { status: 500 });
-  }
+  } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
