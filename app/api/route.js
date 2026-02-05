@@ -122,6 +122,7 @@ async function getAuthSheets() {
 
   const privateKey = privateKeyInput.replace(/\\n/g, '\n');
   const auth = new google.auth.JWT(clientEmail, null, privateKey, ['https://www.googleapis.com/auth/spreadsheets']);
+
   return google.sheets({ version: 'v4', auth });
 }
 
@@ -140,56 +141,64 @@ async function sendDiscordWebhook(url, payload, fileBase64 = null) {
   } catch (e) { console.error("Webhook error:", e); }
 }
 
-async function updateEmployeeStats(employeeName, amount, type) {
+// ✅ Optimisé : on passe "sheets" en paramètre pour éviter de se reconnecter
+async function updateEmployeeStats(sheets, sheetId, employeeName, amount, type) {
   try {
-    const sheets = await getAuthSheets();
-    const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
     const resList = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!B2:B200" });
     const rows = resList.data.values || [];
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
     if (rowIndex === -1) return;
+
     const realRow = rowIndex + 2;
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
+
     const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' });
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
-    await sheets.spreadsheets.values.update({ spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW', requestBody: { values: [[currentVal + Number(amount)]] } });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: sheetId,
+      range: targetRange,
+      valueInputOption: 'RAW',
+      requestBody: { values: [[currentVal + Number(amount)]] }
+    });
   } catch (e) { console.error("Stats error", e); }
 }
 
 // ================= API =================
 export async function POST(request) {
+  const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
+  let sheets;
+
   try {
     const body = await request.json().catch(() => ({}));
     const { action, data } = body;
-    const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
+    
+    // On ouvre la connexion une seule fois pour toute la requête
+    sheets = await getAuthSheets();
 
     // META & SYNC
     if (!action || action === 'getMeta' || action === 'syncData') {
-      const sheets = await getAuthSheets();
-      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' });
-      const rows = resFull.data.values || [];
-      const employeesFull = rows.filter(r => r[1]).map(r => ({
+      const [resFull, resLogs] = await Promise.all([
+        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' }),
+        sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Partenaires_Logs'!A2:E2000" }).catch(() => ({ data: { values: [] } }))
+      ]);
+
+      const employeesFull = (resFull.data.values || []).filter(r => r[1]).map(r => ({
         id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
         phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
         salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
       }));
 
-      let partnerLogs = [];
-      try {
-        const resLogs = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Partenaires_Logs'!A2:E2000" });
-        partnerLogs = resLogs.data.values || [];
-      } catch (e) { console.warn("Logs partner empty"); }
-
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, partners: PARTNERS, partnerLogs,
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs: resLogs.data.values || [],
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
 
-    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
+    let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House v${APP_VERSION}` }, color: 0xff9800 };
 
     switch (action) {
       case 'sendFactures':
@@ -200,16 +209,21 @@ export async function POST(request) {
           { name: '💰 Total', value: `**${totalFact}${CURRENCY.symbol}**`, inline: true },
           { name: '📋 Articles', value: data.items?.map(i => `🔸 x${i.qty} ${i.desc}`).join('\n') || '—' }
         ];
-        await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
-        await updateEmployeeStats(data.employee, totalFact, 'CA');
+        // 🚀 Exécution parallèle pour la vitesse
+        await Promise.all([
+            sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] }),
+            updateEmployeeStats(sheets, sheetId, data.employee, totalFact, 'CA')
+        ]);
         break;
 
       case 'sendProduction':
         const tProd = data.items?.reduce((s, i) => s + Number(i.qty), 0);
         embed.title = `📦 Production de ${data.employee}`;
         embed.fields = [{ name: '📊 Total', value: `**${tProd}** unités`, inline: true }, { name: '🍳 Liste', value: data.items?.map(i => `🍳 x${i.qty} ${i.product}`).join('\n') }];
-        await sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] });
-        await updateEmployeeStats(data.employee, tProd, 'STOCK');
+        await Promise.all([
+            sendDiscordWebhook(WEBHOOKS.stock, { embeds: [embed] }),
+            updateEmployeeStats(sheets, sheetId, data.employee, tProd, 'STOCK')
+        ]);
         break;
 
       case 'sendEntreprise':
@@ -217,38 +231,34 @@ export async function POST(request) {
         const totalProQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
         embed.title = `🚚 Livraison Pro de ${data.employee}`;
         embed.fields = [{ name: '🏢 Client', value: `**${data.company}**`, inline: true }, { name: '📋 Détails', value: proDetail }];
-        await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
         
-        // Sauvegarde Google Sheets Commandes_Pro
-        try {
-          const sheets = await getAuthSheets();
-          await sheets.spreadsheets.values.append({
-            spreadsheetId: sheetId, range: "'Commandes_Pro'!A:D", valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, proDetail, totalProQty ]] }
-          });
-        } catch (e) { console.error("Pro Logs Error", e); }
+        await Promise.all([
+            sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] }),
+            sheets.spreadsheets.values.append({
+                spreadsheetId: sheetId, range: "'Commandes_Pro'!A:D", valueInputOption: 'USER_ENTERED',
+                requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, proDetail, totalProQty ]] }
+            })
+        ]);
         break;
 
       case 'sendPartnerOrder':
         const totalQty = data.items?.reduce((s, i) => s + Number(i.qty), 0) || 0;
         const menuDetail = data.items?.map(i => `${i.qty}x ${i.menu}`).join(', ');
         embed.title = `🤝 Contrat Partenaire par ${data.employee}`;
-        embed.fields = [{ name: '🏢 Entreprise', value: data.company, inline: true }, { name: '🔑 Client', value: data.benef, inline: true }, { name: '🧾 Facture', value: `\`${data.num}\`` }, { name: '💰 Tarif', value: `**1$** / Menu` }, { name: '🍱 Détail', value: menuDetail }];
-        await sendDiscordWebhook(PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures, { embeds: [embed] });
-
-        try {
-          const sheets = await getAuthSheets();
-          await sheets.spreadsheets.values.append({
-            spreadsheetId: sheetId, range: "'Partenaires_Logs'!A:E", valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, data.benef, menuDetail, totalQty ]] }
-          });
-        } catch(e) { console.error("Partner Logs Error", e); }
+        embed.fields = [{ name: '🏢 Entreprise', value: data.company, inline: true }, { name: '🔑 Client', value: data.benef, inline: true }, { name: '🧾 Facture', value: `\`${data.num}\`` }, { name: '🍱 Détail', value: menuDetail }];
+        
+        await Promise.all([
+            sendDiscordWebhook(PARTNERS.companies[data.company]?.webhook || WEBHOOKS.factures, { embeds: [embed] }),
+            sheets.spreadsheets.values.append({
+                spreadsheetId: sheetId, range: "'Partenaires_Logs'!A:E", valueInputOption: 'USER_ENTERED',
+                requestBody: { values: [[ new Date().toISOString().split('T')[0], data.company, data.benef, menuDetail, totalQty ]] }
+            })
+        ]);
         break;
 
       case 'sendExpense':
         embed.title = `💳 Frais de ${data.employee}`;
         embed.fields = [{ name: '🛠️ Type', value: data.kind, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '💵 Montant', value: `**${data.amount}$**` }];
-        if (data.file) embed.image = { url: 'attachment://preuve.jpg' };
         await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file);
         break;
 
@@ -268,6 +278,11 @@ export async function POST(request) {
 
       default: return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
     }
+
     return NextResponse.json({ success: true });
-  } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
+
+  } catch (err) {
+    console.error("Critical Error:", err);
+    return NextResponse.json({ success: false, error: "Serveur occupé ou erreur Google Sheets. Réessayez." }, { status: 500 });
+  }
 }
