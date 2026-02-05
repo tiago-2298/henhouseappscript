@@ -78,8 +78,8 @@ const PARTNERS = {
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
         'RE - DJOUDI Toufik','C - Gilmore Jaden','C - Delgado Madison',
-        'C - Léon Dawson ','C - Eider Aldana','C - Aldana Jaïa',
-        'C - Pearce Asap Jr ','C - Rojas Diozelina',
+        'C - Léon Dawson ','C - Aldana Jaïa',
+        'C - Pearce Asap Jr ',
       ],
       menus: [
         { name: 'Burger Gourmet + Kombucha Citron', catalog: 75 },
@@ -100,7 +100,7 @@ const PARTNERS = {
     },
     'Esthétique Paleto': {
       limits: { day: 2, week: 10 },
-      beneficiaries: [ 'Patronne','Manager','Expérimenté','Stagiaire'],
+      beneficiaries: [ 'Charlie Senna Mendoza','Elijah Evans','Gino Delluci','Luis Blanchette','Rose Brown','Bocceli Hennessy','Diego Velazquez','Stone Taazeer','Kuro Kai',],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
         { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }
@@ -271,3 +271,4 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
+
