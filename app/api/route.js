@@ -32,7 +32,7 @@ const PRICE_LIST = {
 const PARTNERS = {
   companies: {
     'Biogood': {
-      limits: { day: 5, week: 35, dynamicRule: true }, 
+      limits: { day: 5, week: 35, dynamicRule: false }, 
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
@@ -252,3 +252,4 @@ export async function POST(request) {
     return NextResponse.json({ success: false, error: "Délai dépassé ou erreur Google." }, { status: 500 });
   }
 }
+
