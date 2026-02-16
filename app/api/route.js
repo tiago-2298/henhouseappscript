@@ -100,7 +100,7 @@ const PARTNERS = {
     },
     'Esthétique Paleto': {
       limits: { day: 2, week: 10 },
-      beneficiaries: [ 'Charlie Senna Mendoza','Elijah Evans','Gino Delluci','Luis Blanchette','Rose Brown','Bocceli Hennessy','Diego Velazquez','Stone Taazeer','Kuro Kai',],
+      beneficiaries: [ 'Charlie Senna Mendoza','Elijah Evans','Luis Blanchette','Rose Brown','Bocceli Hennessy','Devon Tyler','Leen De Schepper',],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
         { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }
@@ -271,4 +271,5 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
+
 
