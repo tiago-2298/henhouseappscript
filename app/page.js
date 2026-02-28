@@ -1031,83 +1031,153 @@ export default function Home() {
              {/* RULES (RÈGLEMENT INTÉRIEUR) */}
               {currentTab === 'rules' && (
                 <div className="center-box fade-in">
-                  <div className="form-ui" style={{ maxWidth: 800, width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                      <h2 style={{ fontWeight: 900, fontSize: '2rem', letterSpacing: '-1px', color: '#fff' }}>📜 RÈGLEMENT INTÉRIEUR</h2>
-                      <p style={{ color: 'var(--p)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.8rem', marginTop: 5 }}>Hen House • San Andreas</p>
+                  <div className="form-ui" style={{ maxWidth: 850, width: '100%', padding: '40px', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
+                    
+                    <div style={{ textAlign: 'center', marginBottom: 30 }}>
+                      <h2 style={{ fontWeight: 900, fontSize: '2.2rem', letterSpacing: '-1px', color: '#fff', lineHeight: 1.2 }}>📜 RÈGLEMENT INTÉRIEUR</h2>
+                      <p style={{ color: 'var(--p)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.9rem', marginTop: 5 }}>Hen House – San Andreas</p>
                     </div>
 
-                    <div style={{ overflowY: 'auto', paddingRight: 15, flex: 1, color: '#ccc', lineHeight: 1.6, fontSize: '0.95rem' }}>
+                    <div style={{ overflowY: 'auto', paddingRight: 20, flex: 1, color: '#ccc', lineHeight: 1.6, fontSize: '0.95rem' }}>
                       
-                      <div style={{ background: 'rgba(255,152,0,0.1)', borderLeft: '4px solid var(--p)', padding: 15, borderRadius: '0 10px 10px 0', marginBottom: 25 }}>
-                        <b style={{ color: '#fff' }}>Préambule :</b> Ce document régit les règles internes du Hen House. Son respect est obligatoire pour l'ensemble du personnel.
+                      {/* PRÉAMBULE */}
+                      <div style={{ background: 'rgba(255,255,255,0.05)', borderLeft: '4px solid var(--muted)', padding: 20, borderRadius: '0 16px 16px 0', marginBottom: 30 }}>
+                        <h4 style={{ color: '#fff', fontWeight: 800, marginBottom: 10, fontSize: '1.1rem' }}>PRÉAMBULE</h4>
+                        <p>Le présent règlement intérieur a pour objectif de définir les règles applicables à l’ensemble des employés du Hen House, afin de garantir un environnement de travail professionnel, sécurisé, respectueux et conforme aux normes sanitaires en vigueur à San Andreas.</p>
+                        <p style={{ marginTop: 10 }}>Toute personne employée au sein de l’établissement reconnaît avoir pris connaissance du présent règlement et s’engage à le respecter sans réserve.</p>
                       </div>
 
-                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 10, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>I. TEMPS DE TRAVAIL</h3>
-                      <h4 style={{ color: '#fff', fontWeight: 700, marginTop: 15 }}>I.I Horaires</h4>
-                      <ul style={{ paddingLeft: 20, marginBottom: 15 }}>
-                        <li>Les employés doivent respecter les horaires fixés par la direction ou les managers.</li>
-                        <li>Un minimum de 8 heures de service par semaine est requis.</li>
-                      </ul>
+                      {/* I. TEMPS DE TRAVAIL */}
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>I. TEMPS DE TRAVAIL</h3>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>I.I Horaires</h4>
+                      <p style={{ marginBottom: 15 }}>Les employés doivent respecter les horaires établis par la direction ou les managers. Un minimum de 8 heures de service par semaine est requis.</p>
                       <h4 style={{ color: '#fff', fontWeight: 700 }}>I.II Retards et absences</h4>
-                      <ul style={{ paddingLeft: 20, marginBottom: 25 }}>
-                        <li>Tout retard ou absence doit être signalé au moins 1 heure avant le début du service, sauf cas de force majeure.</li>
-                        <li>Toute absence injustifiée de plus de 2 jours pourra entraîner une sanction disciplinaire.</li>
-                      </ul>
+                      <p style={{ marginBottom: 10 }}>Tout retard ou absence doit être signalé au moins 1 heure avant le début du service, sauf cas de force majeure. Toute absence injustifiée supérieure à 2 jours pourra entraîner une sanction disciplinaire.</p>
 
-                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 10, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>II. TENUE PROFESSIONNELLE</h3>
-                      <h4 style={{ color: '#fff', fontWeight: 700, marginTop: 15 }}>II.I Uniforme</h4>
-                      <p style={{ marginBottom: 10 }}>Le port de la tenue professionnelle officielle du Hen House est obligatoire durant le service. La tenue doit être propre, soignée et conforme à l’image de l’établissement.</p>
+                      {/* II. TENUE PROFESSIONNELLE */}
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>II. TENUE PROFESSIONNELLE</h3>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>II.I Uniforme</h4>
+                      <p style={{ marginBottom: 15 }}>Le port de la tenue professionnelle officielle du Hen House est obligatoire durant le service. La tenue doit être propre, soignée et conforme à l’image de l’établissement.</p>
                       <h4 style={{ color: '#fff', fontWeight: 700 }}>II.II Présentation</h4>
-                      <ul style={{ paddingLeft: 20, marginBottom: 25 }}>
-                        <li>Cheveux propres et attachés si nécessaire.</li>
-                        <li>Ongles courts et propres.</li>
-                        <li>Absence de parfum excessif.</li>
-                        <li>Bijoux limités pour des raisons d’hygiène et de sécurité.</li>
+                      <ul style={{ paddingLeft: 20, marginBottom: 10 }}>
+                        <li>Cheveux propres et attachés si nécessaire</li>
+                        <li>Ongles courts et propres</li>
+                        <li>Bijoux limités pour des raisons d’hygiène et de sécurité</li>
+                        <li>Aucun parfum excessif</li>
                       </ul>
 
-                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 10, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>III. HYGIÈNE ET NORMES SANITAIRES</h3>
-                      <h4 style={{ color: '#fff', fontWeight: 700, marginTop: 15 }}>III.I Lavage des mains obligatoires</h4>
-                      <ul style={{ paddingLeft: 20, marginBottom: 10 }}>
-                        <li>Avant toute prise de service et après chaque pause.</li>
-                        <li>Après manipulation d’argent, passage aux toilettes, ou contact avec un élément non alimentaire.</li>
+                      {/* III. HYGIÈNE ET NORMES SANITAIRES */}
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>III. HYGIÈNE ET NORMES SANITAIRES</h3>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>III.I Lavage des mains</h4>
+                      <p>Le lavage des mains est obligatoire :</p>
+                      <ul style={{ paddingLeft: 20, marginBottom: 15 }}>
+                        <li>Avant la prise de service et après chaque pause</li>
+                        <li>Après manipulation d’argent ou passage aux toilettes</li>
+                        <li>Après tout contact non alimentaire</li>
                       </ul>
                       <h4 style={{ color: '#fff', fontWeight: 700 }}>III.II Port de gants</h4>
+                      <p style={{ marginBottom: 15 }}>Le port de gants alimentaires est obligatoire lors de toute préparation ou manipulation de nourriture. Ils doivent être changés régulièrement et ne remplacent en aucun cas le lavage des mains.</p>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>III.III Manipulation des aliments</h4>
+                      <ul style={{ paddingLeft: 20, marginBottom: 15 }}>
+                        <li>Les aliments doivent être conservés aux températures réglementaires.</li>
+                        <li>Aucun produit périmé ne doit être utilisé.</li>
+                        <li>Les surfaces de travail doivent être nettoyées et désinfectées régulièrement.</li>
+                      </ul>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>III.IV Interdictions sanitaires</h4>
+                      <p>Il est strictement interdit :</p>
                       <ul style={{ paddingLeft: 20, marginBottom: 10 }}>
-                        <li>Obligatoire lors de la préparation des aliments (doivent être changés régulièrement).</li>
-                        <li><b style={{color: 'var(--error)'}}>Attention:</b> Les gants ne remplacent pas le lavage des mains.</li>
+                        <li>De travailler en cas de maladie contagieuse.</li>
+                        <li>De fumer dans les zones de préparation.</li>
+                        <li>De consommer des aliments personnels en zone de cuisine.</li>
                       </ul>
-                      <h4 style={{ color: '#fff', fontWeight: 700 }}>III.III Manipulation & Interdictions</h4>
+                      <p style={{ color: 'var(--error)', fontWeight: 700, fontSize: '0.85rem' }}>Tout manquement aux règles d’hygiène pourra entraîner une exclusion immédiate du service.</p>
+
+                      {/* IV. COMPORTEMENT ET CONDUITE */}
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>IV. COMPORTEMENT ET CONDUITE</h3>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>IV.I Respect</h4>
+                      <p style={{ marginBottom: 15 }}>Les employés doivent adopter une attitude respectueuse envers les clients, les collègues et la hiérarchie.</p>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>IV.II Comportements interdits</h4>
                       <ul style={{ paddingLeft: 20, marginBottom: 10 }}>
-                        <li>Conservation selon les normes de température, désinfection régulière, aucun aliment périmé.</li>
-                        <li>Interdit de travailler en cas de maladie contagieuse.</li>
-                        <li>Interdit de fumer ou de consommer des aliments personnels en zone de préparation.</li>
+                        <li>Insultes, menaces ou violences</li>
+                        <li>Discriminations ou harcèlement</li>
+                        <li>Consommation ou possession d’alcool ou de drogue</li>
+                        <li>Discussions ou activités illégales au sein de l’entreprise</li>
                       </ul>
-                      <p style={{ color: 'var(--error)', fontWeight: 700, fontSize: '0.85rem', marginBottom: 25 }}>⚠️ Tout manquement aux règles d’hygiène pourra entraîner une exclusion immédiate du service.</p>
+                      <p style={{ color: 'var(--error)', fontWeight: 700, fontSize: '0.85rem', marginBottom: 15 }}>Toute infraction grave pourra entraîner un licenciement immédiat.</p>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>IV.III Téléphones portables</h4>
+                      <p style={{ marginBottom: 15 }}>L’utilisation du téléphone personnel est interdite pendant le service, sauf urgence ou autorisation hiérarchique.</p>
+                      <h4 style={{ color: '#fff', fontWeight: 700 }}>IV.IV Coffre et ressources</h4>
+                      <p style={{ marginBottom: 10 }}>Le coffre est strictement réservé à un usage professionnel. Chaque employé dispose de 10 menus par semaine, déposés le dimanche soir. Tout prélèvement non autorisé sera sanctionné.</p>
 
-                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 10, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>IV. COMPORTEMENT ET CONDUITE</h3>
-                      <ul style={{ paddingLeft: 20, marginBottom: 10, marginTop: 15 }}>
-                        <li><b style={{color: '#fff'}}>Respect :</b> Attitude respectueuse exigée envers les clients, collègues et la hiérarchie.</li>
-                        <li><b style={{color: '#fff'}}>Interdictions strictes :</b> Insultes, violences, discrimination, consommation/possession d'alcool ou drogue, et toute activité illégale nuisant à l'entreprise.</li>
-                        <li><b style={{color: '#fff'}}>Téléphones :</b> Interdits durant le service, sauf urgence ou autorisation.</li>
-                        <li><b style={{color: '#fff'}}>Coffre & Ressources :</b> Réservé à un usage pro. 10 menus max par employé/semaine (déposés le dimanche soir). Tout abus sera sanctionné.</li>
-                      </ul>
+                      {/* V to IX : Grid display for better readability */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20, marginTop: 30 }}>
+                        <div style={{ background: 'rgba(20,20,20,0.5)', padding: 20, borderRadius: 16, border: '1px solid var(--glass-b)' }}>
+                          <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1rem', marginBottom: 10 }}>V. CONFIDENTIALITÉ</h3>
+                          <p style={{ fontSize: '0.85rem' }}>Les informations relatives aux clients, aux employés et à l’entreprise sont strictement confidentielles. Toute divulgation non autorisée est formellement interdite.</p>
+                        </div>
+                        <div style={{ background: 'rgba(20,20,20,0.5)', padding: 20, borderRadius: 16, border: '1px solid var(--glass-b)' }}>
+                          <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1rem', marginBottom: 10 }}>VI. SÉCURITÉ</h3>
+                          <p style={{ fontSize: '0.85rem' }}>Les employés doivent respecter les consignes de sécurité, utiliser correctement les équipements et signaler immédiatement tout incident ou blessure.</p>
+                        </div>
+                        <div style={{ background: 'rgba(20,20,20,0.5)', padding: 20, borderRadius: 16, border: '1px solid var(--glass-b)' }}>
+                          <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1rem', marginBottom: 10 }}>VII. UTILISATION DU MATÉRIEL</h3>
+                          <p style={{ fontSize: '0.85rem' }}>Le matériel de l’entreprise doit être utilisé uniquement à des fins professionnelles. Les casiers personnels ne doivent contenir aucun objet illégal. Toute dégradation volontaire sera sanctionnée.</p>
+                        </div>
+                        <div style={{ background: 'rgba(20,20,20,0.5)', padding: 20, borderRadius: 16, border: '1px solid var(--glass-b)' }}>
+                          <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1rem', marginBottom: 10 }}>VIII. CONGÉS ET MALADIE</h3>
+                          <p style={{ fontSize: '0.85rem' }}>Les demandes de congés doivent être effectuées à l’avance et validées par la direction. En cas de maladie, prévenir immédiatement (un justificatif médical peut être exigé).</p>
+                        </div>
+                      </div>
 
-                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 10, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5, marginTop: 25 }}>V à IX. RÈGLES GÉNÉRALES</h3>
-                      <ul style={{ paddingLeft: 20, marginBottom: 25, marginTop: 15 }}>
-                        <li><b style={{color: '#fff'}}>V. Confidentialité :</b> Les infos clients/employés/entreprise sont confidentielles.</li>
-                        <li><b style={{color: '#fff'}}>VI. Sécurité :</b> Utilisation correcte des équipements et signalement immédiat des incidents.</li>
-                        <li><b style={{color: '#fff'}}>VII. Matériel :</b> Usage pro exclusif. Aucun objet illégal dans les casiers. Dégradation sanctionnée.</li>
-                        <li><b style={{color: '#fff'}}>VIII. Congés & Maladie :</b> Validation direction requise pour les congés. Prévenir immédiatement en cas de maladie (justificatif exigible).</li>
-                        <li><b style={{color: '#fff'}}>IX. Rémunération :</b> Versement conforme aux lois de San Andreas.</li>
-                      </ul>
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>IX. RÉMUNÉRATION</h3>
+                      <p style={{ marginBottom: 20 }}>Les salaires sont versés conformément aux règles internes du Hen House et aux lois en vigueur à San Andreas.</p>
 
-                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginBottom: 10, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>X à XII. DISCIPLINE ET MODIFICATIONS</h3>
-                      <p style={{ marginBottom: 10, marginTop: 15 }}>Tout manquement entraînera des sanctions selon la gravité : avertissement verbal/écrit, mise à pied, rétrogradation ou licenciement.</p>
-                      <p style={{ marginBottom: 10 }}>Chaque employé représente l’image du Hen House. La direction se réserve le droit de modifier ce règlement à tout moment (communication par écrit).</p>
-                      
-                      <div style={{ textAlign: 'center', marginTop: 30, padding: 20, borderTop: '1px dashed #444', color: 'var(--muted)' }}>
-                        <i>Entrée en vigueur immédiate. <br/><b>La DIRECTION du Hen House</b></i>
+                      {/* X to XIII */}
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>X. DISCIPLINE ET SANCTIONS</h3>
+                      <p>Tout manquement au présent règlement pourra entraîner : Avertissement verbal, Avertissement écrit, Mise à pied temporaire, Rétrogradation, Licenciement. La sanction sera proportionnelle à la gravité des faits.</p>
+
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>XI. HIÉRARCHIE & XII. IMAGE</h3>
+                      <p style={{ marginBottom: 10 }}>Les employés doivent respecter la hiérarchie interne. Les décisions de la direction et des managers sont applicables immédiatement. Toute contestation publique est interdite.</p>
+                      <p style={{ marginBottom: 10 }}>Chaque employé représente l’image du Hen House. Tout comportement portant atteinte à la réputation de l’établissement est strictement interdit.</p>
+
+                      <h3 style={{ color: 'var(--p)', fontWeight: 800, fontSize: '1.2rem', marginTop: 30, marginBottom: 15, borderBottom: '1px solid var(--glass-b)', paddingBottom: 5 }}>XIII. MODIFICATIONS DU RÈGLEMENT</h3>
+                      <p style={{ marginBottom: 40 }}>La direction se réserve le droit de modifier le présent règlement à tout moment. Toute modification sera communiquée par écrit.</p>
+
+                      {/* XIV CLAUSE EXCEPTIONNELLE - TACOVANS */}
+                      <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '2px solid var(--error)', padding: 30, borderRadius: 20, marginBottom: 30, boxShadow: '0 10px 30px rgba(239, 68, 68, 0.15)' }}>
+                        <h3 style={{ color: 'var(--error)', fontWeight: 900, fontSize: '1.4rem', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span>⚠️</span> XIV. CLAUSE EXCEPTIONNELLE – TACOVANS
+                        </h3>
+                        <p style={{ color: '#fff', fontWeight: 700, marginBottom: 20, fontSize: '0.9rem' }}><i>(Clause spécifique – À prendre au sérieux)</i><br/>Cette clause s’applique à tout employé utilisant un TacoVan appartenant au Hen House.</p>
+                        
+                        <h4 style={{ color: '#ff8888', fontWeight: 800 }}>XIV.I Lieux strictement interdits</h4>
+                        <p>Il est formellement interdit de stationner, vendre ou exercer une activité commerciale avec un TacoVan :</p>
+                        <ul style={{ paddingLeft: 20, marginBottom: 15, color: '#fff', fontWeight: 600 }}>
+                          <li>Devant les restaurants</li>
+                          <li>Devant les supérettes et stations-service de type LTD</li>
+                          <li>Devant les boîtes de nuit</li>
+                          <li>Devant les bars</li>
+                        </ul>
+                        <p style={{ marginBottom: 20, fontStyle: 'italic', color: '#ccc' }}>Ces interdictions visent à éviter les conflits commerciaux et préserver l’image de l’entreprise.</p>
+
+                        <h4 style={{ color: '#ff8888', fontWeight: 800 }}>XIV.II Autorisations obligatoires</h4>
+                        <p style={{ marginBottom: 20 }}>Toute installation ou arrêt prolongé nécessite une autorisation préalable du responsable ou propriétaire du lieu. Cela concerne toutes les entreprises et établissements privés. En cas de refus, l’employé doit quitter les lieux immédiatement.</p>
+
+                        <h4 style={{ color: '#ff8888', fontWeight: 800 }}>XIV.III Sanctions</h4>
+                        <p>Tout non-respect de cette clause pourra entraîner :</p>
+                        <ul style={{ paddingLeft: 20, marginBottom: 15, color: '#fff', fontWeight: 700 }}>
+                          <li>Retrait du TacoVan</li>
+                          <li>Suspension immédiate</li>
+                          <li>Sanction disciplinaire pouvant aller jusqu’au licenciement</li>
+                        </ul>
+                        <p style={{ color: 'var(--error)', fontWeight: 900, textTransform: 'uppercase', fontSize: '1.1rem', textAlign: 'center', marginTop: 20, borderTop: '1px solid rgba(239,68,68,0.3)', paddingTop: 15 }}>Aucune tolérance ne sera accordée.</p>
+                      </div>
+
+                      {/* FOOTER */}
+                      <div style={{ textAlign: 'center', marginTop: 40, padding: 30, borderTop: '1px dashed #444', color: 'var(--muted)', background: 'rgba(0,0,0,0.4)', borderRadius: 20 }}>
+                        <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff', marginBottom: 5 }}>Fait à San Andreas</div>
+                        <div style={{ marginBottom: 15 }}>Entrée en vigueur immédiate</div>
+                        <div style={{ color: 'var(--p)', fontWeight: 900, letterSpacing: '3px', textTransform: 'uppercase', fontSize: '1.1rem' }}>La Direction du Hen House</div>
                       </div>
 
                     </div>
@@ -1258,6 +1328,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
