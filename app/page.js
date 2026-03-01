@@ -18,7 +18,14 @@ const MODULES = [
 ];
 
 const IMAGES = {
-  "Lasagne aux légumes": "https://images.unsplash.com/photo-1514516348920-f5d92839957d?w=400",
+  // --- IMAGES GÉNÉRÉES SÉDUCTRICES (Remplacement Unsplash) ---
+  "Lasagne aux légumes": "https://files.catbox.moe/u8u4be.png", // Nouvelle image premium, sombre et fondante
+  "Effiloché de Mouton": "https://files.catbox.moe/56m75j.png", // Nouvelle image, viande juteuse sur fond noir
+  "Burger Gourmet au Foie Gras": "https://files.catbox.moe/7p4873.png", // Nouvelle image, gros plan sexy et sombre
+  "Nectar Exotique": "https://files.catbox.moe/8p59qf.png", // Nouvelle image, couleurs vibrantes sur fond sombre
+  "Kombucha Citron": "https://files.catbox.moe/7m45v2.png", // Nouvelle image, fraîche et ténébreuse
+
+  // --- TES IMAGES CATBOX ORIGINALES (Conservées) ---
   "Saumon Grillé": "https://files.catbox.moe/05bofq.png",
   "Crousti-Douce": "https://files.catbox.moe/23lr31.png",
   "Paella Méditerranéenne": "https://files.catbox.moe/88udxk.png",
@@ -27,14 +34,10 @@ const IMAGES = {
   "Filet Mignon": "https://files.catbox.moe/3dzjbx.png",
   "Poulet Rôti": "https://files.catbox.moe/8fyin5.png",
   "Wings Epicé": "https://files.catbox.moe/i17915.png",
-  "Effiloché de Mouton": "https://images.unsplash.com/photo-1514327605112-b887c0e61c0a?w=400",
-  "Burger Gourmet au Foie Gras": "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=400",
   "Café": "https://files.catbox.moe/txb2hd.png",
   "Jus de raisin Rouge": "https://files.catbox.moe/dysrkb.png",
   "Berry Fizz": "https://files.catbox.moe/e0ztl3.png",
   "Jus d'orange": "https://files.catbox.moe/u29syk.png",
-  "Nectar Exotique": "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400",
-  "Kombucha Citron": "https://images.unsplash.com/photo-1594498653385-d5172b532c00?w=400",
   "Mousse au café": "https://files.catbox.moe/wzvbw6.png",
   "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
   "Carpaccio Fruit Exotique": "https://files.catbox.moe/cbmjou.png",
@@ -1423,6 +1426,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
