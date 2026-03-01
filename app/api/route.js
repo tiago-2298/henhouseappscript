@@ -79,7 +79,7 @@ const PARTNERS = {
         'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
         'RE - DJOUDI Toufik','C - Gilmore Jaden','C - Delgado Madison',
         'C - Léon Dawson ','C - Aldana Jaïa',
-        'C - Pearce Asap Jr ',
+        'C - Pearce Asap Jr ','C - Blossom Skye',
       ],
       menus: [
         { name: 'Burger Gourmet + Kombucha Citron', catalog: 75 },
@@ -271,5 +271,6 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
+
 
 
