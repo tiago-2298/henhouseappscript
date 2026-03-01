@@ -627,48 +627,92 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
-         {/* HOME */}
+       {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
-                  <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
+                  
+                  {/* HEADER IMMERSIF */}
+                  <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'end', borderBottom: '1px solid var(--glass-b)', paddingBottom: 25 }}>
                     <div>
-                      <h1 style={{ fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1 }}>Hello, {user.split(' ')[0]}</h1>
-                      <p style={{ color: 'var(--muted)', fontSize: '1.2rem', marginTop: 10 }}>Prêt pour le service ? Voici tes stats.</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 10px var(--success)' }}></div>
+                        <span style={{ color: 'var(--success)', fontWeight: 800, letterSpacing: '2px', fontSize: '0.75rem', textTransform: 'uppercase' }}>
+                          Connexion Sécurisée • Réseau Hen House
+                        </span>
+                      </div>
+                      <h1 style={{ fontSize: '3.2rem', fontWeight: 900, letterSpacing: '-1.5px', lineHeight: 1, color: '#fff' }}>
+                        {new Date().getHours() < 18 ? 'Bonjour' : 'Bonsoir'}, {user.split(' ')[0]}.
+                      </h1>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 15, marginTop: 12 }}>
+                        <span style={{ background: 'var(--p)', color: '#000', padding: '4px 12px', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                          {myProfile?.role || 'Employé'}
+                        </span>
+                        <span style={{ color: 'var(--muted)', fontSize: '0.95rem' }}>
+                          Vos indicateurs de performance sont à jour.
+                        </span>
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '3rem', fontWeight: 900, color: 'rgba(255,255,255,0.1)' }}>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, color: 'rgba(255,255,255,0.9)', lineHeight: 1 }}>
+                        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div style={{ color: 'var(--p)', fontSize: '1rem', fontWeight: 700, textTransform: 'capitalize', marginTop: 5 }}>
+                        {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </div>
                     </div>
                   </div>
 
-                  {/* STATISTIQUES */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 40 }}>
-                    <div className="stat-card">
-                      <div className="stat-icon" style={{ color: 'var(--p)' }}>💰</div>
-                      <div><div className="stat-label">Chiffre d'Affaires</div><div className="stat-val">${Math.round(myProfile?.ca || 0).toLocaleString()}</div></div>
+                  {/* STATISTIQUES (INDICATEURS) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 45 }}>
+                    <div className="stat-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 15 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div className="stat-icon" style={{ color: 'var(--p)', width: 45, height: 45, fontSize: '1.5rem' }}>💰</div>
+                        <div style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 800, background: 'rgba(16,185,129,0.1)', padding: '4px 8px', borderRadius: 8 }}>Ventes</div>
+                      </div>
+                      <div>
+                        <div className="stat-val" style={{ fontSize: '2.2rem' }}>${Math.round(myProfile?.ca || 0).toLocaleString()}</div>
+                        <div className="stat-label" style={{ marginTop: 5 }}>Chiffre d'Affaires Généré</div>
+                      </div>
                     </div>
-                    <div className="stat-card">
-                      <div className="stat-icon" style={{ color: '#10b981' }}>📦</div>
-                      <div><div className="stat-label">Production</div><div className="stat-val">{myProfile?.stock?.toLocaleString?.() ?? myProfile?.stock}</div></div>
+
+                    <div className="stat-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 15 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div className="stat-icon" style={{ color: '#10b981', width: 45, height: 45, fontSize: '1.5rem' }}>📦</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 800, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 8 }}>Cuisine</div>
+                      </div>
+                      <div>
+                        <div className="stat-val" style={{ fontSize: '2.2rem', color: '#10b981' }}>{myProfile?.stock?.toLocaleString?.() ?? myProfile?.stock}</div>
+                        <div className="stat-label" style={{ marginTop: 5 }}>Articles Préparés</div>
+                      </div>
                     </div>
-                    <div className="stat-card">
-                      <div className="stat-icon" style={{ color: '#6366f1' }}>💶</div>
-                      <div><div className="stat-label">Salaire Estimé</div><div className="stat-val">${Math.round(myProfile?.salary || 0).toLocaleString()}</div></div>
+
+                    <div className="stat-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 15 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div className="stat-icon" style={{ color: '#6366f1', width: 45, height: 45, fontSize: '1.5rem' }}>💶</div>
+                        <div style={{ fontSize: '0.7rem', color: '#6366f1', fontWeight: 800, background: 'rgba(99,102,241,0.1)', padding: '4px 8px', borderRadius: 8 }}>Projection</div>
+                      </div>
+                      <div>
+                        <div className="stat-val" style={{ fontSize: '2.2rem' }}>${Math.round(myProfile?.salary || 0).toLocaleString()}</div>
+                        <div className="stat-label" style={{ marginTop: 5 }}>Salaire Prévisionnel Brut</div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* MODULE : ANNONCES DE LA DIRECTION */}
-                  <div style={{ marginBottom: 40 }}>
-                    <h3 style={{ marginBottom: 15, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>📢 MOT DE LA DIRECTION</h3>
+                  {/* BUREAU DE LA DIRECTION */}
+                  <div style={{ marginBottom: 45 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                      <h3 style={{ fontWeight: 900, color: '#fff', fontSize: '1.2rem', textTransform: 'uppercase' }}>BUREAU DE LA DIRECTION</h3>
+                      <div style={{ height: 1, flex: 1, background: 'linear-gradient(90deg, var(--glass-b), transparent)' }}></div>
+                    </div>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                      
-                      {/* Annonce Primes (Orange/Gold) */}
+                      {/* Annonce Primes */}
                       <div style={{ background: 'rgba(255, 152, 0, 0.08)', border: '1px solid rgba(255, 152, 0, 0.3)', padding: '20px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
                         <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 10px rgba(255, 152, 0, 0.5))' }}>🏆</div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                             <span style={{ fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', fontSize: '1.1rem' }}>LE PODIUM DES PRIMES</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '10px' }}>Épinglé</span>
+                            <span style={{ fontSize: '0.7rem', color: '#000', background: 'var(--p)', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Épinglé</span>
                           </div>
                           <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.6 }}>
                             Pour rappel, les primes seront versées aux <strong>3 meilleurs du classement</strong>, à condition de respecter les critères suivants :<br/>
@@ -678,25 +722,28 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* Alerte Règlement (Rouge/Alerte) */}
+                      {/* Alerte Règlement */}
                       <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '20px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
                         <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.5))' }}>📜</div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                             <span style={{ fontWeight: 900, color: '#ef4444', letterSpacing: '1px', fontSize: '1.1rem' }}>CONSULTATION DU RÈGLEMENT</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '10px' }}>Important</span>
+                            <span style={{ fontSize: '0.7rem', color: '#fff', background: '#ef4444', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>Important</span>
                           </div>
                           <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.5 }}>
                             N'oubliez pas d'aller lire le <strong style={{ color: '#fff', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setCurrentTab('rules')}>Règlement Intérieur</strong> dans la section dédiée de votre terminal. Le respect de ces règles (notamment la Clause XIV sur les TacoVans) est <strong>obligatoire</strong>.
                           </div>
                         </div>
                       </div>
-
                     </div>
                   </div>
 
-                  {/* ACCÈS RAPIDE */}
-                  <h3 style={{ marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>⚡ ACCÈS RAPIDE</h3>
+                  {/* APPLICATIONS MÉTIER */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <h3 style={{ fontWeight: 900, color: '#fff', fontSize: '1.2rem', textTransform: 'uppercase' }}>APPLICATIONS MÉTIER</h3>
+                    <div style={{ height: 1, flex: 1, background: 'linear-gradient(90deg, var(--glass-b), transparent)' }}></div>
+                  </div>
+                  
                   <div className="grid">
                     {MODULES.filter(m => !['home', 'profile', 'performance', 'directory', 'rules'].includes(m.id)).map(m => (
                       <div key={m.id} className="card" onClick={() => setCurrentTab(m.id)} style={{ height: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)' }}>
@@ -1368,6 +1415,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
