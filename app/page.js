@@ -656,6 +656,58 @@ export default function Home() {
                     </div>
                   </div>
 
+                  {/* MODULE : ANNONCES DE LA DIRECTION */}
+                  <div style={{ marginBottom: 40 }}>
+                    <h3 style={{ marginBottom: 15, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>📢 MOT DE LA DIRECTION</h3>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+                      
+                      {/* Annonce Primes (Orange/Gold) */}
+                      <div style={{ background: 'rgba(255, 152, 0, 0.08)', border: '1px solid rgba(255, 152, 0, 0.3)', padding: '20px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 10px rgba(255, 152, 0, 0.5))' }}>🏆</div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                            <span style={{ fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', fontSize: '1.1rem' }}>LE PODIUM DES PRIMES</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '10px' }}>Épinglé</span>
+                          </div>
+                          <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                            Pour rappel, les primes seront versées aux <strong>3 meilleurs du classement</strong>, à condition de respecter les critères suivants :<br/>
+                            <span style={{ color: '#10b981', fontWeight: 900 }}>✅ Assiduité :</span> Vos heures de service doivent être complètes.<br/>
+                            <span style={{ color: '#10b981', fontWeight: 900 }}>✅ Performance :</span> Un quota minimum de 25 factures validées est requis.
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Alerte Règlement (Rouge/Alerte) */}
+                      <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '20px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.5))' }}>📜</div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                            <span style={{ fontWeight: 900, color: '#ef4444', letterSpacing: '1px', fontSize: '1.1rem' }}>CONSULTATION DU RÈGLEMENT</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '10px' }}>Important</span>
+                          </div>
+                          <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                            N'oubliez pas d'aller lire le <strong style={{ color: '#fff', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setCurrentTab('rules')}>Règlement Intérieur</strong> dans la section dédiée de votre terminal. Le respect de ces règles (notamment la Clause XIV sur les TacoVans) est <strong>obligatoire</strong>.
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* ACCÈS RAPIDE */}
+                  <h3 style={{ marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>⚡ ACCÈS RAPIDE</h3>
+                  <div className="grid">
+                    {MODULES.filter(m => !['home', 'profile', 'performance', 'directory', 'rules'].includes(m.id)).map(m => (
+                      <div key={m.id} className="card" onClick={() => setCurrentTab(m.id)} style={{ height: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)' }}>
+                        <span style={{ fontSize: '3rem', marginBottom: 15 }}>{m.e}</span>
+                        <div style={{ fontSize: '1rem', fontWeight: 800 }}>{m.l}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
                   {/* NOUVEAU MODULE : ANNONCES DE LA DIRECTION */}
                   <div style={{ marginBottom: 40 }}>
                     <h3 style={{ marginBottom: 15, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>📢 MOT DE LA DIRECTION</h3>
@@ -1366,6 +1418,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
