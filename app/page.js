@@ -627,7 +627,7 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
-              {/* HOME */}
+           {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
                   <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
@@ -640,7 +640,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 50 }}>
+                  {/* STATISTIQUES */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 40 }}>
                     <div className="stat-card">
                       <div className="stat-icon" style={{ color: 'var(--p)' }}>💰</div>
                       <div><div className="stat-label">Chiffre d'Affaires</div><div className="stat-val">${Math.round(myProfile?.ca || 0).toLocaleString()}</div></div>
@@ -655,9 +656,47 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <h3 style={{ marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>ACCÈS RAPIDE</h3>
+                  {/* NOUVEAU MODULE : ANNONCES DE LA DIRECTION */}
+                  <div style={{ marginBottom: 40 }}>
+                    <h3 style={{ marginBottom: 15, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>📢 MOT DE LA DIRECTION</h3>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+                      
+                      {/* Alerte Importante (Rouge) */}
+                      <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '20px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.5))' }}>⚠️</div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 5 }}>
+                            <span style={{ fontWeight: 900, color: '#ef4444', letterSpacing: '1px', fontSize: '1.1rem' }}>RAPPEL TACOVANS</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '10px' }}>Aujourd'hui</span>
+                          </div>
+                          <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                            Interdiction formelle de stationner devant le Bahama Mamas. La police tourne dans le secteur, respectez la <b>Clause XIV</b> du règlement !
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info Standard (Orange) */}
+                      <div style={{ background: 'rgba(255, 152, 0, 0.05)', border: '1px solid var(--glass-b)', padding: '20px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        <div style={{ fontSize: '2.5rem' }}>🆕</div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 5 }}>
+                            <span style={{ fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', fontSize: '1.1rem' }}>NOUVEAU MENU</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: '10px' }}>Hier</span>
+                          </div>
+                          <div style={{ color: '#e2e8f0', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                            Le <span style={{ color: 'var(--p)', fontWeight: 700 }}>Burger Gourmet au Foie Gras</span> est désormais disponible à la vente. Proposez-le aux clients VIP en priorité.
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* ACCÈS RAPIDE */}
+                  <h3 style={{ marginBottom: 20, fontWeight: 900, color: '#fff', fontSize: '1.2rem', paddingLeft: 10, borderLeft: '4px solid var(--p)' }}>⚡ ACCÈS RAPIDE</h3>
                   <div className="grid">
-                    {MODULES.filter(m => !['home', 'profile', 'performance', 'directory'].includes(m.id)).map(m => (
+                    {MODULES.filter(m => !['home', 'profile', 'performance', 'directory', 'rules'].includes(m.id)).map(m => (
                       <div key={m.id} className="card" onClick={() => setCurrentTab(m.id)} style={{ height: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)' }}>
                         <span style={{ fontSize: '3rem', marginBottom: 15 }}>{m.e}</span>
                         <div style={{ fontSize: '1rem', fontWeight: 800 }}>{m.l}</div>
@@ -666,7 +705,6 @@ export default function Home() {
                   </div>
                 </div>
               )}
-
               {/* INVOICES */}
               {currentTab === 'invoices' && (
                 <div className="fade-in">
@@ -1328,6 +1366,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
