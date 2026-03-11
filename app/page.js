@@ -1103,29 +1103,40 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-                    {data.employeesFull
-                      // FILTRE MAGIQUE : Cherche dans le nom OU dans le poste
-                      .filter(e => 
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+                    {(() => {
+                      const filteredEmployees = data.employeesFull.filter(e => 
                         e.name.toLowerCase().includes(search.toLowerCase()) || 
                         (e.role && e.role.toLowerCase().includes(search.toLowerCase()))
-                      )
-                      .map(e => (
-                      <div key={e.id} className="card" style={{ height: 'auto', padding: 20, background: 'rgba(20,20,20,0.8)', alignItems: 'center', display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-                        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(45deg, #333, #000)', border: '2px solid var(--glass-b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, marginBottom: 15 }}>{e.name.charAt(0)}</div>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{e.name}</div>
-                        <div style={{ color: 'var(--p)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 15 }}>{e.role}</div>
+                      );
 
-                        <button
-                          type="button"
-                          className="btn-p"
-                          style={{ padding: '10px', fontSize: '0.9rem', width: '100%', background: '#222', color: '#fff' }}
-                          onClick={() => copyToClipboard(e.phone)}
-                        >
-                          📋 Copier {e.phone}
-                        </button>
-                      </div>
-                    ))}
+                      if (filteredEmployees.length === 0) {
+                        return (
+                          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
+                            <div style={{ fontSize: '3.5rem', opacity: 0.5, marginBottom: 15 }}>🕵️‍♂️</div>
+                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', marginBottom: 5 }}>Aucun collègue trouvé</h3>
+                            <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Personne ne correspond à la recherche "{search}".</p>
+                          </div>
+                        );
+                      }
+
+                      return filteredEmployees.map(e => (
+                        <div key={e.id} className="card" style={{ height: 'auto', padding: 20, background: 'rgba(20,20,20,0.8)', alignItems: 'center', display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
+                          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(45deg, #333, #000)', border: '2px solid var(--glass-b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, marginBottom: 15 }}>{e.name.charAt(0)}</div>
+                          <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{e.name}</div>
+                          <div style={{ color: 'var(--p)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 15 }}>{e.role}</div>
+
+                          <button
+                            type="button"
+                            className="btn-p"
+                            style={{ padding: '10px', fontSize: '0.9rem', width: '100%', background: '#222', color: '#fff' }}
+                            onClick={() => copyToClipboard(e.phone)}
+                          >
+                            📋 Copier {e.phone}
+                          </button>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
@@ -1505,6 +1516,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
