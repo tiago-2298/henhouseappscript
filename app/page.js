@@ -1285,12 +1285,13 @@ export default function Home() {
               {/* PROFILE */}
               {currentTab === 'profile' && myProfile && (
                 <div className="center-box">
-                  <div className="form-ui" style={{ maxWidth: 500, padding: 50, textAlign: 'center' }}>
+                  <div className="form-ui" style={{ maxWidth: 600, padding: 50, textAlign: 'center' }}> {/* Élargi un peu pour que les 3 blocs respirent */}
                     <div style={{ width: 120, height: 120, borderRadius: '50%', border: '4px solid var(--p)', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 900, background: '#000', color: '#fff' }}>{user.charAt(0)}</div>
                     <h1 style={{ fontSize: '2.2rem', fontWeight: 950, lineHeight: 1 }}>{user}</h1>
                     <div style={{ color: 'var(--p)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 30 }}>{myProfile.role}</div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15, marginBottom: 30 }}>
+                    {/* GRILLE MODIFIÉE : Passage en 3 colonnes */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 15, marginBottom: 30 }}>
                       <div style={{ background: 'rgba(255,255,255,0.05)', padding: 20, borderRadius: 20 }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Chiffre</div>
                         <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>${Math.round(myProfile.ca).toLocaleString()}</div>
@@ -1299,7 +1300,14 @@ export default function Home() {
                         <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Stock</div>
                         <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{myProfile.stock}</div>
                       </div>
+                      
+                      {/* NOUVEAU BLOC : FACTURES */}
+                      <div style={{ background: 'rgba(255,152,0,0.05)', padding: 20, borderRadius: 20, border: '1px solid rgba(255,152,0,0.2)' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--p)', textTransform: 'uppercase' }}>Factures</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff' }}>{myProfile.invoiceCount || 0}</div>
+                      </div>
                     </div>
+
                     <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid var(--success)', borderRadius: 24, padding: 20 }}>
                       <div style={{ color: 'var(--success)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase' }}>Salaire Estimé</div>
                       <div style={{ fontSize: '2.5rem', fontWeight: 950 }}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
@@ -1426,6 +1434,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
