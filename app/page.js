@@ -604,7 +604,7 @@ export default function Home() {
 
               <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', overflowX: 'hidden' }}>
                 {MODULES.map(t => (
-                  <button key={t.id} className={`nav-btn ${currentTab === t.id ? 'active' : ''}`} onClick={() => { playSound('click'); setCurrentTab(t.id); }}>
+                  <button key={t.id} className={`nav-btn ${currentTab === t.id ? 'active' : ''}`} onClick={() => { playSound('click'); setCurrentTab(t.id); setSearch(''); }}>
                     <span className="nav-icon">{t.e}</span>
                     <span className="nav-label">{t.l}</span>
                   </button>
@@ -1469,6 +1469,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
