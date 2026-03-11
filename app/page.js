@@ -780,24 +780,41 @@ export default function Home() {
                       <div key={c} className={`chip ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>{c}</div>
                     ))}
                   </div>
-                  <div className="grid">
-                    {data.products.filter(p => (catFilter === 'Tous' || data.productsByCategory[catFilter]?.includes(p)) && p.toLowerCase().includes(search.toLowerCase())).map(p => {
-                      const cartItem = cart.find(i => i.name === p);
-                      return (
-                        <div key={p} className="card" onClick={() => {
-                          playSound('click');
-                          if (cartItem) setCart(cart.map(x => x.name === p ? { ...x, qty: x.qty + 1 } : x));
-                          else setCart([...cart, { name: p, qty: 1, pu: data.prices[p] || 0 }]);
-                        }}>
-                          {cartItem && <div className="card-qty">{cartItem.qty}</div>}
-                          {IMAGES[p] ? <img src={IMAGES[p]} className="card-img-bg" /> : <div className="card-img-bg" style={{ background: '#222' }}></div>}
-                          <div className="card-overlay">
-                            <div className="card-title">{p}</div>
-                            <div className="card-price">${data.prices[p]}</div>
-                          </div>
-                        </div>
+                 <div className="grid">
+                    {(() => {
+                      const filteredProducts = data.products.filter(p => 
+                        (catFilter === 'Tous' || data.productsByCategory[catFilter]?.includes(p)) && 
+                        p.toLowerCase().includes(search.toLowerCase())
                       );
-                    })}
+
+                      if (filteredProducts.length === 0) {
+                        return (
+                          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
+                            <div style={{ fontSize: '3.5rem', opacity: 0.5, marginBottom: 15 }}>🍽️</div>
+                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', marginBottom: 5 }}>Aucun produit trouvé</h3>
+                            <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Essayez un autre mot-clé ou changez de catégorie.</p>
+                          </div>
+                        );
+                      }
+
+                      return filteredProducts.map(p => {
+                        const cartItem = cart.find(i => i.name === p);
+                        return (
+                          <div key={p} className="card" onClick={() => {
+                            playSound('click');
+                            if (cartItem) setCart(cart.map(x => x.name === p ? { ...x, qty: x.qty + 1 } : x));
+                            else setCart([...cart, { name: p, qty: 1, pu: data.prices[p] || 0 }]);
+                          }}>
+                            {cartItem && <div className="card-qty">{cartItem.qty}</div>}
+                            {IMAGES[p] ? <img src={IMAGES[p]} className="card-img-bg" /> : <div className="card-img-bg" style={{ background: '#222' }}></div>}
+                            <div className="card-overlay">
+                              <div className="card-title">{p}</div>
+                              <div className="card-price">${data.prices[p]}</div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               )}
@@ -1488,6 +1505,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
