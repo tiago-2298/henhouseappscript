@@ -1050,7 +1050,6 @@ export default function Home() {
               )}
 
               {/* GARAGE */}
-              {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
                   <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Gestion Flotte</h2>
@@ -1067,12 +1066,34 @@ export default function Home() {
                 </div></div>
               )}
 
-              {/* DIRECTORY */}
+            {/* DIRECTORY */}
               {currentTab === 'directory' && (
                 <div className="fade-in">
-                  <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: 30 }}>Annuaire</h2>
+                  
+                  {/* EN-TÊTE AVEC BARRE DE RECHERCHE */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, flexWrap: 'wrap', gap: '15px' }}>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0 }}>Annuaire</h2>
+                    
+                    <div style={{ position: 'relative', flex: '1', minWidth: '250px', maxWidth: '400px' }}>
+                      <input 
+                        className="inp" 
+                        placeholder="Rechercher par nom ou poste..." 
+                        style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(255,255,255,0.05)' }} 
+                        value={search}
+                        onChange={e => setSearch(e.target.value)} 
+                      />
+                      <span style={{ position: 'absolute', left: 20, top: 16, opacity: 0.5, fontSize: '1.2rem' }}>🔍</span>
+                    </div>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-                    {data.employeesFull.map(e => (
+                    {data.employeesFull
+                      // FILTRE MAGIQUE : Cherche dans le nom OU dans le poste
+                      .filter(e => 
+                        e.name.toLowerCase().includes(search.toLowerCase()) || 
+                        (e.role && e.role.toLowerCase().includes(search.toLowerCase()))
+                      )
+                      .map(e => (
                       <div key={e.id} className="card" style={{ height: 'auto', padding: 20, background: 'rgba(20,20,20,0.8)', alignItems: 'center', display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
                         <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(45deg, #333, #000)', border: '2px solid var(--glass-b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, marginBottom: 15 }}>{e.name.charAt(0)}</div>
                         <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{e.name}</div>
@@ -1086,13 +1107,11 @@ export default function Home() {
                         >
                           📋 Copier {e.phone}
                         </button>
-
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-
              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 // J'ai passé le minmax de 400px à 320px pour que les 3 classements rentrent bien côte à côte sur écran
@@ -1469,6 +1488,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
