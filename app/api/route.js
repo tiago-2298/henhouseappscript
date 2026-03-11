@@ -76,10 +76,8 @@ const PARTNERS = {
       limits: { day: null, week: 35 }, 
       beneficiaries: [
         'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
-        'RH - Jefferson Patt','RH - DUGGAN Edward','RE - Gonzales Malya',
-        'RE - DJOUDI Toufik','C - Gilmore Jaden','C - Delgado Madison',
-        'C - Léon Dawson ','C - Aldana Jaïa',
-        'C - Pearce Asap Jr ','C - Blossom Skye',
+        'RH - Jefferson Patt','RE - Gonzales Malya','C - Gilmore Jaden','RL - Delgado Madison',
+        'C - Léon Dawson ','RH - Aldana Jaïa','C - Pearce Asap Jr ','C - ',
       ],
       menus: [
         { name: 'Burger Gourmet + Kombucha Citron', catalog: 75 },
@@ -100,8 +98,7 @@ const PARTNERS = {
     },
     'Esthétique Paleto': {
       limits: { day: 2, week: 10 },
-      beneficiaries: [ 'Charlie Senna Mendoza','Luis Blanchette','Rose Brown','Bocceli Hennessy','Devon Tyler','Leen De Schepper',,'Evan Parker',,'Isalia Wiston',,'LArmando Sainz',,'Kario Freeman',,'Kled Antonio','Kyle Garcia',
-                     'Zoey Cooper','Geovany Russo','Santoro Ottavio',],
+      beneficiaries: [ 'Charlie Senna Mendoza','Luis Blanchette','Rose Brown','Bocceli Hennessy','Isalia Wiston',,'Armando Sainz',,'Kario Freeman',,'Kled Antonio','Noa Park','Sierra Senna','William Senna','Deva Senna',],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
         { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }
@@ -272,6 +269,7 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
+
 
 
 
