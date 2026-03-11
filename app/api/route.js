@@ -147,11 +147,27 @@ async function updateEmployeeStats(employeeName, amount, type) {
     const rowIndex = rows.findIndex(r => r[0] && r[0].trim().toLowerCase() === employeeName.trim().toLowerCase());
     if (rowIndex === -1) return;
     const realRow = rowIndex + 2;
+    
+    // Mise à jour du CA ou du STOCK
     const col = type === 'CA' ? 'G' : 'H';
     const targetRange = `'Employés'!${col}${realRow}`;
     const currentValRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: targetRange, valueRenderOption: 'UNFORMATTED_VALUE' });
     const currentVal = Number(currentValRes.data.values?.[0]?.[0] || 0);
     await sheets.spreadsheets.values.update({ spreadsheetId: sheetId, range: targetRange, valueInputOption: 'RAW', requestBody: { values: [[currentVal + Number(amount)]] } });
+
+    // --- NOUVEAU : Incrémenter le nombre de factures ---
+    if (type === 'CA') {
+      const invoiceRange = `'Employés'!K${realRow}`; // Colonne K = Nb Factures
+      const currentInvRes = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: invoiceRange, valueRenderOption: 'UNFORMATTED_VALUE' });
+      const currentInv = Number(currentInvRes.data.values?.[0]?.[0] || 0);
+      await sheets.spreadsheets.values.update({ 
+        spreadsheetId: sheetId, 
+        range: invoiceRange, 
+        valueInputOption: 'RAW', 
+        requestBody: { values: [[currentInv + 1]] } 
+      });
+    }
+
   } catch (e) { console.error("Stats error", e); }
 }
 
@@ -165,13 +181,14 @@ export async function POST(request) {
     // META & SYNC
     if (!action || action === 'getMeta' || action === 'syncData') {
       const sheets = await getAuthSheets();
-      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:I200", valueRenderOption: 'UNFORMATTED_VALUE' });
+      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:K200", valueRenderOption: 'UNFORMATTED_VALUE' }); // Changé à K200
       const rows = resFull.data.values || [];
       const employeesFull = rows.filter(r => r[1]).map(r => ({
-        id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
-        phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
-        salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0)
-      }));
+         id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
+      phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
+     salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0),
+  invoiceCount: Number(r[10] ?? 0) // <-- NOUVELLE DONNÉE (Index 10 = Colonne K)
+   }));
 
       let partnerLogs = [];
       try {
@@ -269,6 +286,7 @@ export async function POST(request) {
     return NextResponse.json({ success: true });
   } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
 }
+
 
 
 
