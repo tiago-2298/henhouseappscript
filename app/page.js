@@ -1093,9 +1093,12 @@ export default function Home() {
                 </div>
               )}
 
-              {/* PERFORMANCE */}
+             {/* PERFORMANCE */}
               {currentTab === 'performance' && (
-                <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 30 }}>
+                // J'ai passé le minmax de 400px à 320px pour que les 3 classements rentrent bien côte à côte sur écran
+                <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 30 }}>
+                  
+                  {/* 1. TOP VENDEURS (CA) */}
                   <div className="form-ui" style={{ maxWidth: '100%', padding: 30 }}>
                     <h2 style={{ marginBottom: 30, fontWeight: 900 }}>🏆 TOP VENDEURS</h2>
                     {data.employeesFull.sort((a, b) => b.ca - a.ca).slice(0, 10).map((e, i) => (
@@ -1106,10 +1109,14 @@ export default function Home() {
                           </span>
                           <b style={{ color: '#fff' }}>${Math.round(e.ca).toLocaleString()}</b>
                         </div>
-                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}><div style={{ height: '100%', background: i === 0 ? 'var(--p)' : '#555', width: (e.ca / Math.max(...data.employeesFull.map(x => x.ca)) * 100) + '%' }}></div></div>
+                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: i === 0 ? 'var(--p)' : '#555', width: (e.ca / Math.max(...data.employeesFull.map(x => x.ca)) * 100) + '%' }}></div>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* 2. TOP CUISTOS (STOCK) */}
                   <div className="form-ui" style={{ maxWidth: '100%', padding: 30 }}>
                     <h2 style={{ marginBottom: 30, fontWeight: 900 }}>🍳 TOP CUISTOS</h2>
                     {data.employeesFull.sort((a, b) => b.stock - a.stock).slice(0, 10).map((e, i) => (
@@ -1120,10 +1127,38 @@ export default function Home() {
                           </span>
                           <b>{e.stock.toLocaleString()}</b>
                         </div>
-                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}><div style={{ height: '100%', background: i === 0 ? 'var(--success)' : '#555', width: (e.stock / Math.max(...data.employeesFull.map(x => x.stock)) * 100) + '%' }}></div></div>
+                        <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: i === 0 ? 'var(--success)' : '#555', width: (e.stock / Math.max(...data.employeesFull.map(x => x.stock)) * 100) + '%' }}></div>
+                        </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* 3. TOP FACTURES (NOUVEAU) */}
+                  <div className="form-ui" style={{ maxWidth: '100%', padding: 30 }}>
+                    <h2 style={{ marginBottom: 30, fontWeight: 900 }}>🧾 TOP FACTURES</h2>
+                    {data.employeesFull.sort((a, b) => (b.invoiceCount || 0) - (a.invoiceCount || 0)).slice(0, 10).map((e, i) => {
+                      // On évite la division par zéro si personne n'a de facture
+                      const maxFactures = Math.max(...data.employeesFull.map(x => x.invoiceCount || 0), 1);
+                      const count = e.invoiceCount || 0;
+                      
+                      return (
+                        <div key={i} style={{ marginBottom: 20 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: 8 }}>
+                            <span style={{ display: 'flex', gap: 10 }}>
+                              {/* On utilise du bleu (#3b82f6) pour différencier ce classement */}
+                              <b style={{ color: i === 0 ? '#3b82f6' : '#555' }}>#{i + 1}</b> {e.name}
+                            </span>
+                            <b>{count} factures</b>
+                          </div>
+                          <div style={{ height: 6, background: '#333', borderRadius: 10, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: i === 0 ? '#3b82f6' : '#555', width: (count / maxFactures * 100) + '%' }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                 </div>
               )}
              {/* RULES (RÈGLEMENT INTÉRIEUR) */}
@@ -1434,6 +1469,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 
