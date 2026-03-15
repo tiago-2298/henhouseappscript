@@ -10,7 +10,7 @@ const CURRENCY = { symbol: '$', code: 'USD' };
 
 const PRODUCTS_CAT = {
   plats_principaux: [
-    'Lasagne aux légumes', 'Saumon grillé', 'Crousti-Douce',
+    'Lasagne aux légumes', "Saumon Grillé à l'Avocat", 'Crousti-Douce',
     'Paella Méditerranéenne', "Steak 'Potatoes", 'Ribs',
     'Filet Mignon', 'Poulet Rôti', 'Wings Epicé',
     'Effiloché de Mouton', 'Burger Gourmet au Foie Gras'
@@ -21,7 +21,7 @@ const PRODUCTS_CAT = {
   ],
   boissons: [
     'Café', 'Jus de raisin Rouge', 'Berry Fizz',
-    "Jus d'orange", 'Nectar Exotique', 'Kombucha Citron'
+    "Jus d'orange", 'Kombucha Citron', 'Nectar Exotique'
   ],
   menus: [
     'LA SIGNATURE VÉGÉTALE', 'LE PRESTIGE DE LA MER', 'LE RED WINGS',
@@ -49,17 +49,17 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
-  'Lasagne aux légumes': 50, 'Saumon grillé': 35, 'Crousti-Douce': 65,
-  'Paella Méditerranéenne': 65, "Steak 'Potatoes": 40, 'Ribs': 45,
-  'Filet Mignon': 50, 'Poulet Rôti': 60, 'Wings Epicé': 65,
+  'Lasagne aux légumes': 50, "Saumon Grillé à l'Avocat": 40, 'Crousti-Douce': 60,
+  'Paella Méditerranéenne': 65, "Steak 'Potatoes": 45, 'Ribs': 50,
+  'Filet Mignon': 60, 'Poulet Rôti': 60, 'Wings Epicé': 70,
   'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
-  'Mousse au café': 25, 'Tiramisu Fraise': 30, 'Carpaccio Fruit Exotique': 30,
+  'Mousse au café': 30, 'Tiramisu Fraise': 35, 'Carpaccio Fruit Exotique': 35,
   'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
-  'Café': 15, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
-  "Jus d'orange": 35, 'Nectar Exotique': 50, 'Kombucha Citron': 40,
-  'LA SIGNATURE VÉGÉTALE': 80, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
+  'Café': 20, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
+  "Jus d'orange": 35, 'Kombucha Citron': 40, 'Nectar Exotique': 50,
+  'LA SIGNATURE VÉGÉTALE': 90, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
   "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120,
-  'LA CROISIÈRE GOURMANDE': 120,
+  'LA CROISIÈRE GOURMANDE': 130,
   'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20,
   'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25,
   'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40,
