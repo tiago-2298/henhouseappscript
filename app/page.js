@@ -895,214 +895,298 @@ export default function Home() {
                 </div></div>
               )}
 
-             {/* PARTNERS SECTION */}
+             {/* PARTNERS SECTION (ULTRA PREMIUM SPLIT-PANE + JAUGE NEON) */}
               {currentTab === 'partners' && (() => {
-                
-                // --- 1. LOGIQUE GLOBALE DES QUOTAS ET LIMITES ---
+                // --- LOGIQUE DE CALCUL DES QUOTAS ---
                 const selectedCompany = forms.partner.company;
                 const selectedBenef = forms.partner.benef;
                 const limits = data.partners.companies[selectedCompany]?.limits;
-
-                const logs = data.partnerLogs || [];
-                const now = new Date();
-                const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
-                const todayStr = parisTime.toISOString().split('T')[0];
-                const currentDayIndex = parisTime.getDay() || 7; // Lundi = 1, Dimanche = 7
-
-                // Calcul du premier jour de la semaine (Lundi)
-                const d = new Date(parisTime);
-                d.setHours(-24 * (currentDayIndex - 1));
-                const startOfWeekStr = d.toISOString().split('T')[0];
+                const isVIP = !limits;
 
                 let takenDay = 0;
                 let takenWeek = 0;
+                let maxDay = limits?.day;
+                const maxWeek = limits?.week;
+                
+                const now = new Date();
+                const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
+                const todayStr = parisTime.toISOString().split('T')[0];
+                const currentDayIndex = parisTime.getDay();
 
-                // Historique STRICTEMENT limité à la semaine en cours (Lundi -> Dimanche)
-                const userLogsThisWeek = logs.filter(row => {
-                  if (row[1] !== selectedCompany || row[2] !== selectedBenef) return false;
-                  return row[0] >= startOfWeekStr; 
-                }).reverse();
+                const isSameWeek = (dateStr) => {
+                    const dateLog = new Date(dateStr);
+                    const tempNow = new Date(parisTime);
+                    const dayOfWeek = tempNow.getDay() || 7; 
+                    if(dayOfWeek !== 1) tempNow.setHours(-24 * (dayOfWeek - 1)); 
+                    const startOfWeek = new Date(tempNow.toISOString().split('T')[0]);
+                    return dateLog >= startOfWeek;
+                };
 
-                userLogsThisWeek.forEach(row => {
-                  const qty = parseInt(row[4]) || 0;
-                  if (row[0] === todayStr) takenDay += qty;
-                  takenWeek += qty;
+                const logs = data.partnerLogs || [];
+                logs.forEach(row => {
+                    if (row[1] === selectedCompany && row[2] === selectedBenef) {
+                        const qty = parseInt(row[4]) || 0; 
+                        if (row[0] === todayStr) takenDay += qty;
+                        if (isSameWeek(row[0])) takenWeek += qty;
+                    }
                 });
 
-                let maxDay = null;
-                let maxWeek = null;
-                let availableQty = 9999; // Illimité par défaut (ex: SASP)
+                const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
 
-                if (limits) {
-                  maxDay = limits.day;
-                  maxWeek = limits.week;
-
-                  if (limits.dynamicRule) {
+                if (!isVIP && limits.dynamicRule) {
                     if (currentDayIndex === 1 || currentDayIndex === 2) {
-                      maxDay = 5; // Lundi/Mardi
+                        maxDay = 5;
                     } else {
-                      const takenDaysBeforeToday = takenWeek - takenDay;
-                      maxDay = maxWeek ? Math.max(0, maxWeek - takenDaysBeforeToday) : 9999;
+                        const takenDaysBeforeToday = takenWeek - takenDay;
+                        maxDay = maxWeek ? Math.max(0, maxWeek - takenDaysBeforeToday) : 9999;
                     }
-                  }
-
-                  const remainingDay = maxDay !== null ? Math.max(0, maxDay - takenDay) : 9999;
-                  const remainingWeek = maxWeek !== null ? Math.max(0, maxWeek - takenWeek) : 9999;
-                  
-                  // La quantité disponible est le plus petit chiffre entre le reste du jour et le reste de la semaine
-                  availableQty = Math.min(remainingDay, remainingWeek);
                 }
 
-                const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
-                
-                // Si l'employé change de client et que le formulaire (1 menu par défaut) dépasse la limite (ex: il lui reste 0)
-                const isOverLimit = currentQtyInForm > availableQty;
+                const isBlockedDay = maxDay && (takenDay + currentQtyInForm > maxDay);
+                const isBlockedWeek = maxWeek && (takenWeek + currentQtyInForm > maxWeek);
+                const isOverLimit = !isVIP && (isBlockedDay || isBlockedWeek);
 
-                // Composant Jauge
+                // --- COMPOSANT JAUGE CIRCULAIRE PREMIUM 2.0 (NÉON XXL) ---
                 const Gauge = ({ label, taken, max }) => {
                     if (!max) return null;
                     const pct = Math.min(100, (taken / max) * 100);
-                    let color = '#10b981';
-                    if (pct >= 100) color = '#ef4444';
-                    else if (pct >= 75) color = '#f59e0b';
+                    
+                    // Couleurs et lueurs dynamiques
+                    let color = '#10b981'; // Vert par défaut
+                    let glow = 'rgba(16, 185, 129, 0.4)';
+                    if (pct >= 100) {
+                        color = '#ef4444'; // Rouge
+                        glow = 'rgba(239, 68, 68, 0.6)';
+                    } else if (pct >= 75) {
+                        color = '#f59e0b'; // Orange
+                        glow = 'rgba(245, 158, 11, 0.5)';
+                    }
+
+                    const remaining = Math.max(0, max - taken);
 
                     return (
-                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
-                            <div style={{ width: 70, height: 70, borderRadius: '50%', background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 15px ${color}25`, marginBottom: 10 }}>
-                                <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column' }}>
-                                    <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{Math.max(0, max - taken)}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                            {/* Cercle principal avec effet Néon */}
+                            <div style={{ 
+                                position: 'relative', width: 130, height: 130, marginBottom: 15, borderRadius: '50%', 
+                                background: `conic-gradient(${color} ${pct}%, rgba(255,255,255,0.05) ${pct}%)`,
+                                boxShadow: `0 0 30px ${glow}, inset 0 0 20px rgba(0,0,0,0.8)`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                {/* Découpe centrale (Trou noir avec bordure glass) */}
+                                <div style={{ 
+                                    width: 106, height: 106, borderRadius: '50%', background: '#111', 
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    border: '1px solid rgba(255,255,255,0.05)',
+                                    boxShadow: 'inset 0 5px 15px rgba(0,0,0,0.8)'
+                                }}>
+                                    <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', lineHeight: 1, textShadow: `0 0 15px ${glow}` }}>
+                                        {remaining}
+                                    </span>
+                                    <span style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', marginTop: 4 }}>
+                                        Reste
+                                    </span>
                                 </div>
                             </div>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#bbb', textTransform:'uppercase' }}>{label}</div>
-                            <div style={{ fontSize:'0.65rem', color: '#666', marginTop: 2 }}>{taken} / {max}</div>
+                            
+                            {/* Labels stylisés sous la jauge */}
+                            <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{label}</div>
+                            <div style={{ fontSize: '0.8rem', color: color, marginTop: 6, fontWeight: 800, background: 'rgba(0,0,0,0.4)', padding: '4px 12px', borderRadius: 12, border: `1px solid ${glow}` }}>
+                                {taken} / {max}
+                            </div>
                         </div>
                     );
                 };
 
-                // --- 2. RENDU DE L'INTERFACE ---
                 return (
-                  <div className="fade-in" style={{ display: 'flex', gap: 30, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '25px', maxWidth: '1200px', margin: '0 auto', alignItems: 'stretch' }}>
                     
-                    {/* --- COLONNE GAUCHE : FORMULAIRE SÉCURISÉ --- */}
-                    <div className="form-ui" style={{ flex: 1, minWidth: '320px', padding: 40 }}>
-                      <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>NOUVELLE COMMANDE</h2>
+                    {/* ANIMATION CSS POUR LE GLOW */}
+                    <style>{`
+                      .glass-card {
+                        background: rgba(20, 20, 20, 0.7);
+                        backdrop-filter: blur(20px);
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                        border-radius: 30px;
+                        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+                      }
+                      .menu-row {
+                        transition: all 0.2s;
+                        border: 1px solid transparent;
+                      }
+                      .menu-row:hover {
+                        background: rgba(255, 152, 0, 0.05) !important;
+                        border-color: rgba(255, 152, 0, 0.2);
+                        transform: translateX(5px);
+                      }
+                      .qty-btn-custom {
+                        width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: #fff; font-weight: 900; cursor: pointer; transition: 0.2s; display:flex; align-items:center; justify-content:center;
+                      }
+                      .qty-btn-custom:hover { background: var(--p); color: #000; }
+                      .hazard-bg {
+                        background: repeating-linear-gradient( 45deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.05) 10px, rgba(0, 0, 0, 0.2) 10px, rgba(0, 0, 0, 0.2) 20px );
+                        border: 1px solid rgba(239, 68, 68, 0.3);
+                      }
+                      .vip-bg {
+                        background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.15), transparent 60%), rgba(20,20,20,0.8);
+                        border: 1px solid rgba(255, 215, 0, 0.3);
+                      }
+                      @keyframes pulseError { 
+                        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); } 
+                        70% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.3); } 
+                        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.8); } 
+                      }
+                    `}</style>
+
+                    {/* COLONNE GAUCHE : IDENTIFICATION CLIENT */}
+                    <div className="glass-card" style={{ 
+                        flex: '1 1 350px', display: 'flex', flexDirection: 'column', padding: '35px', position: 'relative', overflow: 'hidden',
+                        animation: isOverLimit ? 'pulseError 2s infinite' : 'none',
+                        transition: 'all 0.3s'
+                    }}>
                       
-                      <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
+                      {/* Liseré supérieur coloré dynamique */}
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: isVIP ? 'gold' : (isOverLimit ? 'var(--error)' : 'var(--p)') }}></div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 30 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🛂</div>
+                        <div>
+                            <h2 style={{ fontWeight: 900, margin: 0, fontSize: '1.2rem', letterSpacing: '1px', color: '#fff' }}>CONTRÔLE D'ACCÈS</h2>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800 }}>Base de données Partenaires</div>
+                        </div>
+                      </div>
                       
-                      <div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>
-                        <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>
-                          {Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>
-                          {data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
+                      {/* Sélecteurs stylisés */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 30 }}>
+                        <div style={{ position: 'relative' }}>
+                          <label style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -8, left: 15, background: '#181818', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Société</label>
+                          <select className="inp" style={{ marginBottom: 0, paddingTop: 20, height: 60, fontSize: '1.05rem', fontWeight: 800 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>
+                            {Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                          <label style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -8, left: 15, background: '#181818', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Bénéficiaire</label>
+                          <select className="inp" style={{ marginBottom: 0, paddingTop: 20, height: 60, fontSize: '1.05rem', fontWeight: 800 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>
+                            {data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
                       </div>
 
-                      <div style={{ maxHeight: 200, overflowY:'auto', paddingRight:5 }}>
+                      {/* Carte ID / Quota */}
+                      <div className={isVIP ? "vip-bg" : (isOverLimit ? "hazard-bg" : "")} style={{ flex: 1, borderRadius: 24, padding: '25px', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', background: (!isVIP && !isOverLimit) ? 'rgba(0,0,0,0.4)' : undefined, border: (!isVIP && !isOverLimit) ? '1px solid rgba(255,255,255,0.05)' : undefined }}>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 25 }}>
+                          <span style={{ fontWeight: 900, color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Statut Autorisation</span>
+                          {isVIP ? (
+                            <span style={{ color: '#000', background: 'gold', padding: '4px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 0 15px rgba(255,215,0,0.4)' }}>VIP</span>
+                          ) : (
+                            <span style={{ color: isOverLimit ? '#ef4444' : '#10b981', background: isOverLimit ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', padding: '4px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 900, border: `1px solid ${isOverLimit ? '#ef4444' : '#10b981'}` }}>
+                                {isOverLimit ? 'BLOQUÉ' : 'ACTIF'}
+                            </span>
+                          )}
+                        </div>
+
+                        {isVIP ? (
+                          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: 10, filter: 'drop-shadow(0 0 15px rgba(255,215,0,0.5))' }}>👑</div>
+                            <div style={{ fontWeight: 900, color: 'gold', fontSize: '1.3rem', letterSpacing: '1px' }}>ACCÈS VIP ILLIMITÉ</div>
+                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>Service Corporate Premium</div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center' }}>
+                            {/* Alignement centré avec un beau gap entre les jauges XXL */}
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px' }}>
+                                <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "Semaine" : "Jour"} taken={takenDay} max={maxDay} />
+                                
+                                {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && (
+                                    <div style={{ width: 1, height: 80, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent)' }}></div>
+                                )}
+                                
+                                {(!limits.dynamicRule || currentDayIndex <= 2) && (
+                                    <Gauge label="Semaine" taken={takenWeek} max={maxWeek} />
+                                )}
+                            </div>
+
+                            {isOverLimit && (
+                              <div style={{ marginTop: 25, background: 'rgba(0,0,0,0.5)', padding: '12px', borderRadius: 12, color: '#ff8888', fontWeight: 900, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                                <span style={{ fontSize: '1.2rem' }}>⚠️</span> LIMITE ATTEINTE
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* COLONNE DROITE : LE TERMINAL DE COMMANDE */}
+                    <div className="glass-card" style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
+                      
+                      {/* En-tête de la commande */}
+                      <div style={{ background: 'rgba(0,0,0,0.5)', padding: '25px 35px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h2 style={{ fontWeight: 900, margin: 0, fontSize: '1.2rem', letterSpacing: '1px', color: '#fff' }}>TERMINAL COMMANDE</h2>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--p)', fontWeight: 800, marginTop: 4 }}>Total: {currentQtyInForm} Menu(s)</div>
+                        </div>
+                        <div style={{ width: 150 }}>
+                            <input className="inp" placeholder="N° FACTURE" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} style={{ marginBottom: 0, textAlign: 'center', padding: '10px', height: 45, borderRadius: 12, borderColor: forms.partner.num ? 'var(--p)' : 'var(--glass-b)', background: '#000', fontSize: '0.9rem', fontWeight: 900 }} />
+                        </div>
+                      </div>
+
+                      {/* Liste des Menus */}
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '25px 35px', display: 'flex', flexDirection: 'column', gap: 15 }}>
                         {forms.partner.items.map((item, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center' }}>
-                            <select className="inp" style={{ flex: 1, marginBottom:0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>
-                              {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
-                            </select>
+                          <div key={idx} className="menu-row" style={{ display: 'flex', gap: 15, alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '12px 15px', borderRadius: 20 }}>
                             
-                            {/* BOUTONS + ET - POUR LA QUANTITÉ (Pas de saisie clavier) */}
-                            <div className="qty-control" style={{ marginBottom: 0, padding: 3 }}>
-                              <button type="button" className="qty-btn" onClick={() => { const n = [...forms.partner.items]; if (n[idx].qty > 1) n[idx].qty--; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>-</button>
-                              <input className="qty-input" type="text" readOnly value={item.qty} style={{ cursor: 'default' }} />
-                              <button type="button" className="qty-btn" disabled={currentQtyInForm >= availableQty} onClick={() => { if(currentQtyInForm < availableQty) { const n = [...forms.partner.items]; n[idx].qty++; setForms({ ...forms, partner: { ...forms.partner, items: n } }); } }}>+</button>
+                            <div style={{ flex: 1 }}>
+                                <select className="inp" style={{ width: '100%', marginBottom: 0, background: 'transparent', border: 'none', padding: 0, fontSize: '0.95rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>
+                                    {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+                                </select>
+                            </div>
+                            
+                            {/* Contrôle de quantité en mode Pilule */}
+                            <div style={{ display: 'flex', alignItems: 'center', background: '#0a0a0a', borderRadius: 12, border: '1px solid #333', padding: 4, gap: 5 }}>
+                                <button className="qty-btn-custom" onClick={() => { const n = [...forms.partner.items]; if (n[idx].qty > 1) { n[idx].qty--; setForms({ ...forms, partner: { ...forms.partner, items: n } }); } }}>-</button>
+                                <div style={{ width: 30, textAlign: 'center', fontWeight: 900, fontSize: '1rem', color: 'var(--p)' }}>{item.qty}</div>
+                                <button className="qty-btn-custom" onClick={() => { const n = [...forms.partner.items]; n[idx].qty++; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>+</button>
                             </div>
 
                             {forms.partner.items.length > 1 && (
-                              <button type="button" className="del-btn" style={{ marginLeft: 0 }} onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
+                              <button style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.2rem', transition: '0.2s' }} onMouseOver={e => { e.target.style.background = '#ef4444'; e.target.style.color = '#fff'; }} onMouseOut={e => { e.target.style.background = 'rgba(239, 68, 68, 0.1)'; e.target.style.color = '#ef4444'; }} onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
                             )}
                           </div>
                         ))}
-                      </div>
-
-                      <button 
-                        type="button" 
-                        className="inp" 
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px dashed #444', color: currentQtyInForm >= availableQty ? '#444' : '#888', cursor: currentQtyInForm >= availableQty ? 'not-allowed' : 'pointer', padding: 8, fontSize:'0.8rem', marginTop: 10 }} 
-                        disabled={currentQtyInForm >= availableQty}
-                        onClick={() => {
-                          if (currentQtyInForm < availableQty) {
+                        
+                        <button style={{ background: 'transparent', border: '2px dashed rgba(255,255,255,0.1)', color: 'var(--muted)', borderRadius: 20, padding: 15, fontSize:'0.9rem', fontWeight: 800, cursor: 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }} 
+                            onMouseOver={(e) => { e.target.style.borderColor = 'var(--p)'; e.target.style.color = '#fff'; }}
+                            onMouseOut={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.color = 'var(--muted)'; }}
+                            onClick={() => {
                             const currentMenus = data.partners.companies[forms.partner.company]?.menus;
                             const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
                             setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                          }
-                      }}>
-                        + Ajouter un menu
-                      </button>
-                      
-                      <button 
-                        type="button"
-                        className="btn-p" 
-                        style={{ marginTop: 20 }} 
-                        disabled={isOverLimit || !forms.partner.num}
-                        onClick={() => send('sendPartnerOrder', forms.partner)}
-                      >
-                        VALIDER COMMANDE (1$)
-                      </button>
-                    </div>
-
-                    {/* --- COLONNE DROITE : DOSSIER (JAUGES + HISTORIQUE DE LA SEMAINE) --- */}
-                    <div className="form-ui" style={{ flex: 1, minWidth: '320px', padding: 40, background: 'rgba(15,15,15,0.85)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, borderBottom: '1px solid var(--glass-b)', paddingBottom: 15 }}>
-                        <div>
-                          <div style={{ fontWeight: 900, color: 'var(--p)', fontSize: '1.2rem', textTransform: 'uppercase' }}>{forms.partner.benef}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 700 }}>{forms.partner.company}</div>
-                        </div>
-                        <div style={{ fontSize: '2rem', opacity: 0.8 }}>🗂️</div>
+                        }}>
+                            <span style={{ fontSize: '1.2rem' }}>+</span> AJOUTER UNE LIGNE
+                        </button>
                       </div>
 
-                      {!limits ? (
-                          // CAS VIP / SASP
-                          <div style={{textAlign:'center', padding:30, background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.3)', borderRadius:20, color:'gold', marginTop: 20, boxShadow:'0 0 30px rgba(255,215,0,0.1)'}}>
-                              <div style={{fontSize:'3rem', marginBottom:10, filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))'}}>🛡️</div>
-                              <div style={{fontWeight:900, fontSize:'1.1rem', textTransform:'uppercase', letterSpacing:'1px'}}>Contrat Prioritaire</div>
-                              <div style={{fontSize:'0.85rem', opacity:0.8, marginTop:8}}>Consommation illimitée.<br/>Historique classifié.</div>
-                          </div>
-                      ) : (
-                          // CAS STANDARD
-                          <div>
-                              {/* --- JAUGES --- */}
-                              <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'15px 0', borderRadius:20, border:'1px solid var(--glass-b)' }}>
-                                  <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
-                                      <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "Solde Sem" : "Jour"} taken={takenDay} max={maxDay} />
-                                      {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && <div style={{ width:1, height:50, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>}
-                                      {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="Semaine" taken={takenWeek} max={maxWeek} />}
-                                  </div>
-                                  
-                                  {isOverLimit && (
-                                      <div style={{ marginTop: 15, marginInline: 15, background:'rgba(239, 68, 68, 0.1)', border:'1px solid #ef444450', padding:'8px', borderRadius:10, color: '#ff8888', fontWeight: 700, textAlign:'center', fontSize:'0.75rem' }}>
-                                          ⛔ COTA DEPASSÉ OU VIDE
-                                      </div>
-                                  )}
-                              </div>
-
-                              {/* --- HISTORIQUE DE LA SEMAINE --- */}
-                              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', marginBottom: 15, textTransform: 'uppercase', letterSpacing: '1px' }}>Historique de la semaine</div>
-                              
-                              {userLogsThisWeek.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: 20, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed var(--glass-b)', color: 'var(--muted)', fontSize: '0.85rem' }}>
-                                  Aucune consommation cette semaine.
-                                </div>
-                              ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 220, overflowY: 'auto', paddingRight: 5 }}>
-                                  {userLogsThisWeek.slice(0, 5).map((log, i) => (
-                                    <div key={i} style={{ background: 'rgba(0,0,0,0.4)', padding: 12, borderRadius: 12, borderLeft: '3px solid var(--p)' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                        <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 700 }}>{log[0]}</span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--p)', fontWeight: 900 }}>Qté: {log[4]}</span>
-                                      </div>
-                                      <div style={{ fontSize: '0.8rem', color: '#ccc', lineHeight: 1.3 }}>{log[3]}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                          </div>
-                      )}
+                      {/* Footer et Bouton Validation */}
+                      <div style={{ padding: '25px 35px', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <button 
+                            className="btn-p" 
+                            style={{ 
+                                padding: '22px', fontSize: '1.1rem', letterSpacing: '2px', width: '100%', borderRadius: 20,
+                                background: isOverLimit ? '#222' : 'var(--p)',
+                                color: isOverLimit ? '#555' : '#000',
+                                boxShadow: isOverLimit ? 'none' : '0 15px 35px rgba(255, 152, 0, 0.3)',
+                                cursor: isOverLimit ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                            }} 
+                            disabled={isOverLimit || !forms.partner.num || currentQtyInForm <= 0 || sending}
+                            onClick={() => send('sendPartnerOrder', forms.partner)}
+                          >
+                            {isOverLimit ? '⛔ QUOTA DÉPASSÉ' : (!forms.partner.num ? 'SAISIR N° DE FACTURE' : 'ENVOYER LA COMMANDE (1$)')}
+                          </button>
+                      </div>
                     </div>
+
                   </div>
                 );
               })()}
