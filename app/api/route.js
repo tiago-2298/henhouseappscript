@@ -97,7 +97,7 @@ const PARTNERS = {
       webhook: 'https://discord.com/api/webhooks/1434640579806892216/kkDgXYVYQFHYo7iHjPqiE-sWgSRJA-qMxqmTh7Br-jzmQpNsGdBVLwzSQJ6Hm-5gz8UU'
     },
     'Esthétique Paleto': {
-      limits: { day: 2, week: 10 },
+      limits: { day: 2, week: 14 },
       beneficiaries: [ 'Charlie Senna Mendoza','Luis Blanchette','Rose Brown','Bocceli Hennessy','Isalia Wiston',,'Armando Sainz',,'Kario Freeman',,'Kled Antonio','Noa Park','Sierra Senna','William Senna','Deva Senna',],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
