@@ -70,11 +70,11 @@ export default function Home() {
   const [dragActive, setDragActive] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
 
-  const initialForms = {
+ const initialForms = {
     invoiceNum: '',
     stock: [{ product: '', qty: 1 }],
     enterprise: { name: '', items: [{ product: '', qty: 1 }] },
-    : { num: '', company: '', benef: '', items: [{ menu: '', qty: 1 }] },
+    partner: { num: '', company: '', benef: '', items: [{ menu: '', qty: 1 }] }, // <-- IL MANQUAIT "partner" ICI
     expense: { vehicle: '', kind: 'Essence', amount: '', file: null },
     garage: { vehicle: '', action: 'Entrée', fuel: 50 },
     support: { sub: 'Problème Stock', msg: '' }
