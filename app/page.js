@@ -895,195 +895,217 @@ export default function Home() {
                 </div></div>
               )}
 
-              {/* PARTNERS SECTION */}
-              {currentTab === 'partners' && (
-                <div className="fade-in" style={{ display: 'flex', gap: 30, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+             {/* PARTNERS SECTION */}
+              {currentTab === 'partners' && (() => {
+                
+                // --- 1. LOGIQUE GLOBALE DES QUOTAS ET LIMITES ---
+                const selectedCompany = forms.partner.company;
+                const selectedBenef = forms.partner.benef;
+                const limits = data.partners.companies[selectedCompany]?.limits;
+
+                const logs = data.partnerLogs || [];
+                const now = new Date();
+                const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
+                const todayStr = parisTime.toISOString().split('T')[0];
+                const currentDayIndex = parisTime.getDay() || 7; // Lundi = 1, Dimanche = 7
+
+                // Calcul du premier jour de la semaine (Lundi)
+                const d = new Date(parisTime);
+                d.setHours(-24 * (currentDayIndex - 1));
+                const startOfWeekStr = d.toISOString().split('T')[0];
+
+                let takenDay = 0;
+                let takenWeek = 0;
+
+                // Historique STRICTEMENT limité à la semaine en cours (Lundi -> Dimanche)
+                const userLogsThisWeek = logs.filter(row => {
+                  if (row[1] !== selectedCompany || row[2] !== selectedBenef) return false;
+                  return row[0] >= startOfWeekStr; 
+                }).reverse();
+
+                userLogsThisWeek.forEach(row => {
+                  const qty = parseInt(row[4]) || 0;
+                  if (row[0] === todayStr) takenDay += qty;
+                  takenWeek += qty;
+                });
+
+                let maxDay = null;
+                let maxWeek = null;
+                let availableQty = 9999; // Illimité par défaut (ex: SASP)
+
+                if (limits) {
+                  maxDay = limits.day;
+                  maxWeek = limits.week;
+
+                  if (limits.dynamicRule) {
+                    if (currentDayIndex === 1 || currentDayIndex === 2) {
+                      maxDay = 5; // Lundi/Mardi
+                    } else {
+                      const takenDaysBeforeToday = takenWeek - takenDay;
+                      maxDay = maxWeek ? Math.max(0, maxWeek - takenDaysBeforeToday) : 9999;
+                    }
+                  }
+
+                  const remainingDay = maxDay !== null ? Math.max(0, maxDay - takenDay) : 9999;
+                  const remainingWeek = maxWeek !== null ? Math.max(0, maxWeek - takenWeek) : 9999;
                   
-                  {/* --- COLONNE GAUCHE : FORMULAIRE --- */}
-                  <div className="form-ui" style={{ flex: 1, minWidth: '320px', padding: 40 }}>
-                    <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>NOUVELLE COMMANDE</h2>
-                    
-                    <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
-                    
-                    <div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>
-                      <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>
-                        {Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                      <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>
-                        {data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}
-                      </select>
-                    </div>
+                  // La quantité disponible est le plus petit chiffre entre le reste du jour et le reste de la semaine
+                  availableQty = Math.min(remainingDay, remainingWeek);
+                }
 
-                    <div style={{ maxHeight: 200, overflowY:'auto', paddingRight:5 }}>
-                      {forms.partner.items.map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                          <select className="inp" style={{ flex: 1, marginBottom:0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>
-                            {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
-                          </select>
-                          <input type="number" className="inp" style={{ width: 65, textAlign:'center', marginBottom:0 }} value={item.qty} onChange={e => { const n = [...forms.partner.items]; n[idx].qty = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }} />
-                          {forms.partner.items.length > 1 && (
-                            <button className="del-btn" onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
+                
+                // Si l'employé change de client et que le formulaire (1 menu par défaut) dépasse la limite (ex: il lui reste 0)
+                const isOverLimit = currentQtyInForm > availableQty;
 
-                    <button className="inp" style={{ background: 'rgba(255,255,255,0.05)', border: '1px dashed #444', color: '#888', cursor: 'pointer', padding: 8, fontSize:'0.8rem', marginTop: 10 }} onClick={() => {
-                      const currentMenus = data.partners.companies[forms.partner.company]?.menus;
-                      const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
-                      setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                    }}>+ Ajouter un menu</button>
-                    
-                    <button 
-                      className="btn-p" 
-                      style={{ marginTop: 20 }} 
-                      disabled={document.getElementById('limit-flag')?.getAttribute('data-blocked') === 'true' || !forms.partner.num}
-                      onClick={() => send('sendPartnerOrder', forms.partner)}
-                    >
-                      VALIDER COMMANDE (1$)
-                    </button>
-                  </div>
+                // Composant Jauge
+                const Gauge = ({ label, taken, max }) => {
+                    if (!max) return null;
+                    const pct = Math.min(100, (taken / max) * 100);
+                    let color = '#10b981';
+                    if (pct >= 100) color = '#ef4444';
+                    else if (pct >= 75) color = '#f59e0b';
 
-                  {/* --- COLONNE DROITE : DOSSIER (JAUGES + HISTORIQUE) --- */}
-                  <div className="form-ui" style={{ flex: 1, minWidth: '320px', padding: 40, background: 'rgba(15,15,15,0.85)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, borderBottom: '1px solid var(--glass-b)', paddingBottom: 15 }}>
-                      <div>
-                        <div style={{ fontWeight: 900, color: 'var(--p)', fontSize: '1.2rem', textTransform: 'uppercase' }}>{forms.partner.benef}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 700 }}>{forms.partner.company}</div>
-                      </div>
-                      <div style={{ fontSize: '2rem', opacity: 0.8 }}>🗂️</div>
-                    </div>
-
-                    {(() => {
-                        const selectedCompany = forms.partner.company;
-                        const selectedBenef = forms.partner.benef;
-                        const limits = data.partners.companies[selectedCompany]?.limits;
-
-                        // 1. CAS VIP / SASP (Pas de limite)
-                        if (!limits) {
-                             return (
-                                <div style={{textAlign:'center', padding:30, background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.3)', borderRadius:20, color:'gold', marginTop: 20, boxShadow:'0 0 30px rgba(255,215,0,0.1)'}}>
-                                    <div style={{fontSize:'3rem', marginBottom:10, filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))'}}>🛡️</div>
-                                    <div style={{fontWeight:900, fontSize:'1.1rem', textTransform:'uppercase', letterSpacing:'1px'}}>Contrat Prioritaire</div>
-                                    <div style={{fontSize:'0.85rem', opacity:0.8, marginTop:8}}>Consommation illimitée.<br/>Historique classifié.</div>
-                                    <div id="limit-flag" data-blocked="false" style={{display:'none'}}></div>
+                    return (
+                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
+                            <div style={{ width: 70, height: 70, borderRadius: '50%', background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 15px ${color}25`, marginBottom: 10 }}>
+                                <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column' }}>
+                                    <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{Math.max(0, max - taken)}</span>
                                 </div>
-                             );
-                        }
-
-                        // 2. CALCUL DES QUOTAS (Ton code original)
-                        const logs = data.partnerLogs || [];
-                        const now = new Date();
-                        const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
-                        const todayStr = parisTime.toISOString().split('T')[0];
-                        const currentDayIndex = parisTime.getDay();
-
-                        const isSameWeek = (dateStr) => {
-                            const dateLog = new Date(dateStr);
-                            const tempNow = new Date(parisTime);
-                            const dayOfWeek = tempNow.getDay() || 7; 
-                            if(dayOfWeek !== 1) tempNow.setHours(-24 * (dayOfWeek - 1)); 
-                            const startOfWeek = new Date(tempNow.toISOString().split('T')[0]);
-                            return dateLog >= startOfWeek;
-                        };
-
-                        let takenDay = 0;
-                        let takenWeek = 0;
-
-                        logs.forEach(row => {
-                            if (row[1] === selectedCompany && row[2] === selectedBenef) {
-                                const qty = parseInt(row[4]) || 0; 
-                                if (row[0] === todayStr) takenDay += qty;
-                                if (isSameWeek(row[0])) takenWeek += qty;
-                            }
-                        });
-
-                        const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
-                        
-                        let maxDay = limits.day;
-                        const maxWeek = limits.week; 
-
-                        if (limits.dynamicRule) {
-                            if (currentDayIndex === 1 || currentDayIndex === 2) {
-                                maxDay = 5;
-                            } else {
-                                const takenDaysBeforeToday = takenWeek - takenDay;
-                                maxDay = maxWeek ? Math.max(0, maxWeek - takenDaysBeforeToday) : 9999;
-                            }
-                        }
-
-                        const isBlockedDay = maxDay && (takenDay + currentQtyInForm > maxDay);
-                        const isBlockedWeek = maxWeek && (takenWeek + currentQtyInForm > maxWeek);
-                        const isOverLimit = isBlockedDay || isBlockedWeek;
-
-                        // COMPOSANT JAUGE
-                        const Gauge = ({ label, taken, max }) => {
-                            if (!max) return null;
-                            const pct = Math.min(100, (taken / max) * 100);
-                            let color = '#10b981';
-                            if (pct >= 100) color = '#ef4444';
-                            else if (pct >= 75) color = '#f59e0b';
-
-                            return (
-                                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:1 }}>
-                                    <div style={{ width: 70, height: 70, borderRadius: '50%', background: `conic-gradient(${color} ${pct}%, #333 ${pct}%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 15px ${color}25`, marginBottom: 10 }}>
-                                        <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection:'column' }}>
-                                            <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{Math.max(0, max - taken)}</span>
-                                        </div>
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#bbb', textTransform:'uppercase' }}>{label}</div>
-                                    <div style={{ fontSize:'0.65rem', color: '#666', marginTop: 2 }}>{taken} / {max}</div>
-                                </div>
-                            );
-                        };
-
-                        // 3. EXTRACTION HISTORIQUE (5 Derniers passages)
-                        const userLogs = logs
-                          .filter(row => row[1] === selectedCompany && row[2] === selectedBenef)
-                          .reverse()
-                          .slice(0, 5);
-
-                        return (
-                            <div>
-                                {/* --- JAUGES --- */}
-                                <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'15px 0', borderRadius:20, border:'1px solid var(--glass-b)' }}>
-                                    <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
-                                        <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "Solde Sem" : "Jour"} taken={takenDay} max={maxDay} />
-                                        {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && <div style={{ width:1, height:50, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>}
-                                        {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="Semaine" taken={takenWeek} max={maxWeek} />}
-                                    </div>
-                                    
-                                    {isOverLimit && (
-                                        <div style={{ marginTop: 15, marginInline: 15, background:'rgba(239, 68, 68, 0.1)', border:'1px solid #ef444450', padding:'8px', borderRadius:10, color: '#ff8888', fontWeight: 700, textAlign:'center', fontSize:'0.75rem' }}>
-                                            ⛔ QUOTA DÉPASSÉ
-                                        </div>
-                                    )}
-                                    <div id="limit-flag" data-blocked={isOverLimit ? "true" : "false"} style={{display:'none'}}></div>
-                                </div>
-
-                                {/* --- HISTORIQUE --- */}
-                                <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', marginBottom: 15, textTransform: 'uppercase', letterSpacing: '1px' }}>Historique Récent</div>
-                                {userLogs.length === 0 ? (
-                                  <div style={{ textAlign: 'center', padding: 20, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed var(--glass-b)', color: 'var(--muted)', fontSize: '0.85rem' }}>Aucune consommation trouvée.</div>
-                                ) : (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                    {userLogs.map((log, i) => (
-                                      <div key={i} style={{ background: 'rgba(0,0,0,0.4)', padding: 12, borderRadius: 12, borderLeft: '3px solid var(--p)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                          <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 700 }}>{log[0]}</span>
-                                          <span style={{ fontSize: '0.75rem', color: 'var(--p)', fontWeight: 900 }}>Qté: {log[4]}</span>
-                                        </div>
-                                        <div style={{ fontSize: '0.8rem', color: '#ccc', lineHeight: 1.3 }}>{log[3]}</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
                             </div>
-                        );
-                    })()}
+                            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#bbb', textTransform:'uppercase' }}>{label}</div>
+                            <div style={{ fontSize:'0.65rem', color: '#666', marginTop: 2 }}>{taken} / {max}</div>
+                        </div>
+                    );
+                };
+
+                // --- 2. RENDU DE L'INTERFACE ---
+                return (
+                  <div className="fade-in" style={{ display: 'flex', gap: 30, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    
+                    {/* --- COLONNE GAUCHE : FORMULAIRE SÉCURISÉ --- */}
+                    <div className="form-ui" style={{ flex: 1, minWidth: '320px', padding: 40 }}>
+                      <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900, letterSpacing:'-1px' }}>NOUVELLE COMMANDE</h2>
+                      
+                      <input className="inp" placeholder="N° Facture" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} />
+                      
+                      <div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>
+                        <select className="inp" style={{ flex: 1 }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: data.partners.companies[c].beneficiaries[0], items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>
+                          {Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <select className="inp" style={{ flex: 1 }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>
+                          {data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </div>
+
+                      <div style={{ maxHeight: 200, overflowY:'auto', paddingRight:5 }}>
+                        {forms.partner.items.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center' }}>
+                            <select className="inp" style={{ flex: 1, marginBottom:0 }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>
+                              {data.partners.companies[forms.partner.company]?.menus.map(m => <option key={m.name}>{m.name}</option>)}
+                            </select>
+                            
+                            {/* BOUTONS + ET - POUR LA QUANTITÉ (Pas de saisie clavier) */}
+                            <div className="qty-control" style={{ marginBottom: 0, padding: 3 }}>
+                              <button type="button" className="qty-btn" onClick={() => { const n = [...forms.partner.items]; if (n[idx].qty > 1) n[idx].qty--; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>-</button>
+                              <input className="qty-input" type="text" readOnly value={item.qty} style={{ cursor: 'default' }} />
+                              <button type="button" className="qty-btn" disabled={currentQtyInForm >= availableQty} onClick={() => { if(currentQtyInForm < availableQty) { const n = [...forms.partner.items]; n[idx].qty++; setForms({ ...forms, partner: { ...forms.partner, items: n } }); } }}>+</button>
+                            </div>
+
+                            {forms.partner.items.length > 1 && (
+                              <button type="button" className="del-btn" style={{ marginLeft: 0 }} onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <button 
+                        type="button" 
+                        className="inp" 
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px dashed #444', color: currentQtyInForm >= availableQty ? '#444' : '#888', cursor: currentQtyInForm >= availableQty ? 'not-allowed' : 'pointer', padding: 8, fontSize:'0.8rem', marginTop: 10 }} 
+                        disabled={currentQtyInForm >= availableQty}
+                        onClick={() => {
+                          if (currentQtyInForm < availableQty) {
+                            const currentMenus = data.partners.companies[forms.partner.company]?.menus;
+                            const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
+                            setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
+                          }
+                      }}>
+                        + Ajouter un menu
+                      </button>
+                      
+                      <button 
+                        type="button"
+                        className="btn-p" 
+                        style={{ marginTop: 20 }} 
+                        disabled={isOverLimit || !forms.partner.num}
+                        onClick={() => send('sendPartnerOrder', forms.partner)}
+                      >
+                        VALIDER COMMANDE (1$)
+                      </button>
+                    </div>
+
+                    {/* --- COLONNE DROITE : DOSSIER (JAUGES + HISTORIQUE DE LA SEMAINE) --- */}
+                    <div className="form-ui" style={{ flex: 1, minWidth: '320px', padding: 40, background: 'rgba(15,15,15,0.85)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25, borderBottom: '1px solid var(--glass-b)', paddingBottom: 15 }}>
+                        <div>
+                          <div style={{ fontWeight: 900, color: 'var(--p)', fontSize: '1.2rem', textTransform: 'uppercase' }}>{forms.partner.benef}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 700 }}>{forms.partner.company}</div>
+                        </div>
+                        <div style={{ fontSize: '2rem', opacity: 0.8 }}>🗂️</div>
+                      </div>
+
+                      {!limits ? (
+                          // CAS VIP / SASP
+                          <div style={{textAlign:'center', padding:30, background:'rgba(255,215,0,0.08)', border:'1px solid rgba(255,215,0,0.3)', borderRadius:20, color:'gold', marginTop: 20, boxShadow:'0 0 30px rgba(255,215,0,0.1)'}}>
+                              <div style={{fontSize:'3rem', marginBottom:10, filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.8))'}}>🛡️</div>
+                              <div style={{fontWeight:900, fontSize:'1.1rem', textTransform:'uppercase', letterSpacing:'1px'}}>Contrat Prioritaire</div>
+                              <div style={{fontSize:'0.85rem', opacity:0.8, marginTop:8}}>Consommation illimitée.<br/>Historique classifié.</div>
+                          </div>
+                      ) : (
+                          // CAS STANDARD
+                          <div>
+                              {/* --- JAUGES --- */}
+                              <div style={{ marginBottom: 25, background:'rgba(0,0,0,0.3)', padding:'15px 0', borderRadius:20, border:'1px solid var(--glass-b)' }}>
+                                  <div style={{ display:'flex', justifyContent:'space-evenly', alignItems:'start' }}>
+                                      <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "Solde Sem" : "Jour"} taken={takenDay} max={maxDay} />
+                                      {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && <div style={{ width:1, height:50, background:'rgba(255,255,255,0.1)', marginTop: 10 }}></div>}
+                                      {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="Semaine" taken={takenWeek} max={maxWeek} />}
+                                  </div>
+                                  
+                                  {isOverLimit && (
+                                      <div style={{ marginTop: 15, marginInline: 15, background:'rgba(239, 68, 68, 0.1)', border:'1px solid #ef444450', padding:'8px', borderRadius:10, color: '#ff8888', fontWeight: 700, textAlign:'center', fontSize:'0.75rem' }}>
+                                          ⛔ COTA DEPASSÉ OU VIDE
+                                      </div>
+                                  )}
+                              </div>
+
+                              {/* --- HISTORIQUE DE LA SEMAINE --- */}
+                              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', marginBottom: 15, textTransform: 'uppercase', letterSpacing: '1px' }}>Historique de la semaine</div>
+                              
+                              {userLogsThisWeek.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: 20, background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed var(--glass-b)', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                                  Aucune consommation cette semaine.
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 220, overflowY: 'auto', paddingRight: 5 }}>
+                                  {userLogsThisWeek.slice(0, 5).map((log, i) => (
+                                    <div key={i} style={{ background: 'rgba(0,0,0,0.4)', padding: 12, borderRadius: 12, borderLeft: '3px solid var(--p)' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#888', fontWeight: 700 }}>{log[0]}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--p)', fontWeight: 900 }}>Qté: {log[4]}</span>
+                                      </div>
+                                      <div style={{ fontSize: '0.8rem', color: '#ccc', lineHeight: 1.3 }}>{log[3]}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                          </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
               {/* GARAGE */}
               {currentTab === 'garage' && (
                 <div className="center-box"><div className="form-ui">
