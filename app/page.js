@@ -822,10 +822,8 @@ export default function Home() {
                 </div>
               )}
 
-             {/* EXPENSES (NOTE DE FRAIS & HISTORIQUE) */}
              {currentTab === 'expenses' && (() => {
 
-                  // --- LOGIQUE DES FRAIS ---
                   const myExpenses = (data.expensesHistory || [])
                       .filter(row => row[1] === user)
                       .map(row => ({
@@ -844,12 +842,10 @@ export default function Home() {
 
                   const availableExpenseWeeks = [...new Set(myExpenses.map(exp => getWeekNumber(exp.date)))];
 
-                  // Filtrer selon la semaine sélectionnée
                   const displayedExpenses = expenseWeek === 'Toutes' 
                       ? myExpenses 
                       : myExpenses.filter(exp => getWeekNumber(exp.date) === expenseWeek);
 
-                  // Calcul des totaux
                   let totalValide = 0, totalAttente = 0, totalRefuse = 0;
                   displayedExpenses.forEach(exp => {
                       if (exp.status.includes('Validé') || exp.status.includes('✅')) totalValide += exp.amount;
@@ -858,18 +854,23 @@ export default function Home() {
                   });
 
                   return (
-                    <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 100px)', alignItems: 'stretch' }}>
+                    {/* LE CONTENEUR PRINCIPAL VERROUILLÉ */}
+                    <div className="fade-in" style={{ 
+                        display: 'flex', gap: '30px', maxWidth: '1300px', margin: '0 auto', 
+                        height: 'calc(100vh - 110px)', /* Hauteur figée */
+                        overflow: 'hidden' /* Interdit le défilement de la page */
+                    }}>
                       
-                      {/* COLONNE GAUCHE : LE FORMULAIRE ET LE SCANNER */}
-                      <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', paddingRight: '5px' }}>
+                      {/* ========================================== */}
+                      {/* COLONNE GAUCHE : FORMULAIRE SCROLLABLE INTRA */}
+                      {/* ========================================== */}
+                      <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', paddingRight: '10px' }}>
                           
-                          {/* HEADER */}
                           <div style={{ flexShrink: 0 }}>
                               <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>NOTES DE <span style={{ color: '#3b82f6' }}>FRAIS</span></h1>
                               <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Portail de remboursement Hen House</p>
                           </div>
 
-                          {/* LE FORMULAIRE */}
                           <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
                               <div>
                                   <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Type d'intervention</label>
@@ -899,7 +900,6 @@ export default function Home() {
                               </div>
                           </div>
 
-                          {/* LE SCANNER DE PREUVE */}
                           <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
                                   <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 10 }}><span>📸</span> SCANNER DE REÇU</h3>
@@ -928,10 +928,11 @@ export default function Home() {
                           </div>
                       </div>
 
-                      {/* COLONNE DROITE : HISTORIQUE ET COMPTEURS FINANCIERS */}
-                      <div style={{ flex: '1 1 500px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      {/* ========================================== */}
+                      {/* COLONNE DROITE : HISTORIQUE VERROUILLÉ     */}
+                      {/* ========================================== */}
+                      <div style={{ flex: '1.2 1 500px', height: '100%', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                           
-                          {/* EN-TÊTE FIXE AVEC FILTRES */}
                           <div style={{ padding: '30px 30px 15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
                               <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
                                   <span>📊</span> SUIVI DES REMBOURSEMENTS
@@ -951,7 +952,6 @@ export default function Home() {
                               )}
                           </div>
 
-                          {/* RÉSUMÉ FINANCIER (FIXE) */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '20px 30px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
                               <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px', padding: '15px 10px', textAlign: 'center' }}>
                                   <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>✅ Validé</div>
@@ -967,7 +967,7 @@ export default function Home() {
                               </div>
                           </div>
 
-                          {/* LISTE DES FRAIS (SCROLLABLE) */}
+                          {/* LA SEULE ZONE QUI SCROLLE À DROITE */}
                           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px 30px 30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                               {displayedExpenses.length === 0 ? (
                                   <div style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
