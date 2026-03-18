@@ -862,9 +862,9 @@ export default function Home() {
                     <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', overflow: 'hidden', alignItems: 'stretch' }}>
                       
                       {/* ========================================== */}
-                      {/* COLONNE GAUCHE : FORMULAIRE & SCANNER      */}
+                      {/* COLONNE GAUCHE : FORMULAIRE & SCANNER (SANS SCROLL) */}
                       {/* ========================================== */}
-                      <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', paddingRight: '10px' }}>
+                      <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflow: 'hidden' }}>
                           
                           <div style={{ flexShrink: 0 }}>
                               <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>NOTES DE <span style={{ color: '#3b82f6' }}>FRAIS</span></h1>
@@ -900,29 +900,29 @@ export default function Home() {
                               </div>
                           </div>
 
-                          <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+                          <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, flexShrink: 0 }}>
                                   <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 10 }}><span>📸</span> SCANNER DE REÇU</h3>
                                   <span style={{ fontSize: '0.65rem', color: forms.expense.file ? '#10b981' : 'var(--error)', background: forms.expense.file ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: 8, fontWeight: 900 }}>{forms.expense.file ? 'PREUVE CHARGÉE' : 'REQUIS'}</span>
                               </div>
 
-                              <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => !forms.expense.file && document.getElementById('inpFile').click()} style={{ minHeight: '160px', border: `2px dashed ${dragActive ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: 20, textAlign: 'center', cursor: forms.expense.file ? 'default' : 'pointer', background: dragActive ? 'rgba(59,130,246,0.05)' : 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative', overflow: 'hidden', marginBottom: 20 }}>
+                              <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => !forms.expense.file && document.getElementById('inpFile').click()} style={{ flex: 1, minHeight: '120px', border: `2px dashed ${dragActive ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: 20, textAlign: 'center', cursor: forms.expense.file ? 'default' : 'pointer', background: dragActive ? 'rgba(59,130,246,0.05)' : 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative', overflow: 'hidden', marginBottom: 20 }}>
                                   <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
                                   {!forms.expense.file ? (
                                       <div style={{ pointerEvents: 'none' }}>
                                           <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5, filter: dragActive ? 'drop-shadow(0 0 15px #3b82f6)' : 'none' }}>📄</div>
                                           <div style={{ fontWeight: 900, fontSize: '1rem', color: '#fff' }}>Déposez le ticket ici</div>
-                                          <div style={{ marginTop: 15, display: 'inline-block', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, color: '#aaa' }}>⌨️ Astuce : Ctrl + V</div>
+                                          <div style={{ marginTop: 10, display: 'inline-block', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, color: '#aaa' }}>⌨️ Astuce : Ctrl + V</div>
                                       </div>
                                   ) : (
                                       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                           <button style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(239, 68, 68, 0.9)', border: 'none', color: '#fff', borderRadius: '10px', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', zIndex: 10 }} onClick={(e) => { e.stopPropagation(); setForms({ ...forms, expense: { ...forms.expense, file: null } }); }}>✖ SUPPRIMER</button>
-                                          <img src={forms.expense.file} style={{ maxHeight: '160px', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                                          <img src={forms.expense.file} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }} />
                                       </div>
                                   )}
                               </div>
 
-                              <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)} style={{ padding: '20px', fontSize: '1rem', borderRadius: 16, background: (!forms.expense.amount || !forms.expense.file) ? '#222' : 'linear-gradient(90deg, #3b82f6, #2563eb)', color: (!forms.expense.amount || !forms.expense.file) ? '#555' : '#fff', boxShadow: (!forms.expense.amount || !forms.expense.file) ? 'none' : '0 10px 25px rgba(59,130,246,0.4)', border: 'none', cursor: (!forms.expense.amount || !forms.expense.file) ? 'not-allowed' : 'pointer' }}>
+                              <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)} style={{ padding: '20px', fontSize: '1rem', borderRadius: 16, background: (!forms.expense.amount || !forms.expense.file) ? '#222' : 'linear-gradient(90deg, #3b82f6, #2563eb)', color: (!forms.expense.amount || !forms.expense.file) ? '#555' : '#fff', boxShadow: (!forms.expense.amount || !forms.expense.file) ? 'none' : '0 10px 25px rgba(59,130,246,0.4)', border: 'none', cursor: (!forms.expense.amount || !forms.expense.file) ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
                                   {sending ? 'TRANSMISSION...' : 'SOUMETTRE LA DEMANDE'}
                               </button>
                           </div>
