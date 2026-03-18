@@ -1804,29 +1804,34 @@ export default function Home() {
                         </div>
 
                         {/* ========================================== */}
-                        {/* POP-UP TICKET DE CAISSE (MODAL)            */}
+                        {/* POP-UP TICKET DE CAISSE (MODAL SCROLLABLE) */}
                         {/* ========================================== */}
                         {expandedInv && typeof expandedInv === 'object' && (
                             <div className="modal-overlay" onClick={() => setExpandedInv(null)} style={{ zIndex: 10000 }}>
                                 <div className="modal-box fade-in" style={{ 
                                     background: '#111', border: 'none', borderRadius: '0', 
                                     width: '320px', padding: '0', boxShadow: '0 50px 100px rgba(0,0,0,0.9)',
-                                    position: 'relative'
+                                    position: 'relative', 
+                                    display: 'flex', flexDirection: 'column', maxHeight: '85vh' /* VERROUILLAGE HAUTEUR MAX */
                                 }} onClick={e => e.stopPropagation()}>
                                     
                                     {/* Effet papier ticket (Bordure crantée en haut) */}
                                     <div style={{ height: '10px', background: 'radial-gradient(circle, transparent 4px, #111 5px) repeat-x', backgroundSize: '12px 20px', position: 'absolute', top: '-10px', left: 0, width: '100%' }}></div>
                                     
-                                    {/* En-tête du ticket */}
-                                    <div style={{ padding: '30px 20px 20px', borderBottom: '2px dashed #333', textAlign: 'center' }}>
+                                    {/* En-tête du ticket (Fixe) */}
+                                    <div style={{ padding: '30px 20px 20px', borderBottom: '2px dashed #333', textAlign: 'center', flexShrink: 0 }}>
                                         <div style={{ fontSize: '2rem', marginBottom: 10, filter: 'grayscale(100%)' }}>🐔</div>
                                         <h2 style={{ margin: 0, fontFamily: '"Courier New", Courier, monospace', color: '#fff', fontSize: '1.5rem', fontWeight: 900 }}>HEN HOUSE</h2>
                                         <div style={{ fontSize: '0.8rem', color: '#888', fontFamily: '"Courier New", Courier, monospace', marginTop: 5 }}>TICKET #{expandedInv.num}</div>
                                         <div style={{ fontSize: '0.75rem', color: '#666', fontFamily: '"Courier New", Courier, monospace', marginTop: 2 }}>Opérateur : {user.split(' ')[0]}</div>
                                     </div>
 
-                                    {/* Détail de la commande */}
-                                    <div style={{ padding: '20px', fontFamily: '"Courier New", Courier, monospace', color: '#ddd', fontSize: '0.85rem', textAlign: 'left', minHeight: '150px' }}>
+                                    {/* Détail de la commande (Zone Scrollable) */}
+                                    <div style={{ 
+                                        padding: '20px', fontFamily: '"Courier New", Courier, monospace', 
+                                        color: '#ddd', fontSize: '0.85rem', textAlign: 'left', 
+                                        flex: 1, overflowY: 'auto' /* DÉFILEMENT ACTIVÉ ICI */
+                                    }}>
                                         {expandedInv.details ? expandedInv.details.split(',').map((item, i) => {
                                             const [qty, ...nameParts] = item.trim().split('x ');
                                             const name = nameParts.join('x ');
@@ -1839,25 +1844,21 @@ export default function Home() {
                                         }) : <div style={{ color: '#555', fontStyle: 'italic', textAlign: 'center' }}>Détails indisponibles</div>}
                                     </div>
 
-                                    {/* Pied du ticket */}
-                                    <div style={{ padding: '20px', borderTop: '2px dashed #333', textAlign: 'center', background: '#0a0a0a' }}>
+                                    {/* Pied du ticket (Fixe) */}
+                                    <div style={{ padding: '20px', borderTop: '2px dashed #333', textAlign: 'center', background: '#0a0a0a', flexShrink: 0 }}>
                                         <div style={{ fontSize: '0.8rem', color: '#888', fontFamily: '"Courier New", Courier, monospace', marginBottom: 5 }}>TOTAL ENCAISSÉ</div>
                                         <div style={{ color: '#10b981', fontSize: '2rem', fontWeight: 900, fontFamily: '"Courier New", Courier, monospace' }}>
                                             ${Number(expandedInv.amount).toLocaleString()}
                                         </div>
                                     </div>
                                     
-                                    {/* Bouton fermer en bas */}
-                                    <button style={{ width: '100%', padding: '15px', background: 'var(--p)', border: 'none', color: '#000', fontWeight: 900, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif' }} onClick={() => setExpandedInv(null)}>
+                                    {/* Bouton fermer en bas (Fixe) */}
+                                    <button style={{ width: '100%', padding: '15px', background: 'var(--p)', border: 'none', color: '#000', fontWeight: 900, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif', flexShrink: 0 }} onClick={() => setExpandedInv(null)}>
                                         FERMER LE TICKET
                                     </button>
                                 </div>
                             </div>
                         )}
-
-                    </div>
-                );
-              })()}
               {/* SUPPORT (SMART HELPDESK & SECURE PAGER) */}
               {currentTab === 'support' && (() => {
                   
