@@ -1667,6 +1667,8 @@ export default function Home() {
                   </div>
                 );
               })()}
+            </div>
+          </main>
 
           {/* PANIER (CAISSE) */}
           {currentTab === 'invoices' && (
