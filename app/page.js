@@ -69,6 +69,8 @@ export default function Home() {
   const [cart, setCart] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [profileWeek, setProfileWeek] = useState('Toutes');
+  const [expandedInv, setExpandedInv] = useState(null);
 
   const initialForms = {
     invoiceNum: '',
@@ -1591,7 +1593,7 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              {/* PROFILE (ULTRA PREMIUM DOSSIER + HISTORIQUE PAR SEMAINE) */}
+              {/* PROFILE (ULTRA PREMIUM DOSSIER + HISTORIQUE FILTRABLE & DÉTAILLÉ) */}
               {currentTab === 'profile' && myProfile && (() => {
                   
                 const getRoleStyle = (role) => {
@@ -1605,13 +1607,12 @@ export default function Home() {
 
                 const rStyle = getRoleStyle(myProfile.role);
 
-                // --- LOGIQUE DE L'HISTORIQUE DES FACTURES ---
+                // --- LOGIQUE DE L'HISTORIQUE ---
                 const myInvoices = (data.invoicesHistory || [])
-                    .filter(row => row[1] === user) // On ne garde que les factures de l'employé connecté
+                    .filter(row => row[1] === user)
                     .map(row => ({ date: row[0], num: row[2], amount: row[3], details: row[4] }))
-                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Du plus récent au plus ancien
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                // Fonction pour calculer la semaine (Ex: S12)
                 const getWeekNumber = (d) => {
                     const date = new Date(d);
                     date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
@@ -1620,13 +1621,20 @@ export default function Home() {
                     return `S${weekNo}`;
                 };
 
-                // Grouper les factures par semaine
+                // Extraire les semaines uniques pour les filtres
+                const availableWeeks = [...new Set(myInvoices.map(inv => getWeekNumber(inv.date)))];
+
                 const groupedInvoices = myInvoices.reduce((acc, inv) => {
                     const week = getWeekNumber(inv.date);
                     if (!acc[week]) acc[week] = [];
                     acc[week].push(inv);
                     return acc;
                 }, {});
+
+                // Déterminer quelles semaines afficher selon le filtre
+                const weeksToDisplay = profileWeek === 'Toutes' 
+                    ? Object.keys(groupedInvoices).sort((a, b) => b.localeCompare(a)) 
+                    : [profileWeek];
 
                 return (
                     <div className="center-box fade-in" style={{ height: '100%', padding: '10px' }}>
@@ -1639,7 +1647,6 @@ export default function Home() {
                             position: 'relative', overflow: 'hidden',
                             display: 'flex', flexDirection: 'column'
                         }}>
-                            {/* Liseré supérieur néon */}
                             <div style={{ height: '6px', background: `linear-gradient(90deg, transparent, ${rStyle.color}, transparent)`, flexShrink: 0 }}></div>
                             
                             <div style={{ padding: '35px 40px 10px 40px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
@@ -1670,7 +1677,6 @@ export default function Home() {
 
                                 {/* GRILLE ET SALAIRE COMPACTS */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 15 }}>
-                                    {/* BLOC SALAIRE */}
                                     <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '20px 25px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                         <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 8 }}>
                                             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span> Salaire Estimé
@@ -1680,7 +1686,6 @@ export default function Home() {
                                         </div>
                                     </div>
 
-                                    {/* MINIS WIDGETS */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Ventes</span>
@@ -1695,7 +1700,7 @@ export default function Home() {
                             </div>
 
                             {/* HISTORIQUE DES FACTURES (ZONE SCROLLABLE) */}
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 40px 30px 40px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 40px 30px 40px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
                                     <div style={{ height: 1, flex: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1))' }}></div>
@@ -1703,46 +1708,96 @@ export default function Home() {
                                     <div style={{ height: 1, flex: 1, background: 'linear-gradient(270deg, transparent, rgba(255,255,255,0.1))' }}></div>
                                 </div>
 
-                                {Object.keys(groupedInvoices).length === 0 ? (
+                                {/* FILTRES DE SEMAINE */}
+                                {availableWeeks.length > 0 && (
+                                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', marginTop: '10px' }}>
+                                        <button 
+                                            style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === 'Toutes' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === 'Toutes' ? '#000' : '#fff' }}
+                                            onClick={() => setProfileWeek('Toutes')}
+                                        >
+                                            Toutes
+                                        </button>
+                                        {availableWeeks.map(w => (
+                                            <button 
+                                                key={w}
+                                                style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === w ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === w ? '#000' : '#fff' }}
+                                                onClick={() => setProfileWeek(w)}
+                                            >
+                                                {w}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* LISTE DES FACTURES */}
+                                {weeksToDisplay.length === 0 || !groupedInvoices[weeksToDisplay[0]] ? (
                                     <div style={{ textAlign: 'center', padding: '40px', opacity: 0.3 }}>
                                         <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
                                         <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Aucune transaction enregistrée.</div>
                                     </div>
                                 ) : (
-                                    Object.keys(groupedInvoices).sort((a, b) => b.localeCompare(a)).map(week => (
+                                    weeksToDisplay.map(week => (
                                         <div key={week}>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--p)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <span style={{ background: 'var(--p)', color: '#000', padding: '2px 8px', borderRadius: '6px' }}>{week}</span>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--muted)', marginBottom: 12, marginTop: 15, paddingLeft: 5 }}>
+                                                — Semaine {week.replace('S', '')}
                                             </div>
                                             
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                                 {groupedInvoices[week].map((inv, idx) => {
                                                     const d = new Date(inv.date);
                                                     const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                                                     const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                                                    const isExpanded = expandedInv === inv.num;
                                                     
                                                     return (
-                                                        <div key={idx} style={{ 
-                                                            background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', 
-                                                            borderRadius: '16px', padding: '15px 20px', display: 'flex', alignItems: 'center', gap: 15,
-                                                            transition: '0.2s'
-                                                        }} onMouseOver={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'} onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}>
-                                                            
-                                                            <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🧾</div>
-                                                            
-                                                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                                                                    <span style={{ fontWeight: 900, color: '#fff', fontSize: '1rem' }}>{inv.num}</span>
-                                                                    <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>{dateStr} • {timeStr}</span>
+                                                        <div key={idx} 
+                                                            style={{ 
+                                                                background: isExpanded ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)', 
+                                                                border: `1px solid ${isExpanded ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)'}`, 
+                                                                borderRadius: '20px', padding: '15px 20px', display: 'flex', flexDirection: 'column',
+                                                                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                                            }} 
+                                                            onClick={() => {
+                                                                playSound('click');
+                                                                setExpandedInv(isExpanded ? null : inv.num);
+                                                            }}
+                                                            onMouseOver={e => !isExpanded && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')} 
+                                                            onMouseOut={e => !isExpanded && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)')}
+                                                        >
+                                                            {/* Ligne Principale */}
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                                                                <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🧾</div>
+                                                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                                                                        <span style={{ fontWeight: 900, color: '#fff', fontSize: '1.05rem' }}>{inv.num}</span>
+                                                                    </div>
+                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 700, marginTop: 4 }}>
+                                                                        {dateStr} à {timeStr}
+                                                                    </div>
                                                                 </div>
-                                                                <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                                    {inv.details || 'Articles divers'}
+                                                                <div style={{ textAlign: 'right' }}>
+                                                                    <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#10b981' }}>+${Number(inv.amount).toLocaleString()}</div>
+                                                                    <div style={{ fontSize: '0.65rem', color: '#555', fontWeight: 900, marginTop: 2 }}>{isExpanded ? '▲ RÉDUIRE' : '▼ DÉTAILS'}</div>
                                                                 </div>
                                                             </div>
 
-                                                            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#10b981' }}>
-                                                                +${Number(inv.amount).toLocaleString()}
-                                                            </div>
+                                                            {/* Zone Déroulante (Détails de la commande) */}
+                                                            {isExpanded && (
+                                                                <div className="fade-in" style={{ marginTop: 20, paddingTop: 20, borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                                                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 15, fontWeight: 800 }}>Détail des articles consommés</div>
+                                                                    
+                                                                    {inv.details ? inv.details.split(',').map((item, i) => {
+                                                                        const [qty, ...nameParts] = item.trim().split('x ');
+                                                                        const name = nameParts.join('x ');
+                                                                        return (
+                                                                            <div key={i} style={{ display: 'flex', gap: 15, alignItems: 'center', marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid rgba(255,255,255,0.1)' }}>
+                                                                                <div style={{ background: '#111', color: 'var(--p)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}>{qty}x</div>
+                                                                                <div style={{ fontSize: '0.85rem', color: '#ccc', fontWeight: 700 }}>{name}</div>
+                                                                            </div>
+                                                                        )
+                                                                    }) : <div style={{ color: '#777', fontStyle: 'italic', fontSize: '0.8rem' }}>Aucun détail enregistré pour cette transaction.</div>}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })}
