@@ -178,17 +178,17 @@ export async function POST(request) {
     const { action, data } = body;
     const sheetId = cleanEnv(process.env.GOOGLE_SHEET_ID);
 
-    // META & SYNC
+   // META & SYNC
     if (!action || action === 'getMeta' || action === 'syncData') {
       const sheets = await getAuthSheets();
-      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:K200", valueRenderOption: 'UNFORMATTED_VALUE' }); // Changé à K200
+      const resFull = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Employés'!A2:K200", valueRenderOption: 'UNFORMATTED_VALUE' });
       const rows = resFull.data.values || [];
       const employeesFull = rows.filter(r => r[1]).map(r => ({
          id: String(r[0] ?? ''), name: String(r[1] ?? '').trim(), role: String(r[2] ?? ''),
-      phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
-     salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0),
-  invoiceCount: Number(r[10] ?? 0) // <-- NOUVELLE DONNÉE (Index 10 = Colonne K)
-   }));
+         phone: String(r[3] ?? ''), ca: Number(r[6] ?? 0), stock: Number(r[7] ?? 0),
+         salary: Number(r[8] ?? 0), seniority: Number(r[5] ?? 0),
+         invoiceCount: Number(r[10] ?? 0)
+      }));
 
       let partnerLogs = [];
       try {
@@ -196,10 +196,17 @@ export async function POST(request) {
         partnerLogs = resLogs.data.values || [];
       } catch (e) { console.warn("Logs partner empty"); }
 
+      // --- NOUVEAU : Récupération de l'historique des factures ---
+      let invoicesHistory = [];
+      try {
+        const resInvoices = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Factures'!A2:E5000" });
+        invoicesHistory = resInvoices.data.values || [];
+      } catch (e) { console.warn("Factures history empty"); }
+
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, partners: PARTNERS, partnerLogs,
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory, // <-- Ajouté ici
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
@@ -217,6 +224,16 @@ export async function POST(request) {
         ];
         await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalFact, 'CA');
+
+        // --- NOUVEAU : Sauvegarde de la facture dans l'onglet "Factures" ---
+        try {
+          const sheets = await getAuthSheets();
+          const factDetail = data.items?.map(i => `${i.qty}x ${i.desc}`).join(', ');
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Factures'!A:E", valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[ new Date().toISOString(), data.employee, data.invoiceNumber, totalFact, factDetail ]] }
+          });
+        } catch (e) { console.error("Erreur sauvegarde Facture", e); }
         break;
 
       case 'sendProduction':
