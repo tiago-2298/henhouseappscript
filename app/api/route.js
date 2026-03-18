@@ -206,18 +206,21 @@ export async function POST(request) {
       // --- Récupération de l'historique du Garage ---
       let garageHistory = [];
       try {
-        const resGarage = await sheets.spreadsheets.values.get({ 
-            spreadsheetId: sheetId, 
-            range: "'Garage'!A2:E500" 
-        });
+        const resGarage = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Garage'!A2:E500" });
         garageHistory = (resGarage.data.values || []).reverse().slice(0, 3);
       } catch (e) { console.warn("Garage history empty"); }
 
-      // TOUTES LES DONNÉES SONT BIEN RENVOYÉES ICI 👇
+      // --- Récupération de l'historique des Frais ---
+      let expensesHistory = [];
+      try {
+        const resExpenses = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Frais'!A2:F500" });
+        expensesHistory = (resExpenses.data.values || []).reverse();
+      } catch (e) { console.warn("Frais history empty"); }
+
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory, garageHistory,
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory, garageHistory, expensesHistory,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
     }
@@ -236,7 +239,6 @@ export async function POST(request) {
         await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalFact, 'CA');
 
-        // --- Sauvegarde de la facture dans l'onglet "Factures" ---
         try {
           const sheets = await getAuthSheets();
           const factDetail = data.items?.map(i => `${i.qty}x ${i.desc}`).join(', ');
@@ -292,6 +294,16 @@ export async function POST(request) {
         embed.fields = [{ name: '🛠️ Type', value: data.kind, inline: true }, { name: '🚗 Véhicule', value: data.vehicle, inline: true }, { name: '💵 Montant', value: `**${data.amount}$**` }];
         if (data.file) embed.image = { url: 'attachment://preuve.jpg' };
         await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file);
+        
+        // --- NOUVEAU : Sauvegarde de la note de frais dans l'onglet "Frais" ---
+        try {
+          const sheets = await getAuthSheets();
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Frais'!A:F", valueInputOption: 'USER_ENTERED',
+            // On ajoute "⏳ En attente" par défaut dans la colonne Statut
+            requestBody: { values: [[ new Date().toISOString(), data.employee, data.kind, data.vehicle, data.amount, "⏳ En attente" ]] }
+          });
+        } catch (e) { console.error("Erreur sauvegarde Frais", e); }
         break;
 
      case 'sendGarage':
