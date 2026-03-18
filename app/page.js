@@ -822,195 +822,151 @@ export default function Home() {
                 </div>
               )}
 
-            {/* ========================================== */}
-              {/* EXPENSES (NOTE DE FRAIS & HISTORIQUE FIXÉ)   */}
+           {/* ========================================== */}
+              {/* ENTREPRISE (POS TACTILE - 4 CATÉGORIES)      */}
               {/* ========================================== */}
-              {currentTab === 'expenses' && (() => {
-
-                  // --- LOGIQUE DES FRAIS ---
-                  const myExpenses = (data.expensesHistory || [])
-                      .filter(row => row[1] === user)
-                      .map(row => ({
-                          date: row[0], type: row[2], vehicle: row[3],
-                          amount: Number(row[4] || 0), status: row[5] || '⏳ En attente'
-                      }))
-                      .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                  const getWeekNumber = (d) => {
-                      const date = new Date(d);
-                      date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
-                      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-                      const weekNo = Math.ceil(( ( (date - yearStart) / 86400000) + 1)/7);
-                      return `S${weekNo}`;
+              {currentTab === 'entreprise' && (() => {
+                  
+                  // Fonction pour ajouter un produit au panier
+                  const handleAddProduct = (productName) => {
+                      const currentItems = forms.entreprise.items || [];
+                      const existing = currentItems.find(i => i.product === productName);
+                      
+                      if (existing) {
+                          const newItems = currentItems.map(i => i.product === productName ? { ...i, qty: Number(i.qty) + 1 } : i);
+                          setForms({ ...forms, entreprise: { ...forms.entreprise, items: newItems } });
+                      } else {
+                          setForms({ ...forms, entreprise: { ...forms.entreprise, items: [...currentItems, { product: productName, qty: 1 }] } });
+                      }
+                      playSound('click');
                   };
 
-                  const availableExpenseWeeks = [...new Set(myExpenses.map(exp => getWeekNumber(exp.date)))];
+                  // Fonction pour modifier la quantité au CLAVIER
+                  const handleUpdateQty = (productName, newQty) => {
+                      const val = Math.max(1, Number(newQty)); 
+                      const newItems = (forms.entreprise.items || []).map(i => i.product === productName ? { ...i, qty: val } : i);
+                      setForms({ ...forms, entreprise: { ...forms.entreprise, items: newItems } });
+                  };
 
-                  const displayedExpenses = expenseWeek === 'Toutes' 
-                      ? myExpenses 
-                      : myExpenses.filter(exp => getWeekNumber(exp.date) === expenseWeek);
+                  // Fonction pour supprimer une ligne
+                  const handleRemoveProduct = (productName) => {
+                      const newItems = (forms.entreprise.items || []).filter(i => i.product !== productName);
+                      setForms({ ...forms, entreprise: { ...forms.entreprise, items: newItems } });
+                  };
 
-                  let totalValide = 0, totalAttente = 0, totalRefuse = 0;
-                  displayedExpenses.forEach(exp => {
-                      if (exp.status.includes('Validé') || exp.status.includes('✅')) totalValide += exp.amount;
-                      else if (exp.status.includes('Refusé') || exp.status.includes('❌')) totalRefuse += exp.amount;
-                      else totalAttente += exp.amount;
-                  });
+                  const itemsList = forms.entreprise.items || [];
+                  const totalItems = itemsList.reduce((acc, curr) => acc + Number(curr.qty), 0);
+                  
+                  // 🎯 FILTRE : On force l'ordre et on ne garde que ces 4 catégories
+                  const allowedCategories = ['plats_principaux', 'boissons', 'desserts', 'alcools'];
+                  const categories = allowedCategories.filter(cat => data.productsByCategory && data.productsByCategory[cat]);
+
+                  // Petite sécurité
+                  const categoryToDisplay = categories.includes(activeCat) ? activeCat : 'plats_principaux';
+
+                  // Esthétique des noms de catégories
+                  const getCatName = (cat) => {
+                      if (cat === 'plats_principaux') return 'PLATS';
+                      return cat.toUpperCase();
+                  };
+
+                  // Icônes
+                  const getIcon = (cat) => {
+                      if(cat.includes('plats')) return '🍔';
+                      if(cat.includes('desserts')) return '🍰';
+                      if(cat.includes('boissons')) return '🥤';
+                      if(cat.includes('alcools')) return '🍷';
+                      return '📦';
+                  };
 
                   return (
-                    // CONTENEUR GLOBAL VERROUILLÉ EN HAUTEUR
-                    <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', overflow: 'hidden', alignItems: 'stretch' }}>
-                      
-                      {/* ========================================== */}
-                      {/* COLONNE GAUCHE : FORMULAIRE & SCANNER (SANS SCROLL) */}
-                      {/* ========================================== */}
-                      <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflow: 'hidden' }}>
-                          
-                          <div style={{ flexShrink: 0 }}>
-                              <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>NOTES DE <span style={{ color: '#3b82f6' }}>FRAIS</span></h1>
-                              <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Portail de remboursement interne</p>
-                          </div>
+                      <div className="fade-in" style={{ display: 'flex', gap: '30px', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', maxWidth: '1400px', margin: '0 auto', overflow: 'hidden' }}>
 
-                          <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
-                              <div>
-                                  <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Type d'intervention</label>
-                                  <div style={{ display: 'flex', gap: 10 }}>
-                                      {[{ id: 'Essence', icon: '⛽' }, { id: 'Réparation', icon: '🔧' }, { id: 'Autre', icon: '📄' }].map(k => (
-                                          <button key={k.id} style={{ flex: 1, padding: '12px 5px', borderRadius: '16px', border: '1px solid', background: forms.expense.kind === k.id ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.02)', borderColor: forms.expense.kind === k.id ? '#3b82f6' : 'rgba(255,255,255,0.05)', color: forms.expense.kind === k.id ? '#fff' : 'var(--muted)', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }} onClick={() => setForms({ ...forms, expense: { ...forms.expense, kind: k.id } })}>
-                                              <span style={{ fontSize: '1.4rem', filter: forms.expense.kind === k.id ? 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' : 'grayscale(1)' }}>{k.icon}</span>
-                                              {k.id}
-                                          </button>
-                                      ))}
-                                  </div>
+                          {/* ========================================== */}
+                          {/* PANNEAU GAUCHE : LE PAVÉ TACTILE (70%)     */}
+                          {/* ========================================== */}
+                          <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: '20px', overflow: 'hidden' }}>
+                              
+                              <div style={{ flexShrink: 0 }}>
+                                  <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>PRÉPARATION <span style={{ color: '#f59e0b' }}>PRO</span></h1>
+                                  <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Terminal logistique des commandes de gros</p>
                               </div>
 
-                              <div style={{ position: 'relative' }}>
-                                  <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -10, left: 15, background: '#111', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Véhicule concerné</label>
-                                  <select className="inp" value={forms.expense.vehicle} onChange={e => setForms({ ...forms, expense: { ...forms.expense, vehicle: e.target.value } })} style={{ height: 55, fontSize: '0.9rem', fontWeight: 800, borderColor: 'rgba(255,255,255,0.1)', marginBottom: 0 }}>
-                                      {data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}
-                                  </select>
+                              {/* ONGLET DES CATÉGORIES (Filtre appliqué) */}
+                              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', flexShrink: 0 }} className="custom-scroll">
+                                  {categories.map(cat => (
+                                      <button key={cat} onClick={() => { setActiveCat(cat); playSound('click'); }} style={{ padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', background: categoryToDisplay === cat ? '#f59e0b' : 'rgba(255,255,255,0.05)', color: categoryToDisplay === cat ? '#000' : '#fff', border: 'none', boxShadow: categoryToDisplay === cat ? '0 10px 20px rgba(245,158,11,0.3)' : 'none' }}>
+                                          {getCatName(cat)}
+                                      </button>
+                                  ))}
                               </div>
 
-                              <div style={{ position: 'relative' }}>
-                                  <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -10, left: 15, background: '#111', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Montant de la facture</label>
-                                  <div style={{ position: 'relative' }}>
-                                      <span style={{ position: 'absolute', left: 20, top: 13, fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>$</span>
-                                      <input className="inp" type="number" placeholder="0.00" value={forms.expense.amount} onChange={e => setForms({ ...forms, expense: { ...forms.expense, amount: e.target.value } })} style={{ height: 55, fontSize: '1.2rem', fontWeight: 900, paddingLeft: 45, color: '#10b981', borderColor: forms.expense.amount ? '#10b981' : 'rgba(255,255,255,0.1)', marginBottom: 0 }} />
-                                  </div>
+                              {/* GRILLE DES PRODUITS */}
+                              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', alignContent: 'start', paddingRight: '10px', paddingBottom: '20px' }}>
+                                  {(data.productsByCategory[categoryToDisplay] || []).map(prod => (
+                                      <button key={prod} onClick={() => handleAddProduct(prod)} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '25px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', cursor: 'pointer', transition: 'all 0.1s', minHeight: '130px' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                                          <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.5))' }}>{getIcon(categoryToDisplay)}</div>
+                                          <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: '1.2' }}>{prod}</div>
+                                      </button>
+                                  ))}
                               </div>
                           </div>
 
-                          <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15, flexShrink: 0 }}>
-                                  <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 10 }}><span>📸</span> SCANNER DE REÇU</h3>
-                                  <span style={{ fontSize: '0.65rem', color: forms.expense.file ? '#10b981' : 'var(--error)', background: forms.expense.file ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: 8, fontWeight: 900 }}>{forms.expense.file ? 'PREUVE CHARGÉE' : 'REQUIS'}</span>
+                          {/* ========================================== */}
+                          {/* PANNEAU DROIT : LE BON DE COMMANDE (30%)   */}
+                          {/* ========================================== */}
+                          <div style={{ flex: '0 0 450px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 30px 80px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                              
+                              {/* CHOIX DU CLIENT */}
+                              <div style={{ padding: '30px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                  <label style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Entreprise Cliente</label>
+                                  <input type="text" className="inp" placeholder="Nom de l'entreprise (ex: Benny's)" value={forms.entreprise.company} onChange={e => setForms({ ...forms, entreprise: { ...forms.entreprise, company: e.target.value } })} style={{ width: '100%', height: '55px', fontSize: '1rem', fontWeight: 800, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '16px', padding: '0 20px', marginBottom: 0 }} />
                               </div>
 
-                              <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => !forms.expense.file && document.getElementById('inpFile').click()} style={{ flex: 1, minHeight: '120px', border: `2px dashed ${dragActive ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: 20, textAlign: 'center', cursor: forms.expense.file ? 'default' : 'pointer', background: dragActive ? 'rgba(59,130,246,0.05)' : 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative', overflow: 'hidden', marginBottom: 20 }}>
-                                  <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
-                                  {!forms.expense.file ? (
-                                      <div style={{ pointerEvents: 'none' }}>
-                                          <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5, filter: dragActive ? 'drop-shadow(0 0 15px #3b82f6)' : 'none' }}>📄</div>
-                                          <div style={{ fontWeight: 900, fontSize: '1rem', color: '#fff' }}>Déposez le ticket ici</div>
-                                          <div style={{ marginTop: 10, display: 'inline-block', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, color: '#aaa' }}>⌨️ Astuce : Ctrl + V</div>
+                              {/* LISTE DES ARTICLES AVEC QUANTITÉ AU CLAVIER */}
+                              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                  {itemsList.length === 0 ? (
+                                      <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <div style={{ fontSize: '3.5rem', marginBottom: 15 }}>🛒</div>
+                                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Le chariot est vide</div>
+                                          <div style={{ fontSize: '0.8rem', marginTop: 5, fontWeight: 600 }}>Touchez les produits pour les ajouter</div>
                                       </div>
                                   ) : (
-                                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                          <button style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(239, 68, 68, 0.9)', border: 'none', color: '#fff', borderRadius: '10px', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', zIndex: 10 }} onClick={(e) => { e.stopPropagation(); setForms({ ...forms, expense: { ...forms.expense, file: null } }); }}>✖ SUPPRIMER</button>
-                                          <img src={forms.expense.file} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }} />
-                                      </div>
+                                      itemsList.map((item, idx) => (
+                                          <div key={idx} className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px 15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                              
+                                              {/* CHAMP DE QUANTITÉ (CLAVIER) */}
+                                              <div style={{ display: 'flex', alignItems: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0, width: '70px', height: '45px' }}>
+                                                  <input type="number" value={item.qty} onChange={e => handleUpdateQty(item.product, e.target.value)} style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '1.2rem', fontWeight: 900, textAlign: 'center', outline: 'none' }} min="1" />
+                                              </div>
+
+                                              {/* NOM DU PRODUIT */}
+                                              <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 800, color: '#fff', lineHeight: '1.2' }}>{item.product}</div>
+
+                                              {/* BOUTON SUPPRIMER */}
+                                              <button onClick={() => { playSound('error'); handleRemoveProduct(item.product); }} style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.1rem', transition: '0.2s', flexShrink: 0 }} onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>
+                                                  <div style={{ marginTop: '-2px' }}>✖</div>
+                                              </button>
+                                          </div>
+                                      ))
                                   )}
                               </div>
 
-                              <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)} style={{ padding: '20px', fontSize: '1rem', borderRadius: 16, background: (!forms.expense.amount || !forms.expense.file) ? '#222' : 'linear-gradient(90deg, #3b82f6, #2563eb)', color: (!forms.expense.amount || !forms.expense.file) ? '#555' : '#fff', boxShadow: (!forms.expense.amount || !forms.expense.file) ? 'none' : '0 10px 25px rgba(59,130,246,0.4)', border: 'none', cursor: (!forms.expense.amount || !forms.expense.file) ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
-                                  {sending ? 'TRANSMISSION...' : 'SOUMETTRE LA DEMANDE'}
-                              </button>
+                              {/* PIED DE PAGE & VALIDATION */}
+                              <div style={{ padding: '30px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                      <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Unités</span>
+                                      <span style={{ fontSize: '2rem', fontWeight: 900, color: '#fff' }}>{totalItems}</span>
+                                  </div>
+                                  
+                                  <button disabled={sending || itemsList.length === 0 || !forms.entreprise.company} onClick={() => send('sendEntreprise', forms.entreprise)} style={{ width: '100%', padding: '22px', borderRadius: '24px', border: 'none', background: (sending || itemsList.length === 0 || !forms.entreprise.company) ? '#222' : 'linear-gradient(90deg, #f59e0b, #ea580c)', color: (sending || itemsList.length === 0 || !forms.entreprise.company) ? '#555' : '#fff', fontSize: '1.1rem', fontWeight: 900, cursor: (sending || itemsList.length === 0 || !forms.entreprise.company) ? 'not-allowed' : 'pointer', boxShadow: (sending || itemsList.length === 0 || !forms.entreprise.company) ? 'none' : '0 10px 30px rgba(245,158,11,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.3s' }}>
+                                      <span>{sending ? 'EXPÉDITION EN COURS...' : '📦 VALIDER LA COMMANDE'}</span>
+                                      <span style={{ fontSize: '0.75rem', opacity: 0.8, fontWeight: 700 }}>Préparé par {user.split(' ')[0]}</span>
+                                  </button>
+                              </div>
+
                           </div>
                       </div>
-
-                      {/* ========================================== */}
-                      {/* COLONNE DROITE : HISTORIQUE BLINDÉ         */}
-                      {/* ========================================== */}
-                      <div style={{ flex: '1 1 500px', height: '100%', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                          
-                          {/* EN-TÊTE FIXE */}
-                          <div style={{ padding: '30px 30px 15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
-                              <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <span>📊</span> SUIVI DES REMBOURSEMENTS
-                              </h2>
-                              
-                              {availableExpenseWeeks.length > 0 && (
-                                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginTop: '15px', paddingBottom: '5px' }}>
-                                      <button style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: expenseWeek === 'Toutes' ? '#3b82f6' : 'rgba(255,255,255,0.05)', color: expenseWeek === 'Toutes' ? '#fff' : 'var(--muted)' }} onClick={() => setExpenseWeek('Toutes')}>
-                                          Toutes
-                                      </button>
-                                      {availableExpenseWeeks.map(w => (
-                                          <button key={w} style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: expenseWeek === w ? '#3b82f6' : 'rgba(255,255,255,0.05)', color: expenseWeek === w ? '#fff' : 'var(--muted)' }} onClick={() => setExpenseWeek(w)}>
-                                              Semaine {w.replace('S', '')}
-                                          </button>
-                                      ))}
-                                  </div>
-                              )}
-                          </div>
-
-                          {/* RÉSUMÉ FINANCIER FIXE */}
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '20px 30px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
-                              <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px', padding: '15px 10px', textAlign: 'center' }}>
-                                  <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>✅ Validé</div>
-                                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>${totalValide.toLocaleString()}</div>
-                              </div>
-                              <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '16px', padding: '15px 10px', textAlign: 'center' }}>
-                                  <div style={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>⏳ Attente</div>
-                                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>${totalAttente.toLocaleString()}</div>
-                              </div>
-                              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '16px', padding: '15px 10px', textAlign: 'center' }}>
-                                  <div style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>❌ Refusé</div>
-                                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>${totalRefuse.toLocaleString()}</div>
-                              </div>
-                          </div>
-
-                          {/* ZONE SCROLLABLE INTERNE (Ne bouge pas le reste de la page) */}
-                          <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px 30px 30px 30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              {displayedExpenses.length === 0 ? (
-                                  <div style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                      <div style={{ fontSize: '3rem', marginBottom: 15 }}>📝</div>
-                                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Aucune demande trouvée</div>
-                                  </div>
-                              ) : (
-                                  displayedExpenses.map((exp, idx) => {
-                                      const d = new Date(exp.date);
-                                      const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-                                      
-                                      let statusColor = '#f59e0b';
-                                      let statusBg = 'rgba(245,158,11,0.1)';
-                                      if (exp.status.includes('Validé') || exp.status.includes('✅')) { statusColor = '#10b981'; statusBg = 'rgba(16,185,129,0.1)'; }
-                                      if (exp.status.includes('Refusé') || exp.status.includes('❌')) { statusColor = '#ef4444'; statusBg = 'rgba(239,68,68,0.1)'; }
-
-                                      return (
-                                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: '0.2s', flexShrink: 0 }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>
-                                              <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                                                  <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', border: `1px solid ${statusBg}` }}>
-                                                      {exp.type === 'Essence' ? '⛽' : exp.type === 'Réparation' ? '🔧' : '📄'}
-                                                  </div>
-                                                  <div>
-                                                      <div style={{ fontWeight: 900, color: '#fff', fontSize: '0.95rem' }}>{exp.type}</div>
-                                                      <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, marginTop: 3 }}>Le {dateStr}</div>
-                                                  </div>
-                                              </div>
-                                              
-                                              <div style={{ textAlign: 'right' }}>
-                                                  <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff' }}>${exp.amount.toLocaleString()}</div>
-                                                  <div style={{ fontSize: '0.65rem', color: statusColor, background: statusBg, padding: '4px 8px', borderRadius: '6px', fontWeight: 900, marginTop: 4, display: 'inline-block' }}>
-                                                      {exp.status}
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      );
-                                  })
-                              )}
-                          </div>
-                      </div>
-                    </div>
                   );
               })()}
               {/* STOCK */}
@@ -1031,7 +987,7 @@ export default function Home() {
                 </div></div>
               )}
 
-{/* ========================================== */}
+              {/* ========================================== */}
               {/* ENTREPRISE (POS TACTILE - PRÉPARATION RAPIDE)*/}
               {/* ========================================== */}
               {currentTab === 'entreprise' && (() => {
