@@ -203,6 +203,17 @@ export async function POST(request) {
         invoicesHistory = resInvoices.data.values || [];
       } catch (e) { console.warn("Factures history empty"); }
 
+      // --- Récupération de l'historique du Garage ---
+      let garageHistory = [];
+      try {
+        const resGarage = await sheets.spreadsheets.values.get({ 
+            spreadsheetId: sheetId, 
+            range: "'Garage'!A2:E500" 
+        });
+        // On ne garde que les 3 derniers pour l'affichage rapide
+        garageHistory = (resGarage.data.values || []).reverse().slice(0, 3);
+      } catch (e) { console.warn("Garage history empty"); }
+
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
@@ -284,11 +295,25 @@ export async function POST(request) {
         await sendDiscordWebhook(WEBHOOKS.expenses, { embeds: [embed] }, data.file);
         break;
 
-      case 'sendGarage':
-        embed.title = data.action === 'Sortie' ? `🔑 Sortie par ${data.employee}` : `🅿️ Entrée par ${data.employee}`;
-        embed.color = data.action === 'Sortie' ? 0x2ECC71 : 0xE74C3C;
-        embed.fields = [{ name: '🚗 Véhicule', value: `**${data.vehicle}**`, inline: true }, { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }];
+     case 'sendGarage':
+        // 1. Envoi Discord
+        embed.title = `🚗 Mouvement Véhicule : ${data.vehicle}`;
+        embed.color = data.action === 'Entrée' ? 0x10b981 : 0xff9800;
+        embed.fields = [
+          { name: '👤 Employé', value: data.employee, inline: true },
+          { name: '📍 Action', value: data.action, inline: true },
+          { name: '⛽ Essence', value: `${data.fuel}%`, inline: true }
+        ];
         await sendDiscordWebhook(WEBHOOKS.garage, { embeds: [embed] });
+
+        // 2. Sauvegarde dans le Sheet "Garage"
+        try {
+          const sheets = await getAuthSheets();
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId, range: "'Garage'!A:E", valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[ new Date().toISOString(), data.employee, data.vehicle, data.action, data.fuel ]] }
+          });
+        } catch (e) { console.error("Erreur sauvegarde Garage", e); }
         break;
 
       case 'sendSupport':
