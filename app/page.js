@@ -1591,10 +1591,9 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              {/* PROFILE (ULTRA PREMIUM DOSSIER - ANTI-SCROLL) */}
+              {/* PROFILE (ULTRA PREMIUM DOSSIER + HISTORIQUE PAR SEMAINE) */}
               {currentTab === 'profile' && myProfile && (() => {
                   
-                // On réutilise la même logique de couleur que l'annuaire
                 const getRoleStyle = (role) => {
                     const r = (role || '').toLowerCase();
                     if (r.includes('pdg')) return { color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.05)', border: '#fbbf24', shadow: 'rgba(251, 191, 36, 0.4)' };
@@ -1606,103 +1605,151 @@ export default function Home() {
 
                 const rStyle = getRoleStyle(myProfile.role);
 
+                // --- LOGIQUE DE L'HISTORIQUE DES FACTURES ---
+                const myInvoices = (data.invoicesHistory || [])
+                    .filter(row => row[1] === user) // On ne garde que les factures de l'employé connecté
+                    .map(row => ({ date: row[0], num: row[2], amount: row[3], details: row[4] }))
+                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // Du plus récent au plus ancien
+
+                // Fonction pour calculer la semaine (Ex: S12)
+                const getWeekNumber = (d) => {
+                    const date = new Date(d);
+                    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+                    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+                    const weekNo = Math.ceil(( ( (date - yearStart) / 86400000) + 1)/7);
+                    return `S${weekNo}`;
+                };
+
+                // Grouper les factures par semaine
+                const groupedInvoices = myInvoices.reduce((acc, inv) => {
+                    const week = getWeekNumber(inv.date);
+                    if (!acc[week]) acc[week] = [];
+                    acc[week].push(inv);
+                    return acc;
+                }, {});
+
                 return (
-                    // La div prend 100% de l'espace restant pour éviter le scroll global
                     <div className="center-box fade-in" style={{ height: '100%', padding: '10px' }}>
                         
                         <div style={{ 
-                            width: '100%', maxWidth: '800px', background: 'rgba(15, 15, 15, 0.7)', 
-                            backdropFilter: 'blur(20px)', borderRadius: '40px', 
-                            border: `1px solid rgba(255,255,255,0.05)`, 
+                            width: '100%', maxWidth: '850px', height: '100%', maxHeight: '90vh',
+                            background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', 
+                            borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, 
                             boxShadow: `0 30px 80px rgba(0,0,0,0.8), 0 0 50px ${rStyle.shadow}`,
                             position: 'relative', overflow: 'hidden',
                             display: 'flex', flexDirection: 'column'
                         }}>
                             {/* Liseré supérieur néon */}
-                            <div style={{ height: '6px', background: `linear-gradient(90deg, transparent, ${rStyle.color}, transparent)` }}></div>
+                            <div style={{ height: '6px', background: `linear-gradient(90deg, transparent, ${rStyle.color}, transparent)`, flexShrink: 0 }}></div>
                             
-                            {/* Remplacement des gros margin par un gap flexible pour compacter l'intérieur */}
-                            <div style={{ padding: '35px 40px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                            <div style={{ padding: '35px 40px 10px 40px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
                                 
-                                {/* HEADER: Avatar & Identité */}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                                    
-                                    {/* Aura lumineuse derrière l'avatar */}
-                                    <div style={{ position: 'absolute', top: 0, width: '120px', height: '120px', background: rStyle.color, filter: 'blur(50px)', opacity: 0.25, borderRadius: '50%' }}></div>
+                                {/* HEADER COMPACT: Avatar & Identité */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 25, position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: 0, width: '100px', height: '100px', background: rStyle.color, filter: 'blur(50px)', opacity: 0.25, borderRadius: '50%' }}></div>
                                     
                                     <div style={{ 
-                                        width: 100, height: 100, borderRadius: '35%', 
-                                        background: 'linear-gradient(135deg, #222, #050505)', 
-                                        border: `2px solid ${rStyle.color}`, 
+                                        width: 85, height: 85, borderRadius: '30%', flexShrink: 0,
+                                        background: 'linear-gradient(135deg, #222, #050505)', border: `2px solid ${rStyle.color}`, 
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                                        fontSize: '3rem', fontWeight: 900, color: '#fff',
+                                        fontSize: '2.5rem', fontWeight: 900, color: '#fff',
                                         boxShadow: `0 10px 25px ${rStyle.bg}, inset 0 0 15px rgba(255,255,255,0.05)`,
-                                        position: 'relative', zIndex: 2, marginBottom: '15px',
-                                        transform: 'rotate(4deg)' // Style asymétrique
+                                        position: 'relative', zIndex: 2, transform: 'rotate(4deg)'
                                     }}>
                                         <div style={{ transform: 'rotate(-4deg)' }}>{user.charAt(0)}</div>
-                                        
-                                        {/* Pastille "En Ligne" ajustée */}
-                                        <div style={{ position: 'absolute', bottom: -5, right: -5, width: 20, height: 20, background: '#10b981', border: '3px solid #111', borderRadius: '50%', boxShadow: '0 0 10px #10b981' }}></div>
+                                        <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, background: '#10b981', border: '3px solid #111', borderRadius: '50%', boxShadow: '0 0 10px #10b981' }}></div>
                                     </div>
                                     
-                                    <h1 style={{ fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-1px', margin: 0, textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: '#fff' }}>
-                                        {user}
-                                    </h1>
-                                    
-                                    <div style={{ 
-                                        marginTop: 10, background: rStyle.bg, border: `1px solid ${rStyle.border}50`, 
-                                        color: rStyle.color, padding: '6px 16px', borderRadius: '50px', 
-                                        fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px',
-                                        boxShadow: `0 0 15px ${rStyle.shadow}`
-                                    }}>
-                                        {myProfile.role || 'Food Service Associate'}
-                                    </div>
-                                </div>
-
-                                {/* GRILLE DES WIDGETS DE PERFORMANCE (Plus compacte) */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 15 }}>
-                                    
-                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px 15px', borderRadius: '24px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: 10, filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.4))' }}>💰</div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Ventes</div>
-                                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981', marginTop: 5 }}>${Math.round(myProfile.ca).toLocaleString()}</div>
-                                    </div>
-                                    
-                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px 15px', borderRadius: '24px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: 10, filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}>📦</div>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Stock Cuisiné</div>
-                                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>{myProfile.stock}</div>
-                                    </div>
-                                    
-                                    <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.2)', padding: '20px 15px', borderRadius: '24px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: 10, filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' }}>🧾</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#3b82f6', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Factures</div>
-                                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>{myProfile.invoiceCount || 0}</div>
-                                    </div>
-
-                                </div>
-
-                                {/* BLOC SALAIRE (BANKING NEON - Hauteur réduite) */}
-                                <div style={{ 
-                                    background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', 
-                                    border: '1px solid rgba(16,185,129,0.3)', 
-                                    borderRadius: '24px', padding: '25px 35px', 
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                                }}>
                                     <div>
-                                        <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span>
-                                            Salaire Estimé
+                                        <h1 style={{ fontSize: '2rem', fontWeight: 950, letterSpacing: '-1px', margin: 0, textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: '#fff' }}>{user}</h1>
+                                        <div style={{ marginTop: 8, display: 'inline-block', background: rStyle.bg, border: `1px solid ${rStyle.border}50`, color: rStyle.color, padding: '4px 12px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', boxShadow: `0 0 15px ${rStyle.shadow}` }}>
+                                            {myProfile.role || 'Food Service Associate'}
                                         </div>
-                                        <div style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: 5, fontWeight: 600 }}>Projection des performances</div>
-                                    </div>
-                                    
-                                    <div style={{ fontSize: '3rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 25px rgba(16,185,129,0.4)', lineHeight: 1 }}>
-                                        ${Math.round(myProfile.salary || 0).toLocaleString()}
                                     </div>
                                 </div>
 
+                                {/* GRILLE ET SALAIRE COMPACTS */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 15 }}>
+                                    {/* BLOC SALAIRE */}
+                                    <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '20px 25px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                        <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span> Salaire Estimé
+                                        </div>
+                                        <div style={{ fontSize: '2.8rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 25px rgba(16,185,129,0.4)', lineHeight: 1, marginTop: 10 }}>
+                                            ${Math.round(myProfile.salary || 0).toLocaleString()}
+                                        </div>
+                                    </div>
+
+                                    {/* MINIS WIDGETS */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Ventes</span>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>${Math.round(myProfile.ca).toLocaleString()}</span>
+                                        </div>
+                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Factures</span>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3b82f6' }}>{myProfile.invoiceCount || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* HISTORIQUE DES FACTURES (ZONE SCROLLABLE) */}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 40px 30px 40px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                                    <div style={{ height: 1, flex: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1))' }}></div>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '3px' }}>Historique des Transactions</span>
+                                    <div style={{ height: 1, flex: 1, background: 'linear-gradient(270deg, transparent, rgba(255,255,255,0.1))' }}></div>
+                                </div>
+
+                                {Object.keys(groupedInvoices).length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '40px', opacity: 0.3 }}>
+                                        <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
+                                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Aucune transaction enregistrée.</div>
+                                    </div>
+                                ) : (
+                                    Object.keys(groupedInvoices).sort((a, b) => b.localeCompare(a)).map(week => (
+                                        <div key={week}>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--p)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ background: 'var(--p)', color: '#000', padding: '2px 8px', borderRadius: '6px' }}>{week}</span>
+                                            </div>
+                                            
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                                {groupedInvoices[week].map((inv, idx) => {
+                                                    const d = new Date(inv.date);
+                                                    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                                    const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                                                    
+                                                    return (
+                                                        <div key={idx} style={{ 
+                                                            background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.05)', 
+                                                            borderRadius: '16px', padding: '15px 20px', display: 'flex', alignItems: 'center', gap: 15,
+                                                            transition: '0.2s'
+                                                        }} onMouseOver={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'} onMouseOut={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}>
+                                                            
+                                                            <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🧾</div>
+                                                            
+                                                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                                                                    <span style={{ fontWeight: 900, color: '#fff', fontSize: '1rem' }}>{inv.num}</span>
+                                                                    <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>{dateStr} • {timeStr}</span>
+                                                                </div>
+                                                                <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                    {inv.details || 'Articles divers'}
+                                                                </div>
+                                                            </div>
+
+                                                            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#10b981' }}>
+                                                                +${Number(inv.amount).toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
