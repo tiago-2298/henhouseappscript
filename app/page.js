@@ -1192,22 +1192,169 @@ export default function Home() {
                   </div>
                 );
               })()}
-              {/* GARAGE */}
-              {currentTab === 'garage' && (
-                <div className="center-box"><div className="form-ui">
-                  <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Gestion Flotte</h2>
-                  <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })}>{data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}</select>
-                  <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-                    <button className="inp" style={{ flex: 1, background: forms.garage.action === 'Entrée' ? 'var(--success)' : '#222', color: forms.garage.action === 'Entrée' ? '#000' : '#fff', border: 'none', cursor: 'pointer' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Entrée' } })}>Entrée 🅿️</button>
-                    <button className="inp" style={{ flex: 1, background: forms.garage.action === 'Sortie' ? 'var(--p)' : '#222', color: forms.garage.action === 'Sortie' ? '#000' : '#fff', border: 'none', cursor: 'pointer' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Sortie' } })}>Sortie 🔑</button>
+             {/* GARAGE (ULTRA PREMIUM FLEET MANAGER) */}
+              {currentTab === 'garage' && (() => {
+                const VEHICLES_DATA = [
+                  { id: 'brioso', name: 'Grotti Brioso Fulmin', plate: '819435', type: 'Sportive', icon: '⚡' },
+                  { id: 'taco1', name: 'Taco Van #1', plate: '642602', type: 'Utilitaire', icon: '🌮' },
+                  { id: 'taco2', name: 'Taco Van #2', plate: '570587', type: 'Utilitaire', icon: '🌮' },
+                  { id: 'rumpo', name: 'Rumpobox', plate: '34217', type: 'Transport', icon: '📦' }
+                ];
+
+                // Trouver l'objet véhicule correspondant au choix actuel dans le state 'forms'
+                const selectedVehicle = VEHICLES_DATA.find(v => v.name + ' - ' + v.plate === forms.garage.vehicle) || VEHICLES_DATA[0];
+
+                return (
+                  <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1200px', margin: '0 auto', height: 'calc(100vh - 120px)', alignItems: 'stretch' }}>
+                    
+                    <style>{`
+                      .veh-card {
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                        border-radius: 20px;
+                        padding: 20px;
+                        cursor: pointer;
+                        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                        display: flex;
+                        align-items: center;
+                        gap: 20px;
+                      }
+                      .veh-card:hover {
+                        background: rgba(255, 255, 255, 0.08);
+                        transform: translateX(10px);
+                      }
+                      .veh-card.active {
+                        background: rgba(255, 152, 0, 0.1);
+                        border-color: var(--p);
+                        box-shadow: 0 0 20px rgba(255, 152, 0, 0.15);
+                      }
+                      .fuel-bar-container {
+                        height: 12px;
+                        background: rgba(0,0,0,0.5);
+                        border-radius: 10px;
+                        overflow: hidden;
+                        border: 1px solid rgba(255,255,255,0.1);
+                        margin-top: 15px;
+                      }
+                      .fuel-bar-fill {
+                        height: 100%;
+                        transition: width 0.5s ease, background 0.3s ease;
+                      }
+                    `}</style>
+
+                    {/* COLONNE GAUCHE : SÉLECTION DE LA FLOTTE */}
+                    <div style={{ flex: '1 1 400px', display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto', paddingRight: '10px' }}>
+                      <h2 style={{ fontWeight: 900, fontSize: '1.5rem', color: '#fff', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <span>🚗</span> FLOTTE VÉHICULES
+                      </h2>
+                      
+                      {VEHICLES_DATA.map(veh => {
+                        const fullLabel = `${veh.name} - ${veh.plate}`;
+                        const isActive = forms.garage.vehicle === fullLabel;
+                        return (
+                          <div 
+                            key={veh.id} 
+                            className={`veh-card ${isActive ? 'active' : ''}`}
+                            onClick={() => setForms({ ...forms, garage: { ...forms.garage, vehicle: fullLabel } })}
+                          >
+                            <div style={{ 
+                              width: 60, height: 60, borderRadius: '15px', background: isActive ? 'var(--p)' : '#222', 
+                              display: 'flex', alignItems: 'center', justify: 'center', fontSize: '2rem', transition: '0.3s' 
+                            }}>
+                              <span style={{ filter: isActive ? 'brightness(0)' : 'none' }}>{veh.icon}</span>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 900, color: '#fff', fontSize: '1.1rem' }}>{veh.name}</div>
+                              <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 800, textTransform: 'uppercase' }}>{veh.plate}</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>•</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>{veh.type}</span>
+                              </div>
+                            </div>
+                            {isActive && <div style={{ color: 'var(--p)', fontSize: '1.2rem' }}>✓</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* COLONNE DROITE : ACTIONS & ÉTAT */}
+                    <div className="form-ui" style={{ flex: '1.5 1 500px', padding: '40px', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'rgba(15, 15, 15, 0.8)' }}>
+                      
+                      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '3px', marginBottom: '10px' }}>Contrôle de Mouvement</div>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 950, margin: 0, color: '#fff' }}>{selectedVehicle.icon} {selectedVehicle.name}</h2>
+                      </div>
+
+                      {/* Sélecteur Entrée / Sortie stylisé */}
+                      <div style={{ display: 'flex', gap: '15px', marginBottom: '40px' }}>
+                        <button 
+                          style={{ 
+                            flex: 1, padding: '20px', borderRadius: '20px', cursor: 'pointer', border: 'none', fontWeight: 900, fontSize: '1.1rem', transition: '0.3s',
+                            background: forms.garage.action === 'Entrée' ? 'var(--success)' : 'rgba(255,255,255,0.05)',
+                            color: forms.garage.action === 'Entrée' ? '#000' : '#666',
+                            boxShadow: forms.garage.action === 'Entrée' ? '0 10px 20px rgba(16, 185, 129, 0.3)' : 'none'
+                          }} 
+                          onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Entrée' } })}
+                        >
+                          🅿️ RANGER (ENTRÉE)
+                        </button>
+                        <button 
+                          style={{ 
+                            flex: 1, padding: '20px', borderRadius: '20px', cursor: 'pointer', border: 'none', fontWeight: 900, fontSize: '1.1rem', transition: '0.3s',
+                            background: forms.garage.action === 'Sortie' ? 'var(--p)' : 'rgba(255,255,255,0.05)',
+                            color: forms.garage.action === 'Sortie' ? '#000' : '#666',
+                            boxShadow: forms.garage.action === 'Sortie' ? '0 10px 20px rgba(255, 152, 0, 0.3)' : 'none'
+                          }} 
+                          onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Sortie' } })}
+                        >
+                          🔑 SORTIR (SERVICE)
+                        </button>
+                      </div>
+
+                      {/* Jauge d'essence Dynamique */}
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '30px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '40px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
+                          <div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '5px' }}>État du réservoir</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: forms.garage.fuel < 25 ? 'var(--error)' : (forms.garage.fuel < 60 ? 'var(--p)' : 'var(--success)') }}>
+                              {forms.garage.fuel}%
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '2rem' }}>⛽</div>
+                        </div>
+                        
+                        <div className="fuel-bar-container">
+                          <div 
+                            className="fuel-bar-fill" 
+                            style={{ 
+                              width: `${forms.garage.fuel}%`, 
+                              background: forms.garage.fuel < 25 ? 'var(--error)' : (forms.garage.fuel < 60 ? 'var(--p)' : 'var(--success)'),
+                              boxShadow: `0 0 15px ${forms.garage.fuel < 25 ? 'var(--error)' : (forms.garage.fuel < 60 ? 'var(--p)' : 'var(--success)')}50`
+                            }}
+                          ></div>
+                        </div>
+                        
+                        <input 
+                          type="range" 
+                          style={{ width: '100%', accentColor: 'var(--p)', marginTop: '25px', cursor: 'pointer' }} 
+                          value={forms.garage.fuel} 
+                          onChange={e => setForms({ ...forms, garage: { ...forms.garage, fuel: e.target.value } })} 
+                        />
+                      </div>
+
+                      <button 
+                        className="btn-p" 
+                        style={{ padding: '25px', borderRadius: '25px', fontSize: '1.2rem' }}
+                        disabled={sending || !forms.garage.vehicle}
+                        onClick={() => send('sendGarage', forms.garage)}
+                      >
+                        {sending ? 'ACTUALISATION DU REGISTRE...' : 'VALIDER LE MOUVEMENT'}
+                      </button>
+                    </div>
+
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.05)', padding: 25, borderRadius: 20, border: '1px solid var(--glass-b)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, marginBottom: 15 }}><span>Niveau Essence</span><span style={{ color: 'var(--p)' }}>{forms.garage.fuel}%</span></div>
-                    <input type="range" style={{ width: '100%', accentColor: 'var(--p)', height: 8 }} value={forms.garage.fuel} onChange={e => setForms({ ...forms, garage: { ...forms.garage, fuel: e.target.value } })} />
-                  </div>
-                  <button className="btn-p" style={{ marginTop: 30 }} onClick={() => send('sendGarage', forms.garage)}>Valider Mouvement</button>
-                </div></div>
-              )}
+                );
+              })()}
 
             {/* DIRECTORY (PREMIUM ID CARDS) */}
               {currentTab === 'directory' && (() => {
