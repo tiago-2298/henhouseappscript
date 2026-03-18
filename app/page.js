@@ -1032,18 +1032,21 @@ export default function Home() {
                 </div></div>
               )}
 
-             {/* ========================================== */}
-              {/* ENTREPRISE (POS TACTILE - SANS CRASH)        */}
+            {/* ========================================== */}
+              {/* ENTREPRISE (POS TACTILE - 100% BLINDÉ)       */}
               {/* ========================================== */}
               {currentTab === 'entreprise' && (() => {
                   
-                  // Plus de useState ici, on utilise celui d'en haut !
-                  const entForm = forms.entreprise || { items: [], company: '' };
+                  // 🛡️ SÉCURITÉS MAXIMALES (Anti-Crash)
+                  const entForm = forms?.entreprise || { items: [], company: '' };
                   const itemsList = entForm.items || [];
                   const safeUser = user || 'Employé';
+                  const safeData = data || { productsByCategory: {} };
 
+                  // Fonction raccourcie pour mettre à jour le formulaire
                   const setEntForm = (newData) => setForms({ ...forms, entreprise: newData });
 
+                  // Ajouter un produit
                   const handleAddProduct = (productName) => {
                       const existing = itemsList.find(i => i.product === productName);
                       if (existing) {
@@ -1055,12 +1058,14 @@ export default function Home() {
                       playSound('click');
                   };
 
+                  // Modifier la quantité
                   const handleUpdateQty = (productName, newQty) => {
                       const val = Math.max(1, Number(newQty)); 
                       const newItems = itemsList.map(i => i.product === productName ? { ...i, qty: val } : i);
                       setEntForm({ ...entForm, items: newItems });
                   };
 
+                  // Supprimer
                   const handleRemoveProduct = (productName) => {
                       const newItems = itemsList.filter(i => i.product !== productName);
                       setEntForm({ ...entForm, items: newItems });
@@ -1068,8 +1073,9 @@ export default function Home() {
 
                   const totalItems = itemsList.reduce((acc, curr) => acc + Number(curr.qty), 0);
                   
+                  // 🎯 FILTRE DES CATÉGORIES (Sécurisé)
                   const allowedCategories = ['plats_principaux', 'boissons', 'desserts', 'alcools'];
-                  const categories = allowedCategories.filter(cat => data?.productsByCategory && data.productsByCategory[cat]);
+                  const categories = allowedCategories.filter(cat => safeData.productsByCategory && safeData.productsByCategory[cat]);
                   const categoryToDisplay = categories.includes(activeCat) ? activeCat : (categories[0] || 'plats_principaux');
 
                   const getCatName = (cat) => {
@@ -1089,12 +1095,15 @@ export default function Home() {
                   return (
                       <div className="fade-in" style={{ display: 'flex', gap: '30px', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', maxWidth: '1400px', margin: '0 auto', overflow: 'hidden' }}>
 
+                          {/* PANNEAU GAUCHE : LE PAVÉ TACTILE (70%) */}
                           <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: '20px', overflow: 'hidden' }}>
+                              
                               <div style={{ flexShrink: 0 }}>
                                   <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>PRÉPARATION <span style={{ color: '#f59e0b' }}>PRO</span></h1>
                                   <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Terminal logistique des commandes de gros</p>
                               </div>
 
+                              {/* ONGLET DES CATÉGORIES */}
                               <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', flexShrink: 0 }} className="custom-scroll">
                                   {categories.map(cat => (
                                       <button key={cat} onClick={() => { setActiveCat(cat); playSound('click'); }} style={{ padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', background: categoryToDisplay === cat ? '#f59e0b' : 'rgba(255,255,255,0.05)', color: categoryToDisplay === cat ? '#000' : '#fff', border: 'none', boxShadow: categoryToDisplay === cat ? '0 10px 20px rgba(245,158,11,0.3)' : 'none' }}>
@@ -1103,8 +1112,9 @@ export default function Home() {
                                   ))}
                               </div>
 
+                              {/* GRILLE DES PRODUITS */}
                               <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', alignContent: 'start', paddingRight: '10px', paddingBottom: '20px' }}>
-                                  {(data?.productsByCategory?.[categoryToDisplay] || []).map(prod => (
+                                  {(safeData.productsByCategory?.[categoryToDisplay] || []).map(prod => (
                                       <button key={prod} onClick={() => handleAddProduct(prod)} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '25px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', cursor: 'pointer', transition: 'all 0.1s', minHeight: '130px' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
                                           <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.5))' }}>{getIcon(categoryToDisplay)}</div>
                                           <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: '1.2' }}>{prod}</div>
@@ -1113,12 +1123,16 @@ export default function Home() {
                               </div>
                           </div>
 
+                          {/* PANNEAU DROIT : LE BON DE COMMANDE (30%) */}
                           <div style={{ flex: '0 0 450px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 30px 80px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                              
+                              {/* CHOIX DU CLIENT */}
                               <div style={{ padding: '30px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                                   <label style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Entreprise Cliente</label>
                                   <input type="text" className="inp" placeholder="Nom de l'entreprise (ex: Benny's)" value={entForm.company} onChange={e => setEntForm({ ...entForm, company: e.target.value })} style={{ width: '100%', height: '55px', fontSize: '1rem', fontWeight: 800, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '16px', padding: '0 20px', marginBottom: 0 }} />
                               </div>
 
+                              {/* LISTE DES ARTICLES */}
                               <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                   {itemsList.length === 0 ? (
                                       <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1141,6 +1155,7 @@ export default function Home() {
                                   )}
                               </div>
 
+                              {/* PIED DE PAGE & VALIDATION */}
                               <div style={{ padding: '30px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                       <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Unités</span>
@@ -1155,7 +1170,6 @@ export default function Home() {
                       </div>
                   );
               })()}
-
              {/* PARTNERS SECTION (ULTRA PREMIUM SPLIT-PANE + JAUGE NEON) */}
               {currentTab === 'partners' && (() => {
                 // --- LOGIQUE DE CALCUL DES QUOTAS ---
