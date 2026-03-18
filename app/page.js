@@ -1031,7 +1031,7 @@ export default function Home() {
                 </div></div>
               )}
 
-            {/* ========================================== */}
+{/* ========================================== */}
               {/* ENTREPRISE (POS TACTILE - PRÉPARATION RAPIDE)*/}
               {/* ========================================== */}
               {currentTab === 'entreprise' && (() => {
