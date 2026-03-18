@@ -217,10 +217,10 @@ export async function POST(request) {
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory, // <-- Ajouté ici
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory,
+        garageHistory, // <--- C'EST LUI QU'IL MANQUAIT ! 🚗
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
-    }
 
     let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
