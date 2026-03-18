@@ -1039,7 +1039,7 @@ export default function Home() {
                   
                   // Correction de l'orthographe sur forms.enterprise !
                   const entForm = forms.enterprise || { items: [], company: '' };
-                  const itemsList = entForm.items || [];
+                  const itemsList = (entForm.items || []).filter(i => i.product && i.product.trim() !== '');
                   const safeUser = user || 'Employé';
 
                   const setEntForm = (newData) => setForms({ ...forms, enterprise: newData });
