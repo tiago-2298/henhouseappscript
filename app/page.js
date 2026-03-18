@@ -1522,18 +1522,151 @@ export default function Home() {
                 </div>
               )}
 
-              {/* SUPPORT */}
-              {currentTab === 'support' && (
-                <div className="center-box"><div className="form-ui">
-                  <h2 style={{ marginBottom: 10, textAlign: 'center', fontWeight: 900 }}>Ticket Support</h2>
-                  <p style={{ textAlign: 'center', color: 'var(--muted)', marginBottom: 30 }}>Un problème technique ou besoin de stock ?</p>
-                  <input className="inp" placeholder="Sujet" value={forms.support.sub} onChange={e => setForms({ ...forms, support: { ...forms.support, sub: e.target.value } })} />
-                  <textarea className="inp" style={{ height: 150, resize: 'none' }} placeholder="Expliquez le problème..." value={forms.support.msg} onChange={e => setForms({ ...forms, support: { ...forms.support, msg: e.target.value } })}></textarea>
-                  <button className="btn-p" onClick={() => send('sendSupport', forms.support)}>Envoyer au Patron</button>
-                </div></div>
-              )}
-            </div>
-          </main>
+              {/* SUPPORT (SMART HELPDESK & SECURE PAGER) */}
+              {currentTab === 'support' && (() => {
+                  
+                const SUPPORT_CATEGORIES = [
+                    { id: 'stock', icon: '📦', label: 'Problème de Stock', color: '#10b981', hint: 'Précisez quel produit ou ingrédient est manquant dans les frigos ou réserves...' },
+                    { id: 'materiel', icon: '🛠️', label: 'Panne Matériel / Véhicule', color: '#f59e0b', hint: 'Quel équipement ou véhicule (indiquez la plaque) pose problème ? Décrivez la panne...' },
+                    { id: 'rh', icon: '👥', label: 'Problème avec un collègue', color: '#6366f1', hint: 'Expliquez la situation de manière factuelle. Ce rapport restera strictement confidentiel.' },
+                    { id: 'urgence', icon: '🚨', label: 'Urgence Absolue', color: '#ef4444', hint: 'DÉCRIVEZ L\'URGENCE IMMÉDIATEMENT. PRIORITÉ MAXIMALE. LE PDG SERA ALERTÉ.' }
+                ];
+
+                // Trouver la catégorie active (par défaut la première si non trouvée)
+                const activeCat = SUPPORT_CATEGORIES.find(c => c.label === forms.support.sub) || SUPPORT_CATEGORIES[0];
+
+                return (
+                  <div className="center-box fade-in">
+                    
+                    {/* Styles dynamiques pour le Support */}
+                    <style>{`
+                        .support-cat {
+                            background: rgba(255,255,255,0.03);
+                            border: 1px solid rgba(255,255,255,0.08);
+                            border-radius: 20px;
+                            padding: 20px 10px;
+                            cursor: pointer;
+                            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            text-align: center;
+                            gap: 12px;
+                        }
+                        .support-cat:hover {
+                            background: rgba(255,255,255,0.08);
+                            transform: translateY(-5px);
+                        }
+                        .textarea-support:focus {
+                            border-color: ${activeCat.color} !important;
+                            box-shadow: 0 0 20px ${activeCat.color}30 !important;
+                        }
+                        .btn-support {
+                            background: ${activeCat.color} !important;
+                            color: ${activeCat.id === 'stock' || activeCat.id === 'materiel' ? '#000' : '#fff'} !important;
+                            box-shadow: 0 10px 25px ${activeCat.color}40 !important;
+                            border: none;
+                        }
+                        .btn-support:hover {
+                            box-shadow: 0 15px 35px ${activeCat.color}70 !important;
+                            transform: translateY(-2px);
+                        }
+                        .btn-support:disabled {
+                            background: #222 !important;
+                            color: #555 !important;
+                            box-shadow: none !important;
+                            transform: none;
+                        }
+                    `}</style>
+
+                    <div className="form-ui" style={{ 
+                        maxWidth: 800, padding: '40px 50px', background: 'rgba(15,15,15,0.85)', 
+                        borderTop: `4px solid ${activeCat.color}`, transition: 'border-color 0.3s' 
+                    }}>
+                      
+                      <div style={{ textAlign: 'center', marginBottom: 35 }}>
+                          <h2 style={{ fontWeight: 900, fontSize: '2.2rem', letterSpacing: '1px', color: '#fff', marginBottom: 5 }}>CENTRE DE COMMUNICATION</h2>
+                          <p style={{ color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.85rem', letterSpacing: '2px' }}>Ligne directe & cryptée — Direction Hen House</p>
+                      </div>
+
+                      {/* Grille des Catégories (Chips XXL) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 15, marginBottom: 35 }}>
+                          {SUPPORT_CATEGORIES.map(cat => {
+                              const isActive = activeCat.id === cat.id;
+                              return (
+                                  <div 
+                                      key={cat.id} 
+                                      className="support-cat"
+                                      style={{
+                                          background: isActive ? `${cat.color}15` : '',
+                                          borderColor: isActive ? cat.color : '',
+                                          boxShadow: isActive ? `0 0 20px ${cat.color}20, inset 0 0 10px ${cat.color}10` : ''
+                                      }}
+                                      onClick={() => {
+                                          playSound('click');
+                                          setForms({ ...forms, support: { ...forms.support, sub: cat.label } });
+                                      }}
+                                  >
+                                      <div style={{ 
+                                          fontSize: '2.2rem', 
+                                          filter: isActive ? `drop-shadow(0 0 15px ${cat.color}90)` : 'grayscale(0.8) opacity(0.5)',
+                                          transition: '0.3s'
+                                      }}>
+                                          {cat.icon}
+                                      </div>
+                                      <div style={{ fontSize: '0.85rem', fontWeight: 900, color: isActive ? '#fff' : 'var(--muted)', lineHeight: 1.3 }}>
+                                          {cat.label}
+                                      </div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+
+                      {/* Zone de saisie du message */}
+                      <div style={{ position: 'relative', marginBottom: 30 }}>
+                          <div style={{ 
+                              position: 'absolute', top: -10, left: 15, background: '#111', padding: '0 10px', 
+                              fontSize: '0.75rem', fontWeight: 900, color: activeCat.color, 
+                              textTransform: 'uppercase', letterSpacing: '1px', zIndex: 2, borderRadius: 4,
+                              transition: 'color 0.3s'
+                          }}>
+                              Détails du rapport
+                          </div>
+                          <textarea 
+                              className="inp textarea-support" 
+                              style={{ 
+                                  height: 180, resize: 'none', background: 'rgba(0,0,0,0.6)', 
+                                  padding: '25px 20px', fontSize: '0.95rem', lineHeight: 1.6,
+                                  fontWeight: 600, color: '#e2e8f0',
+                                  transition: 'all 0.3s'
+                              }} 
+                              placeholder={activeCat.hint} 
+                              value={forms.support.msg} 
+                              onChange={e => setForms({ ...forms, support: { ...forms.support, msg: e.target.value } })}
+                          ></textarea>
+                      </div>
+
+                      {/* Bouton d'envoi dynamique */}
+                      <button 
+                          className="btn-p btn-support" 
+                          disabled={sending || !forms.support.msg.trim()} 
+                          onClick={() => send('sendSupport', forms.support)}
+                          style={{ width: '100%', padding: '20px', fontSize: '1.1rem', letterSpacing: '2px', borderRadius: 20, transition: 'all 0.3s', fontWeight: 900 }}
+                      >
+                          {sending ? (
+                              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                  <span className="pulse" style={{ fontSize: '1.2rem' }}>🔒</span> CRYPTAGE & TRANSMISSION...
+                              </span>
+                          ) : (
+                              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                  <span style={{ fontSize: '1.3rem' }}>{activeCat.icon}</span> ENVOYER LE RAPPORT
+                              </span>
+                          )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
           {/* PANIER (CAISSE) */}
           {currentTab === 'invoices' && (
