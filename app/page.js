@@ -1207,63 +1207,166 @@ export default function Home() {
                 </div></div>
               )}
 
-            {/* DIRECTORY */}
-              {currentTab === 'directory' && (
-                <div className="fade-in">
-                  
-                  {/* EN-TÊTE AVEC BARRE DE RECHERCHE */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, flexWrap: 'wrap', gap: '15px' }}>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0 }}>Annuaire</h2>
+            {/* DIRECTORY (PREMIUM ID CARDS) */}
+              {currentTab === 'directory' && (() => {
+                
+                // Fonction pour définir la couleur de la carte selon ta hiérarchie officielle
+                const getRoleStyle = (role) => {
+                    const r = (role || '').toLowerCase();
                     
-                    <div style={{ position: 'relative', flex: '1', minWidth: '250px', maxWidth: '400px' }}>
-                      <input 
-                        className="inp" 
-                        placeholder="Rechercher par nom ou poste..." 
-                        style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(255,255,255,0.05)' }} 
-                        value={search}
-                        onChange={e => setSearch(e.target.value)} 
-                      />
-                      <span style={{ position: 'absolute', left: 20, top: 16, opacity: 0.5, fontSize: '1.2rem' }}>🔍</span>
+                    if (r.includes('pdg')) return { color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.05)', border: 'rgba(251, 191, 36, 0.3)', shadow: 'rgba(251, 191, 36, 0.15)' }; // Or
+                    if (r.includes('cceo')) return { color: '#a855f7', bg: 'rgba(168, 85, 247, 0.05)', border: 'rgba(168, 85, 247, 0.3)', shadow: 'rgba(168, 85, 247, 0.15)' }; // Violet
+                    if (r.includes('general manager')) return { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.05)', border: 'rgba(59, 130, 246, 0.3)', shadow: 'rgba(59, 130, 246, 0.15)' }; // Bleu
+                    if (r.includes('shift leader')) return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.05)', border: 'rgba(16, 185, 129, 0.3)', shadow: 'rgba(16, 185, 129, 0.15)' }; // Vert
+                    
+                    // Food Service Associate (par défaut)
+                    return { color: 'var(--p)', bg: 'rgba(255, 152, 0, 0.05)', border: 'rgba(255, 152, 0, 0.2)', shadow: 'var(--p-glow)' }; // Orange Hen House
+                };
+
+                return (
+                  <div className="fade-in">
+                    
+                    {/* EN-TÊTE AVEC BARRE DE RECHERCHE */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40, flexWrap: 'wrap', gap: '15px', borderBottom: '1px solid var(--glass-b)', paddingBottom: 20 }}>
+                      <div>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: 900, margin: 0, letterSpacing: '-1px' }}>Annuaire</h2>
+                        <p style={{ color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '2px', marginTop: 5 }}>
+                            {data.employeesFull.length} Employés Actifs
+                        </p>
+                      </div>
+                      
+                      <div style={{ position: 'relative', flex: '1', minWidth: '250px', maxWidth: '350px' }}>
+                        <input 
+                          className="inp" 
+                          placeholder="Rechercher nom ou poste..." 
+                          style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(0,0,0,0.5)', borderColor: search ? 'var(--p)' : 'var(--glass-b)', borderRadius: 20, height: 50 }} 
+                          value={search}
+                          onChange={e => setSearch(e.target.value)} 
+                        />
+                        <span style={{ position: 'absolute', left: 20, top: 15, opacity: search ? 1 : 0.5, fontSize: '1.2rem', transition: '0.3s' }}>🔍</span>
+                      </div>
+                    </div>
+
+                    <style>{`
+                        .dir-card {
+                            background: rgba(15, 15, 15, 0.6);
+                            backdrop-filter: blur(20px);
+                            border-radius: 24px;
+                            padding: 25px;
+                            position: relative;
+                            overflow: hidden;
+                            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                            display: flex;
+                            flex-direction: column;
+                        }
+                        .dir-card:hover {
+                            transform: translateY(-5px);
+                        }
+                        .copy-btn {
+                            background: rgba(255,255,255,0.03);
+                            border: 1px solid rgba(255,255,255,0.08);
+                            color: #fff;
+                            border-radius: 16px;
+                            padding: 12px;
+                            font-size: 0.9rem;
+                            font-weight: 800;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                            cursor: pointer;
+                            transition: 0.2s;
+                        }
+                        .copy-btn:hover {
+                            background: var(--p);
+                            color: #000;
+                            border-color: var(--p);
+                        }
+                    `}</style>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 25 }}>
+                      {(() => {
+                        const filteredEmployees = data.employeesFull.filter(e => 
+                          e.name.toLowerCase().includes(search.toLowerCase()) || 
+                          (e.role && e.role.toLowerCase().includes(search.toLowerCase()))
+                        );
+
+                        if (filteredEmployees.length === 0) {
+                          return (
+                            <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
+                              <div style={{ fontSize: '3.5rem', opacity: 0.5, marginBottom: 15 }}>🕵️‍♂️</div>
+                              <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', marginBottom: 5 }}>Aucun collègue trouvé</h3>
+                              <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Personne ne correspond à la recherche "{search}".</p>
+                            </div>
+                          );
+                        }
+
+                        return filteredEmployees.map(e => {
+                          const style = getRoleStyle(e.role);
+                          
+                          return (
+                            <div key={e.id} className="dir-card" style={{ border: `1px solid ${style.border}` }}>
+                              
+                              {/* Halo de lumière (Glow effect) coloré selon le grade */}
+                              <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, background: style.shadow, filter: 'blur(40px)', borderRadius: '50%', zIndex: 0 }}></div>
+                              
+                              <div style={{ position: 'relative', zIndex: 1 }}>
+                                  {/* Avatar & Nom */}
+                                  <div style={{ display: 'flex', gap: 15, alignItems: 'center', marginBottom: 25 }}>
+                                    <div style={{ 
+                                        width: 60, height: 60, borderRadius: 16, flexShrink: 0,
+                                        background: 'linear-gradient(135deg, #222, #050505)', 
+                                        border: `2px solid ${style.color}`, 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                        fontSize: '1.5rem', fontWeight: 900, color: '#fff',
+                                        boxShadow: `0 10px 20px ${style.bg}`
+                                    }}>
+                                        {e.name.charAt(0)}
+                                    </div>
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <div style={{ fontWeight: 900, fontSize: '1.15rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {e.name}
+                                        </div>
+                                        <div style={{ color: style.color, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginTop: 2 }}>
+                                            {e.role || 'Food Service'}
+                                        </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Zone des statistiques (pour le RP et la compétition) */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.4)', padding: '12px 15px', borderRadius: 16, marginBottom: 20, border: '1px solid rgba(255,255,255,0.03)' }}>
+                                      <div style={{ textAlign: 'center' }}>
+                                          <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Ventes</div>
+                                          <div style={{ fontWeight: 900, color: '#10b981', fontSize: '1rem', marginTop: 2 }}>
+                                              ${Math.round(e.ca || 0).toLocaleString()}
+                                          </div>
+                                      </div>
+                                      <div style={{ width: 1, background: 'rgba(255,255,255,0.05)' }}></div>
+                                      <div style={{ textAlign: 'center' }}>
+                                          <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Factures</div>
+                                          <div style={{ fontWeight: 900, color: '#fff', fontSize: '1rem', marginTop: 2 }}>
+                                              {e.invoiceCount || 0}
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  {/* Bouton Copier Numéro */}
+                                  <button 
+                                    className="copy-btn" 
+                                    onClick={() => copyToClipboard(e.phone)}
+                                  >
+                                    <span style={{ fontSize: '1.2rem' }}>📱</span> 
+                                    {e.phone || 'Aucun numéro'}
+                                  </button>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </div>
-
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-                    {(() => {
-                      const filteredEmployees = data.employeesFull.filter(e => 
-                        e.name.toLowerCase().includes(search.toLowerCase()) || 
-                        (e.role && e.role.toLowerCase().includes(search.toLowerCase()))
-                      );
-
-                      if (filteredEmployees.length === 0) {
-                        return (
-                          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
-                            <div style={{ fontSize: '3.5rem', opacity: 0.5, marginBottom: 15 }}>🕵️‍♂️</div>
-                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', marginBottom: 5 }}>Aucun collègue trouvé</h3>
-                            <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Personne ne correspond à la recherche "{search}".</p>
-                          </div>
-                        );
-                      }
-
-                      return filteredEmployees.map(e => (
-                        <div key={e.id} className="card" style={{ height: 'auto', padding: 20, background: 'rgba(20,20,20,0.8)', alignItems: 'center', display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-                          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(45deg, #333, #000)', border: '2px solid var(--glass-b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 900, marginBottom: 15 }}>{e.name.charAt(0)}</div>
-                          <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{e.name}</div>
-                          <div style={{ color: 'var(--p)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', marginBottom: 15 }}>{e.role}</div>
-
-                          <button
-                            type="button"
-                            className="btn-p"
-                            style={{ padding: '10px', fontSize: '0.9rem', width: '100%', background: '#222', color: '#fff' }}
-                            onClick={() => copyToClipboard(e.phone)}
-                          >
-                            📋 Copier {e.phone}
-                          </button>
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
              {/* PERFORMANCE */}
               {currentTab === 'performance' && (
                 // J'ai passé le minmax de 400px à 320px pour que les 3 classements rentrent bien côte à côte sur écran
