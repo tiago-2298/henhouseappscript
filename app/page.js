@@ -1593,7 +1593,7 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              {/* PROFILE (ULTRA PREMIUM DOSSIER + HISTORIQUE FILTRABLE & DÉTAILLÉ) */}
+            {/* PROFILE (ULTRA PREMIUM SPLIT-PANE + HISTORIQUE) */}
               {currentTab === 'profile' && myProfile && (() => {
                   
                 const getRoleStyle = (role) => {
@@ -1621,7 +1621,6 @@ export default function Home() {
                     return `S${weekNo}`;
                 };
 
-                // Extraire les semaines uniques pour les filtres
                 const availableWeeks = [...new Set(myInvoices.map(inv => getWeekNumber(inv.date)))];
 
                 const groupedInvoices = myInvoices.reduce((acc, inv) => {
@@ -1631,116 +1630,137 @@ export default function Home() {
                     return acc;
                 }, {});
 
-                // Déterminer quelles semaines afficher selon le filtre
                 const weeksToDisplay = profileWeek === 'Toutes' 
                     ? Object.keys(groupedInvoices).sort((a, b) => b.localeCompare(a)) 
                     : [profileWeek];
 
                 return (
-                    <div className="center-box fade-in" style={{ height: '100%', padding: '10px' }}>
+                    <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 80px)', alignItems: 'stretch' }}>
                         
+                        {/* ========================================== */}
+                        {/* COLONNE GAUCHE : L'IDENTITÉ & PERFORMANCES */}
+                        {/* ========================================== */}
                         <div style={{ 
-                            width: '100%', maxWidth: '850px', height: '100%', maxHeight: '90vh',
-                            background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', 
-                            borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, 
+                            flex: '1 1 350px', maxWidth: '420px', background: 'rgba(15, 15, 15, 0.7)', 
+                            backdropFilter: 'blur(20px)', borderRadius: '40px', 
+                            border: `1px solid rgba(255,255,255,0.05)`, 
                             boxShadow: `0 30px 80px rgba(0,0,0,0.8), 0 0 50px ${rStyle.shadow}`,
-                            position: 'relative', overflow: 'hidden',
-                            display: 'flex', flexDirection: 'column'
+                            position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column'
                         }}>
+                            {/* Liseré supérieur néon */}
                             <div style={{ height: '6px', background: `linear-gradient(90deg, transparent, ${rStyle.color}, transparent)`, flexShrink: 0 }}></div>
                             
-                            <div style={{ padding: '35px 40px 10px 40px', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
+                            <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '30px', flex: 1, overflowY: 'auto' }}>
                                 
-                                {/* HEADER COMPACT: Avatar & Identité */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 25, position: 'relative' }}>
-                                    <div style={{ position: 'absolute', left: 0, width: '100px', height: '100px', background: rStyle.color, filter: 'blur(50px)', opacity: 0.25, borderRadius: '50%' }}></div>
+                                {/* Avatar & Nom */}
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                                    <div style={{ position: 'absolute', top: 0, width: '120px', height: '120px', background: rStyle.color, filter: 'blur(50px)', opacity: 0.25, borderRadius: '50%' }}></div>
                                     
                                     <div style={{ 
-                                        width: 85, height: 85, borderRadius: '30%', flexShrink: 0,
+                                        width: 110, height: 110, borderRadius: '35%', 
                                         background: 'linear-gradient(135deg, #222, #050505)', border: `2px solid ${rStyle.color}`, 
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                                        fontSize: '2.5rem', fontWeight: 900, color: '#fff',
+                                        fontSize: '3rem', fontWeight: 900, color: '#fff',
                                         boxShadow: `0 10px 25px ${rStyle.bg}, inset 0 0 15px rgba(255,255,255,0.05)`,
-                                        position: 'relative', zIndex: 2, transform: 'rotate(4deg)'
+                                        position: 'relative', zIndex: 2, marginBottom: '20px', transform: 'rotate(4deg)'
                                     }}>
                                         <div style={{ transform: 'rotate(-4deg)' }}>{user.charAt(0)}</div>
-                                        <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, background: '#10b981', border: '3px solid #111', borderRadius: '50%', boxShadow: '0 0 10px #10b981' }}></div>
+                                        <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, background: '#10b981', border: '4px solid #111', borderRadius: '50%', boxShadow: '0 0 10px #10b981' }}></div>
                                     </div>
                                     
-                                    <div>
-                                        <h1 style={{ fontSize: '2rem', fontWeight: 950, letterSpacing: '-1px', margin: 0, textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: '#fff' }}>{user}</h1>
-                                        <div style={{ marginTop: 8, display: 'inline-block', background: rStyle.bg, border: `1px solid ${rStyle.border}50`, color: rStyle.color, padding: '4px 12px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', boxShadow: `0 0 15px ${rStyle.shadow}` }}>
-                                            {myProfile.role || 'Food Service Associate'}
-                                        </div>
+                                    <h1 style={{ fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-1px', margin: 0, textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: '#fff', textAlign: 'center' }}>{user}</h1>
+                                    <div style={{ marginTop: 12, background: rStyle.bg, border: `1px solid ${rStyle.border}50`, color: rStyle.color, padding: '6px 16px', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', boxShadow: `0 0 15px ${rStyle.shadow}`, textAlign: 'center' }}>
+                                        {myProfile.role || 'Food Service Associate'}
                                     </div>
                                 </div>
 
-                                {/* GRILLE ET SALAIRE COMPACTS */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 15 }}>
-                                    <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '20px 25px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                        <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span> Salaire Estimé
-                                        </div>
-                                        <div style={{ fontSize: '2.8rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 25px rgba(16,185,129,0.4)', lineHeight: 1, marginTop: 10 }}>
-                                            ${Math.round(myProfile.salary || 0).toLocaleString()}
-                                        </div>
+                                {/* Grille des Mini-Widgets */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.8rem', marginBottom: 5, filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.4))' }}>💰</div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Ventes</div>
+                                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981' }}>${Math.round(myProfile.ca).toLocaleString()}</div>
                                     </div>
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.8rem', marginBottom: 5, filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}>📦</div>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Cuisine</div>
+                                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff' }}>{myProfile.stock}</div>
+                                    </div>
+                                    <div style={{ gridColumn: '1 / -1', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '20px', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div style={{ fontSize: '1.8rem', filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' }}>🧾</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#3b82f6', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Factures Émises</div>
+                                        </div>
+                                        <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff' }}>{myProfile.invoiceCount || 0}</div>
+                                    </div>
+                                </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Ventes</span>
-                                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>${Math.round(myProfile.ca).toLocaleString()}</span>
-                                        </div>
-                                        <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '10px 15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Factures</span>
-                                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3b82f6' }}>{myProfile.invoiceCount || 0}</span>
-                                        </div>
+                                {/* Bloc Salaire Néon */}
+                                <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '25px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: 'auto' }}>
+                                    <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span> Salaire Estimé
+                                    </div>
+                                    <div style={{ fontSize: '3.2rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 25px rgba(16,185,129,0.4)', lineHeight: 1 }}>
+                                        ${Math.round(myProfile.salary || 0).toLocaleString()}
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* HISTORIQUE DES FACTURES (ZONE SCROLLABLE) */}
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 40px 30px 40px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {/* ========================================== */}
+                        {/* COLONNE DROITE : LE REGISTRE DES FACTURES  */}
+                        {/* ========================================== */}
+                        <div style={{ 
+                            flex: '2 1 500px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', 
+                            borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, 
+                            boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden'
+                        }}>
+                            
+                            {/* En-tête fixe avec Filtres */}
+                            <div style={{ padding: '30px 40px 20px 40px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', zIndex: 10 }}>
+                                <h2 style={{ fontWeight: 900, fontSize: '1.5rem', letterSpacing: '1px', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 15 }}>
+                                    <span>📑</span> REGISTRE DES VENTES
+                                </h2>
                                 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-                                    <div style={{ height: 1, flex: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1))' }}></div>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '3px' }}>Historique des Transactions</span>
-                                    <div style={{ height: 1, flex: 1, background: 'linear-gradient(270deg, transparent, rgba(255,255,255,0.1))' }}></div>
-                                </div>
-
-                                {/* FILTRES DE SEMAINE */}
                                 {availableWeeks.length > 0 && (
-                                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', marginTop: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginTop: '20px', paddingBottom: '5px' }}>
                                         <button 
-                                            style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === 'Toutes' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === 'Toutes' ? '#000' : '#fff' }}
+                                            style={{ padding: '8px 18px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === 'Toutes' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === 'Toutes' ? '#000' : '#fff' }}
                                             onClick={() => setProfileWeek('Toutes')}
                                         >
-                                            Toutes
+                                            Toutes les semaines
                                         </button>
                                         {availableWeeks.map(w => (
                                             <button 
                                                 key={w}
-                                                style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === w ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === w ? '#000' : '#fff' }}
+                                                style={{ padding: '8px 18px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === w ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === w ? '#000' : '#fff' }}
                                                 onClick={() => setProfileWeek(w)}
                                             >
-                                                {w}
+                                                Semaine {w.replace('S', '')}
                                             </button>
                                         ))}
                                     </div>
                                 )}
+                            </div>
 
-                                {/* LISTE DES FACTURES */}
+                            {/* Liste Scrollable des Factures */}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 40px 40px 40px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 {weeksToDisplay.length === 0 || !groupedInvoices[weeksToDisplay[0]] ? (
-                                    <div style={{ textAlign: 'center', padding: '40px', opacity: 0.3 }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: 10 }}>📭</div>
-                                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>Aucune transaction enregistrée.</div>
+                                    <div style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                                        <div style={{ fontSize: '3.5rem', marginBottom: 15 }}>📭</div>
+                                        <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff' }}>Aucune transaction trouvée</div>
+                                        <div style={{ fontWeight: 600, fontSize: '0.9rem', marginTop: 5 }}>Faites des ventes pour remplir votre registre.</div>
                                     </div>
                                 ) : (
                                     weeksToDisplay.map(week => (
                                         <div key={week}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--muted)', marginBottom: 12, marginTop: 15, paddingLeft: 5 }}>
-                                                — Semaine {week.replace('S', '')}
-                                            </div>
+                                            {/* Si on affiche "Toutes", on met un petit séparateur de semaine, sinon on le cache */}
+                                            {profileWeek === 'Toutes' && (
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--p)', marginBottom: 15, marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                    <span style={{ background: 'var(--p)', color: '#000', padding: '3px 10px', borderRadius: '8px' }}>SEMAINE {week.replace('S', '')}</span>
+                                                    <div style={{ height: 1, flex: 1, background: 'linear-gradient(90deg, rgba(255,152,0,0.3), transparent)' }}></div>
+                                                </div>
+                                            )}
                                             
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                                 {groupedInvoices[week].map((inv, idx) => {
@@ -1754,48 +1774,53 @@ export default function Home() {
                                                             style={{ 
                                                                 background: isExpanded ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)', 
                                                                 border: `1px solid ${isExpanded ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)'}`, 
-                                                                borderRadius: '20px', padding: '15px 20px', display: 'flex', flexDirection: 'column',
+                                                                borderRadius: '20px', padding: '18px 25px', display: 'flex', flexDirection: 'column',
                                                                 cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                                             }} 
                                                             onClick={() => {
                                                                 playSound('click');
                                                                 setExpandedInv(isExpanded ? null : inv.num);
                                                             }}
-                                                            onMouseOver={e => !isExpanded && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)')} 
-                                                            onMouseOut={e => !isExpanded && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)')}
+                                                            onMouseOver={e => !isExpanded && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)', e.currentTarget.style.transform = 'translateY(-2px)')} 
+                                                            onMouseOut={e => !isExpanded && (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)', e.currentTarget.style.transform = 'translateY(0)')}
                                                         >
                                                             {/* Ligne Principale */}
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                                                                <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🧾</div>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                                                                <div style={{ width: 50, height: 50, borderRadius: '14px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>🧾</div>
+                                                                
                                                                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                                                                        <span style={{ fontWeight: 900, color: '#fff', fontSize: '1.05rem' }}>{inv.num}</span>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                                        <span style={{ fontWeight: 900, color: '#fff', fontSize: '1.1rem', letterSpacing: '1px' }}>{inv.num}</span>
+                                                                        {isExpanded && <span style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', fontWeight: 900 }}>DÉTAILLÉ</span>}
                                                                     </div>
-                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 700, marginTop: 4 }}>
-                                                                        {dateStr} à {timeStr}
+                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 700, marginTop: 5 }}>
+                                                                        {dateStr} • {timeStr}
                                                                     </div>
                                                                 </div>
+                                                                
                                                                 <div style={{ textAlign: 'right' }}>
-                                                                    <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#10b981' }}>+${Number(inv.amount).toLocaleString()}</div>
-                                                                    <div style={{ fontSize: '0.65rem', color: '#555', fontWeight: 900, marginTop: 2 }}>{isExpanded ? '▲ RÉDUIRE' : '▼ DÉTAILS'}</div>
+                                                                    <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#10b981' }}>+${Number(inv.amount).toLocaleString()}</div>
+                                                                    <div style={{ fontSize: '0.7rem', color: '#555', fontWeight: 900, marginTop: 4, transition: '0.3s', color: isExpanded ? 'var(--p)' : '#555' }}>
+                                                                        {isExpanded ? '▲ FERMER' : '▼ VOIR LE TICKET'}
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
                                                             {/* Zone Déroulante (Détails de la commande) */}
                                                             {isExpanded && (
-                                                                <div className="fade-in" style={{ marginTop: 20, paddingTop: 20, borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
-                                                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 15, fontWeight: 800 }}>Détail des articles consommés</div>
+                                                                <div className="fade-in" style={{ marginTop: 25, paddingTop: 20, borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 15, fontWeight: 800 }}>Contenu de la transaction</div>
                                                                     
                                                                     {inv.details ? inv.details.split(',').map((item, i) => {
                                                                         const [qty, ...nameParts] = item.trim().split('x ');
                                                                         const name = nameParts.join('x ');
                                                                         return (
-                                                                            <div key={i} style={{ display: 'flex', gap: 15, alignItems: 'center', marginBottom: 10, paddingLeft: 10, borderLeft: '2px solid rgba(255,255,255,0.1)' }}>
-                                                                                <div style={{ background: '#111', color: 'var(--p)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}>{qty}x</div>
-                                                                                <div style={{ fontSize: '0.85rem', color: '#ccc', fontWeight: 700 }}>{name}</div>
+                                                                            <div key={i} style={{ display: 'flex', gap: 15, alignItems: 'center', marginBottom: 12, paddingLeft: 15, borderLeft: '2px solid rgba(255,255,255,0.1)' }}>
+                                                                                <div style={{ background: '#111', color: 'var(--p)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 900, minWidth: '40px', textAlign: 'center' }}>{qty}x</div>
+                                                                                <div style={{ fontSize: '0.95rem', color: '#e2e8f0', fontWeight: 700 }}>{name}</div>
                                                                             </div>
                                                                         )
-                                                                    }) : <div style={{ color: '#777', fontStyle: 'italic', fontSize: '0.8rem' }}>Aucun détail enregistré pour cette transaction.</div>}
+                                                                    }) : <div style={{ color: '#777', fontStyle: 'italic', fontSize: '0.85rem' }}>Aucun détail enregistré pour cette transaction.</div>}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1807,6 +1832,7 @@ export default function Home() {
                                 )}
                             </div>
                         </div>
+
                     </div>
                 );
               })()}
