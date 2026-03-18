@@ -1192,7 +1192,7 @@ export default function Home() {
                   </div>
                 );
               })()}
-             {/* GARAGE (DASHBOARD SPORT) */}
+             {/* GARAGE (DASHBOARD SPORT AVEC VRAIES DONNÉES SHEET) */}
 {currentTab === 'garage' && (
     <div className="fade-in" style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px', height: '100%', maxHeight: '85vh' }}>
         
@@ -1210,10 +1210,9 @@ export default function Home() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '30px', flex: 1, overflow: 'hidden' }}>
             
-            {/* CONTRÔLES DU VÉHICULE */}
+            {/* CONTRÔLES DU VÉHICULE (GAUCHE) */}
             <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', padding: '35px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: '25px' }}>
                 
-                {/* SELECTOR */}
                 <div style={{ position: 'relative' }}>
                     <label style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -8, left: 15, background: '#181818', padding: '0 8px', zIndex: 2 }}>Véhicule</label>
                     <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })} style={{ height: 60, fontSize: '1rem', fontWeight: 800 }}>
@@ -1221,7 +1220,6 @@ export default function Home() {
                     </select>
                 </div>
 
-                {/* ACTION BUTTONS */}
                 <div style={{ display: 'flex', gap: 15 }}>
                     <button 
                         style={{ flex: 1, height: 70, borderRadius: 20, border: 'none', cursor: 'pointer', transition: '0.3s', fontSize: '0.9rem', fontWeight: 900, background: forms.garage.action === 'Entrée' ? '#10b981' : 'rgba(255,255,255,0.05)', color: forms.garage.action === 'Entrée' ? '#000' : '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5 }}
@@ -1237,14 +1235,13 @@ export default function Home() {
                     </button>
                 </div>
 
-                {/* JAUGE D'ESSENCE INTERACTIVE */}
                 <div style={{ marginTop: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 15, alignItems: 'end' }}>
                         <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>NIVEAU DE CARBURANT</span>
-                        <span style={{ fontSize: '2rem', fontWeight: 900, color: forms.garage.fuel < 20 ? '#ef4444' : 'var(--p)', textShadow: forms.garage.fuel < 20 ? '0 0 15px #ef444450' : 'none' }}>{forms.garage.fuel}%</span>
+                        <span style={{ fontSize: '2rem', fontWeight: 900, color: forms.garage.fuel < 20 ? '#ef4444' : 'var(--p)' }}>{forms.garage.fuel}%</span>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '4px', height: '45px', marginBottom: 20 }}>
+                    <div style={{ display: 'flex', gap: 4, height: 45, marginBottom: 20 }}>
                         {[...Array(20)].map((_, i) => {
                             const isActive = (i * 5) < forms.garage.fuel;
                             const color = forms.garage.fuel < 20 ? '#ef4444' : forms.garage.fuel < 50 ? '#f59e0b' : '#3b82f6';
@@ -1266,31 +1263,38 @@ export default function Home() {
                 </button>
             </div>
 
-            {/* HISTORIQUE (BLOCK DROITE) */}
+            {/* HISTORIQUE (DROITE - LIT LES DONNÉES DU SHEET) */}
             <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 25, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--p)' }}></span>
                     Dernières Actions
                 </h3>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    {(data.garageHistory || []).length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '40px', opacity: 0.2, fontWeight: 800 }}>Aucune donnée</div>
-                    ) : data.garageHistory.map((act, i) => (
-                        <div key={i} style={{ padding: '15px', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            <div style={{ fontSize: '1.4rem', background: 'rgba(0,0,0,0.4)', width: '45px', height: '45px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${act[3] === 'Entrée' ? '#10b98130' : '#ff980030'}` }}>
-                                {act[3] === 'Entrée' ? '🅿️' : '🔑'}
-                            </div>
-                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{act[2]}</div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>{act[1].split(' ')[0]} • <span style={{ color: act[3] === 'Entrée' ? '#10b981' : 'var(--p)' }}>{act[3]}</span></div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fff' }}>{act[4]}%</div>
-                                <div style={{ fontSize: '0.6rem', color: '#555', fontWeight: 800 }}>ESSENCE</div>
-                            </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
+                    {/* On utilise data.garageHistory qui arrive de ton API */}
+                    {(!data.garageHistory || data.garageHistory.length === 0) ? (
+                        <div style={{ textAlign: 'center', padding: '40px', opacity: 0.2, fontWeight: 800 }}>
+                            <div style={{ fontSize: '2rem', marginBottom: 10 }}>📂</div>
+                            Aucune donnée enregistrée
                         </div>
-                    ))}
+                    ) : data.garageHistory.map((act, i) => {
+                        // act[0] = Date, act[1] = Employé, act[2] = Véhicule, act[3] = Action, act[4] = Fuel
+                        return (
+                            <div key={i} style={{ padding: '15px', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 15 }}>
+                                <div style={{ fontSize: '1.4rem', background: 'rgba(0,0,0,0.4)', width: '45px', height: '45px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${act[3] === 'Entrée' ? '#10b98130' : '#ff980030'}` }}>
+                                    {act[3] === 'Entrée' ? '🅿️' : '🔑'}
+                                </div>
+                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{act[2]}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>{act[1]?.split(' ')[0]} • <span style={{ color: act[3] === 'Entrée' ? '#10b981' : 'var(--p)' }}>{act[3]}</span></div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fff' }}>{act[4]}%</div>
+                                    <div style={{ fontSize: '0.6rem', color: '#555', fontWeight: 800 }}>ESSENCE</div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.7rem', fontWeight: 700 }}>
@@ -1300,7 +1304,6 @@ export default function Home() {
         </div>
     </div>
 )}
-
             {/* DIRECTORY (PREMIUM ID CARDS) */}
               {currentTab === 'directory' && (() => {
                 
