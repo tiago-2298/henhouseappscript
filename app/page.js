@@ -1192,113 +1192,60 @@ export default function Home() {
                   </div>
                 );
               })()}
-             {/* GARAGE (DASHBOARD SPORT AVEC VRAIES DONNÉES SHEET) */}
+             {/* GARAGE (VRAIES DONNÉES) */}
 {currentTab === 'garage' && (
-    <div className="fade-in" style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px', height: '100%', maxHeight: '85vh' }}>
+    <div className="fade-in" style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
         
-        {/* HEADER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1.5px' }}>GESTION <span style={{ color: 'var(--p)' }}>FLOTTE</span></h1>
-                <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Terminal de maintenance Hen House</p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#fff' }}>{forms.garage.vehicle}</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 800 }}>VÉHICULE SÉLECTIONNÉ</div>
-            </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0 }}>VÉHICULES</h1>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '30px', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '30px' }}>
             
-            {/* CONTRÔLES DU VÉHICULE (GAUCHE) */}
-            <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', padding: '35px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                
-                <div style={{ position: 'relative' }}>
-                    <label style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -8, left: 15, background: '#181818', padding: '0 8px', zIndex: 2 }}>Véhicule</label>
-                    <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })} style={{ height: 60, fontSize: '1rem', fontWeight: 800 }}>
-                        {data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
+            {/* FORMULAIRE GAUCHE */}
+            <div className="form-ui" style={{ maxWidth: '100%', padding: '35px' }}>
+                <select className="inp" value={forms.garage.vehicle} onChange={e => setForms({ ...forms, garage: { ...forms.garage, vehicle: e.target.value } })}>
+                    {data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+
+                <div style={{ display: 'flex', gap: 15, marginBottom: 25 }}>
+                    <button className="inp" style={{ flex: 1, background: forms.garage.action === 'Entrée' ? '#10b981' : '#222', color: forms.garage.action === 'Entrée' ? '#000' : '#fff' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Entrée' } })}>🅿️ ENTRÉE</button>
+                    <button className="inp" style={{ flex: 1, background: forms.garage.action === 'Sortie' ? 'var(--p)' : '#222', color: forms.garage.action === 'Sortie' ? '#000' : '#fff' }} onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Sortie' } })}>🔑 SORTIE</button>
                 </div>
 
-                <div style={{ display: 'flex', gap: 15 }}>
-                    <button 
-                        style={{ flex: 1, height: 70, borderRadius: 20, border: 'none', cursor: 'pointer', transition: '0.3s', fontSize: '0.9rem', fontWeight: 900, background: forms.garage.action === 'Entrée' ? '#10b981' : 'rgba(255,255,255,0.05)', color: forms.garage.action === 'Entrée' ? '#000' : '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                        onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Entrée' } })}
-                    >
-                        <span style={{ fontSize: '1.4rem' }}>🅿️</span> RANGER (ENTRÉE)
-                    </button>
-                    <button 
-                        style={{ flex: 1, height: 70, borderRadius: 20, border: 'none', cursor: 'pointer', transition: '0.3s', fontSize: '0.9rem', fontWeight: 900, background: forms.garage.action === 'Sortie' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: forms.garage.action === 'Sortie' ? '#000' : '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                        onClick={() => setForms({ ...forms, garage: { ...forms.garage, action: 'Sortie' } })}
-                    >
-                        <span style={{ fontSize: '1.4rem' }}>🔑</span> SORTIR (SERVICE)
-                    </button>
-                </div>
-
-                <div style={{ marginTop: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 15, alignItems: 'end' }}>
-                        <span style={{ fontWeight: 900, fontSize: '0.9rem', color: '#fff' }}>NIVEAU DE CARBURANT</span>
-                        <span style={{ fontSize: '2rem', fontWeight: 900, color: forms.garage.fuel < 20 ? '#ef4444' : 'var(--p)' }}>{forms.garage.fuel}%</span>
+                <div style={{ marginBottom: 30 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontWeight: 800 }}>
+                        <span>ESSENCE</span>
+                        <span style={{ color: 'var(--p)' }}>{forms.garage.fuel}%</span>
                     </div>
-                    
-                    <div style={{ display: 'flex', gap: 4, height: 45, marginBottom: 20 }}>
-                        {[...Array(20)].map((_, i) => {
-                            const isActive = (i * 5) < forms.garage.fuel;
-                            const color = forms.garage.fuel < 20 ? '#ef4444' : forms.garage.fuel < 50 ? '#f59e0b' : '#3b82f6';
-                            return (
-                                <div key={i} style={{
-                                    flex: 1, borderRadius: '4px',
-                                    background: isActive ? color : 'rgba(255,255,255,0.03)',
-                                    boxShadow: isActive ? `0 0 15px ${color}40` : 'none',
-                                    transition: 'all 0.3s'
-                                }} />
-                            );
-                        })}
-                    </div>
-                    <input type="range" style={{ width: '100%', accentColor: 'var(--p)', cursor: 'pointer' }} value={forms.garage.fuel} onChange={e => setForms({ ...forms, garage: { ...forms.garage, fuel: e.target.value } })} />
+                    <input type="range" style={{ width: '100%', accentColor: 'var(--p)' }} value={forms.garage.fuel} onChange={e => setForms({ ...forms, garage: { ...forms.garage, fuel: e.target.value } })} />
                 </div>
 
-                <button className="btn-p" style={{ marginTop: 'auto', padding: '22px', fontSize: '1.1rem' }} disabled={sending} onClick={() => send('sendGarage', forms.garage)}>
-                    {sending ? 'TRANSMISSION...' : 'VALIDER LE MOUVEMENT'}
+                <button className="btn-p" disabled={sending} onClick={() => send('sendGarage', forms.garage)}>
+                    {sending ? 'ENVOI EN COURS...' : 'VALIDER LE MOUVEMENT'}
                 </button>
             </div>
 
-            {/* HISTORIQUE (DROITE - LIT LES DONNÉES DU SHEET) */}
-            <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 25, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--p)' }}></span>
-                    Dernières Actions
-                </h3>
+            {/* HISTORIQUE DROITE */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '30px', padding: '30px', border: '1px solid var(--glass-b)' }}>
+                <h3 style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 20 }}>Dernières Actions</h3>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
-                    {/* On utilise data.garageHistory qui arrive de ton API */}
-                    {(!data.garageHistory || data.garageHistory.length === 0) ? (
-                        <div style={{ textAlign: 'center', padding: '40px', opacity: 0.2, fontWeight: 800 }}>
-                            <div style={{ fontSize: '2rem', marginBottom: 10 }}>📂</div>
-                            Aucune donnée enregistrée
-                        </div>
-                    ) : data.garageHistory.map((act, i) => {
-                        // act[0] = Date, act[1] = Employé, act[2] = Véhicule, act[3] = Action, act[4] = Fuel
-                        return (
-                            <div key={i} style={{ padding: '15px', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 15 }}>
-                                <div style={{ fontSize: '1.4rem', background: 'rgba(0,0,0,0.4)', width: '45px', height: '45px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${act[3] === 'Entrée' ? '#10b98130' : '#ff980030'}` }}>
-                                    {act[3] === 'Entrée' ? '🅿️' : '🔑'}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* UTILISATION DE data.garageHistory ENVOYÉ PAR TON API */}
+                    {data?.garageHistory && data.garageHistory.length > 0 ? (
+                        data.garageHistory.map((act, i) => (
+                            <div key={i} style={{ padding: '15px', borderRadius: '18px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 15 }}>
+                                <div style={{ fontSize: '1.2rem' }}>{act[3] === 'Entrée' ? '🅿️' : '🔑'}</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff' }}>{act[2]}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>{act[1]?.split(' ')[0]} • <span style={{color: act[3] === 'Entrée' ? '#10b981' : 'var(--p)'}}>{act[3]}</span></div>
                                 </div>
-                                <div style={{ flex: 1, overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{act[2]}</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 700 }}>{act[1]?.split(' ')[0]} • <span style={{ color: act[3] === 'Entrée' ? '#10b981' : 'var(--p)' }}>{act[3]}</span></div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fff' }}>{act[4]}%</div>
-                                    <div style={{ fontSize: '0.6rem', color: '#555', fontWeight: 800 }}>ESSENCE</div>
-                                </div>
+                                <div style={{ textAlign: 'right', fontWeight: 900, color: '#fff', fontSize: '0.9rem' }}>{act[4]}%</div>
                             </div>
-                        );
-                    })}
-                </div>
-
-                <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.7rem', fontWeight: 700 }}>
-                    Système de télémétrie Hen House v2.4
+                        ))
+                    ) : (
+                        <div style={{ textAlign: 'center', opacity: 0.3, padding: '20px' }}>Aucun historique trouvé</div>
+                    )}
                 </div>
             </div>
         </div>
