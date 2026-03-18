@@ -821,41 +821,143 @@ export default function Home() {
                 </div>
               )}
 
-              {/* EXPENSES */}
+             {/* EXPENSES (NOTE DE FRAIS & HISTORIQUE) */}
               {currentTab === 'expenses' && (
-                <div className="center-box">
-                  <div className="form-ui">
-                    <h2 style={{ marginBottom: 10, textAlign: 'center', fontWeight: 900, fontSize: '1.8rem' }}>Frais & Essence</h2>
-                    <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                      <select className="inp" style={{ flex: 1 }} value={forms.expense.vehicle} onChange={e => setForms({ ...forms, expense: { ...forms.expense, vehicle: e.target.value } })}>
-                        {data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                      <select className="inp" style={{ flex: 1 }} value={forms.expense.kind} onChange={e => setForms({ ...forms, expense: { ...forms.expense, kind: e.target.value } })}>
-                        <option>Essence</option><option>Réparation</option><option>Autre</option>
-                      </select>
-                    </div>
-                    <input className="inp" type="number" placeholder="Montant ($)" value={forms.expense.amount} onChange={e => setForms({ ...forms, expense: { ...forms.expense, amount: e.target.value } })} />
+                <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 100px)', alignItems: 'stretch' }}>
+                  
+                  {/* ========================================== */}
+                  {/* COLONNE GAUCHE : LE FORMULAIRE ET LE SCANNER */}
+                  {/* ========================================== */}
+                  <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingRight: '10px' }}>
+                      
+                      {/* HEADER */}
+                      <div>
+                          <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>NOTES DE <span style={{ color: '#3b82f6' }}>FRAIS</span></h1>
+                          <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Portail de remboursement Hen House</p>
+                      </div>
 
-                    <div className={`dropzone ${dragActive ? 'active' : ''}`}
-                      onDragOver={e => { e.preventDefault(); setDragActive(true); }}
-                      onDragLeave={() => setDragActive(false)}
-                      onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }}
-                      onClick={() => !forms.expense.file && document.getElementById('inpFile').click()}
-                      style={{ border: '2px dashed var(--glass-b)', borderRadius: 20, padding: 30, textAlign: 'center', cursor: 'pointer', marginBottom: 20, background: dragActive ? 'rgba(255,152,0,0.1)' : 'transparent' }}>
-                      <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
-                      {!forms.expense.file ? (
-                        <>
-                          <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.7 }}>📸</div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted)' }}>Preuve (Click ou Ctrl+V)</div>
-                        </>
-                      ) : (
-                        <div style={{ position: 'relative' }}>
-                          <button style={{ position: 'absolute', top: -10, right: -10, background: 'var(--error)', border: 'none', color: '#fff', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', zIndex: 10 }} onClick={(e) => { e.stopPropagation(); setForms({ ...forms, expense: { ...forms.expense, file: null } }); }}>×</button>
-                          <img src={forms.expense.file} style={{ maxHeight: 200, borderRadius: 10, border: '2px solid #fff' }} />
-                        </div>
-                      )}
-                    </div>
-                    <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)}>Envoyer Note</button>
+                      {/* LE FORMULAIRE */}
+                      <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
+                          
+                          <div>
+                              <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Type d'intervention</label>
+                              <div style={{ display: 'flex', gap: 10 }}>
+                                  {[{ id: 'Essence', icon: '⛽' }, { id: 'Réparation', icon: '🔧' }, { id: 'Autre', icon: '📄' }].map(k => (
+                                      <button key={k.id} style={{ flex: 1, padding: '12px 5px', borderRadius: '16px', border: '1px solid', background: forms.expense.kind === k.id ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.02)', borderColor: forms.expense.kind === k.id ? '#3b82f6' : 'rgba(255,255,255,0.05)', color: forms.expense.kind === k.id ? '#fff' : 'var(--muted)', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', transition: '0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }} onClick={() => setForms({ ...forms, expense: { ...forms.expense, kind: k.id } })}>
+                                          <span style={{ fontSize: '1.4rem', filter: forms.expense.kind === k.id ? 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' : 'grayscale(1)' }}>{k.icon}</span>
+                                          {k.id}
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+
+                          <div style={{ position: 'relative' }}>
+                              <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -10, left: 15, background: '#111', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Véhicule concerné</label>
+                              <select className="inp" value={forms.expense.vehicle} onChange={e => setForms({ ...forms, expense: { ...forms.expense, vehicle: e.target.value } })} style={{ height: 55, fontSize: '0.9rem', fontWeight: 800, borderColor: 'rgba(255,255,255,0.1)' }}>
+                                  {data.vehicles.map(v => <option key={v} value={v}>{v}</option>)}
+                              </select>
+                          </div>
+
+                          <div style={{ position: 'relative' }}>
+                              <label style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -10, left: 15, background: '#111', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Montant de la facture</label>
+                              <div style={{ position: 'relative' }}>
+                                  <span style={{ position: 'absolute', left: 20, top: 13, fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>$</span>
+                                  <input className="inp" type="number" placeholder="0.00" value={forms.expense.amount} onChange={e => setForms({ ...forms, expense: { ...forms.expense, amount: e.target.value } })} style={{ height: 55, fontSize: '1.2rem', fontWeight: 900, paddingLeft: 45, color: '#10b981', borderColor: forms.expense.amount ? '#10b981' : 'rgba(255,255,255,0.1)', marginBottom: 0 }} />
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* LE SCANNER DE PREUVE */}
+                      <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+                              <h3 style={{ margin: 0, fontSize: '0.9rem', color: '#fff', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 10 }}><span>📸</span> SCANNER DE REÇU</h3>
+                              <span style={{ fontSize: '0.65rem', color: forms.expense.file ? '#10b981' : 'var(--error)', background: forms.expense.file ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: 8, fontWeight: 900 }}>{forms.expense.file ? 'PREUVE CHARGÉE' : 'REQUIS'}</span>
+                          </div>
+
+                          <div className={`dropzone ${dragActive ? 'active' : ''}`} onDragOver={e => { e.preventDefault(); setDragActive(true); }} onDragLeave={() => setDragActive(false)} onDrop={e => { e.preventDefault(); setDragActive(false); handleFileChange(e.dataTransfer.files[0]); }} onClick={() => !forms.expense.file && document.getElementById('inpFile').click()} style={{ minHeight: '180px', border: `2px dashed ${dragActive ? '#3b82f6' : 'rgba(255,255,255,0.1)'}`, borderRadius: 20, padding: 20, textAlign: 'center', cursor: forms.expense.file ? 'default' : 'pointer', background: dragActive ? 'rgba(59,130,246,0.05)' : 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', position: 'relative', overflow: 'hidden', marginBottom: 20 }}>
+                              <input type="file" id="inpFile" hidden accept="image/*" onChange={e => handleFileChange(e.target.files[0])} />
+                              
+                              {!forms.expense.file ? (
+                                  <div style={{ pointerEvents: 'none' }}>
+                                      <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5, filter: dragActive ? 'drop-shadow(0 0 15px #3b82f6)' : 'none' }}>📄</div>
+                                      <div style={{ fontWeight: 900, fontSize: '1rem', color: '#fff' }}>Déposez le ticket ici</div>
+                                      <div style={{ marginTop: 15, display: 'inline-block', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 800, color: '#aaa' }}>⌨️ Astuce : Vous pouvez faire Ctrl + V</div>
+                                  </div>
+                              ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                      <button style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(239, 68, 68, 0.9)', border: 'none', color: '#fff', borderRadius: '10px', padding: '6px 10px', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer', zIndex: 10 }} onClick={(e) => { e.stopPropagation(); setForms({ ...forms, expense: { ...forms.expense, file: null } }); }}>✖ SUPPRIMER</button>
+                                      <img src={forms.expense.file} style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }} />
+                                  </div>
+                              )}
+                          </div>
+
+                          <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)} style={{ padding: '20px', fontSize: '1rem', borderRadius: 16, background: (!forms.expense.amount || !forms.expense.file) ? '#222' : 'linear-gradient(90deg, #3b82f6, #2563eb)', color: (!forms.expense.amount || !forms.expense.file) ? '#555' : '#fff', boxShadow: (!forms.expense.amount || !forms.expense.file) ? 'none' : '0 10px 25px rgba(59,130,246,0.4)', border: 'none' }}>
+                              {sending ? 'TRANSMISSION...' : 'SOUMETTRE LA DEMANDE'}
+                          </button>
+                      </div>
+                  </div>
+
+                  {/* ========================================== */}
+                  {/* COLONNE DROITE : HISTORIQUE DES DEMANDES   */}
+                  {/* ========================================== */}
+                  <div style={{ flex: '1 1 450px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      
+                      <div style={{ padding: '30px 30px 15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
+                          <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span>📊</span> ÉTAT DES REMBOURSEMENTS
+                          </h2>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 5, fontWeight: 600 }}>Suivez l'avancement de vos demandes de frais</div>
+                      </div>
+
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px 30px 30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          {(() => {
+                              const myExpenses = (data.expensesHistory || []).filter(row => row[1] === user);
+                              
+                              if (myExpenses.length === 0) {
+                                  return (
+                                      <div style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                                          <div style={{ fontSize: '3rem', marginBottom: 15 }}>📝</div>
+                                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Aucune demande en cours</div>
+                                      </div>
+                                  );
+                              }
+
+                              return myExpenses.map((exp, idx) => {
+                                  const d = new Date(exp[0]);
+                                  const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                                  const type = exp[2];
+                                  const amount = exp[4];
+                                  const status = exp[5] || '⏳ En attente'; // Gère le statut vide si oublié
+                                  
+                                  // Style dynamique selon le statut lu dans le Sheet
+                                  let statusColor = '#f59e0b'; // Orange par défaut (Attente)
+                                  let statusBg = 'rgba(245,158,11,0.1)';
+                                  if (status.includes('Validé') || status.includes('✅')) { statusColor = '#10b981'; statusBg = 'rgba(16,185,129,0.1)'; }
+                                  if (status.includes('Refusé') || status.includes('❌')) { statusColor = '#ef4444'; statusBg = 'rgba(239,68,68,0.1)'; }
+
+                                  return (
+                                      <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                                              <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', border: `1px solid ${statusBg}` }}>
+                                                  {type === 'Essence' ? '⛽' : type === 'Réparation' ? '🔧' : '📄'}
+                                              </div>
+                                              <div>
+                                                  <div style={{ fontWeight: 900, color: '#fff', fontSize: '0.95rem' }}>{type}</div>
+                                                  <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, marginTop: 3 }}>Le {dateStr}</div>
+                                              </div>
+                                          </div>
+                                          
+                                          <div style={{ textAlign: 'right' }}>
+                                              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff' }}>${Number(amount).toLocaleString()}</div>
+                                              <div style={{ fontSize: '0.65rem', color: statusColor, background: statusBg, padding: '4px 8px', borderRadius: '6px', fontWeight: 900, marginTop: 4, display: 'inline-block' }}>
+                                                  {status}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  );
+                              });
+                          })()}
+                      </div>
                   </div>
                 </div>
               )}
