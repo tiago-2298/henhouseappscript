@@ -72,6 +72,7 @@ export default function Home() {
   const [profileWeek, setProfileWeek] = useState('Toutes');
   const [expandedInv, setExpandedInv] = useState(null);
   const [expenseWeek, setExpenseWeek] = useState('Toutes');
+  const [activeCat, setActiveCat] = useState('plats_principaux');
 
   const initialForms = {
     invoiceNum: '',
@@ -1032,20 +1033,17 @@ export default function Home() {
               )}
 
              {/* ========================================== */}
-              {/* ENTREPRISE (POS TACTILE - 100% BLINDÉ)       */}
+              {/* ENTREPRISE (POS TACTILE - SANS CRASH)        */}
               {/* ========================================== */}
               {currentTab === 'entreprise' && (() => {
                   
-                  // 🛡️ SÉCURITÉS MAXIMALES (Anti-Crash)
-                  const entForm = forms.entreprise || { items: [], company: '', activeCat: 'plats_principaux' };
+                  // Plus de useState ici, on utilise celui d'en haut !
+                  const entForm = forms.entreprise || { items: [], company: '' };
                   const itemsList = entForm.items || [];
-                  const activeCat = entForm.activeCat || 'plats_principaux';
                   const safeUser = user || 'Employé';
 
-                  // Fonction raccourcie pour mettre à jour le formulaire
                   const setEntForm = (newData) => setForms({ ...forms, entreprise: newData });
 
-                  // Ajouter un produit
                   const handleAddProduct = (productName) => {
                       const existing = itemsList.find(i => i.product === productName);
                       if (existing) {
@@ -1057,14 +1055,12 @@ export default function Home() {
                       playSound('click');
                   };
 
-                  // Modifier la quantité
                   const handleUpdateQty = (productName, newQty) => {
                       const val = Math.max(1, Number(newQty)); 
                       const newItems = itemsList.map(i => i.product === productName ? { ...i, qty: val } : i);
                       setEntForm({ ...entForm, items: newItems });
                   };
 
-                  // Supprimer
                   const handleRemoveProduct = (productName) => {
                       const newItems = itemsList.filter(i => i.product !== productName);
                       setEntForm({ ...entForm, items: newItems });
@@ -1072,7 +1068,6 @@ export default function Home() {
 
                   const totalItems = itemsList.reduce((acc, curr) => acc + Number(curr.qty), 0);
                   
-                  // 🎯 FILTRE DES CATÉGORIES
                   const allowedCategories = ['plats_principaux', 'boissons', 'desserts', 'alcools'];
                   const categories = allowedCategories.filter(cat => data?.productsByCategory && data.productsByCategory[cat]);
                   const categoryToDisplay = categories.includes(activeCat) ? activeCat : (categories[0] || 'plats_principaux');
@@ -1094,26 +1089,20 @@ export default function Home() {
                   return (
                       <div className="fade-in" style={{ display: 'flex', gap: '30px', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', maxWidth: '1400px', margin: '0 auto', overflow: 'hidden' }}>
 
-                          {/* ========================================== */}
-                          {/* PANNEAU GAUCHE : LE PAVÉ TACTILE (70%)     */}
-                          {/* ========================================== */}
                           <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: '20px', overflow: 'hidden' }}>
-                              
                               <div style={{ flexShrink: 0 }}>
                                   <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>PRÉPARATION <span style={{ color: '#f59e0b' }}>PRO</span></h1>
                                   <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Terminal logistique des commandes de gros</p>
                               </div>
 
-                              {/* ONGLET DES CATÉGORIES */}
                               <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', flexShrink: 0 }} className="custom-scroll">
                                   {categories.map(cat => (
-                                      <button key={cat} onClick={() => { setEntForm({ ...entForm, activeCat: cat }); playSound('click'); }} style={{ padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', background: categoryToDisplay === cat ? '#f59e0b' : 'rgba(255,255,255,0.05)', color: categoryToDisplay === cat ? '#000' : '#fff', border: 'none', boxShadow: categoryToDisplay === cat ? '0 10px 20px rgba(245,158,11,0.3)' : 'none' }}>
+                                      <button key={cat} onClick={() => { setActiveCat(cat); playSound('click'); }} style={{ padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', background: categoryToDisplay === cat ? '#f59e0b' : 'rgba(255,255,255,0.05)', color: categoryToDisplay === cat ? '#000' : '#fff', border: 'none', boxShadow: categoryToDisplay === cat ? '0 10px 20px rgba(245,158,11,0.3)' : 'none' }}>
                                           {getCatName(cat)}
                                       </button>
                                   ))}
                               </div>
 
-                              {/* GRILLE DES PRODUITS */}
                               <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', alignContent: 'start', paddingRight: '10px', paddingBottom: '20px' }}>
                                   {(data?.productsByCategory?.[categoryToDisplay] || []).map(prod => (
                                       <button key={prod} onClick={() => handleAddProduct(prod)} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '25px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', cursor: 'pointer', transition: 'all 0.1s', minHeight: '130px' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
@@ -1124,18 +1113,12 @@ export default function Home() {
                               </div>
                           </div>
 
-                          {/* ========================================== */}
-                          {/* PANNEAU DROIT : LE BON DE COMMANDE (30%)   */}
-                          {/* ========================================== */}
                           <div style={{ flex: '0 0 450px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 30px 80px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                              
-                              {/* CHOIX DU CLIENT */}
                               <div style={{ padding: '30px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                                   <label style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Entreprise Cliente</label>
                                   <input type="text" className="inp" placeholder="Nom de l'entreprise (ex: Benny's)" value={entForm.company} onChange={e => setEntForm({ ...entForm, company: e.target.value })} style={{ width: '100%', height: '55px', fontSize: '1rem', fontWeight: 800, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '16px', padding: '0 20px', marginBottom: 0 }} />
                               </div>
 
-                              {/* LISTE DES ARTICLES */}
                               <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                   {itemsList.length === 0 ? (
                                       <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1146,14 +1129,10 @@ export default function Home() {
                                   ) : (
                                       itemsList.map((item, idx) => (
                                           <div key={idx} className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px 15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
-                                              
-                                              {/* CHAMP DE QUANTITÉ */}
                                               <div style={{ display: 'flex', alignItems: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0, width: '70px', height: '45px' }}>
                                                   <input type="number" value={item.qty} onChange={e => handleUpdateQty(item.product, e.target.value)} style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '1.2rem', fontWeight: 900, textAlign: 'center', outline: 'none' }} min="1" />
                                               </div>
-
                                               <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 800, color: '#fff', lineHeight: '1.2' }}>{item.product}</div>
-
                                               <button onClick={() => { playSound('error'); handleRemoveProduct(item.product); }} style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.1rem', transition: '0.2s', flexShrink: 0 }} onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>
                                                   <div style={{ marginTop: '-2px' }}>✖</div>
                                               </button>
@@ -1162,19 +1141,16 @@ export default function Home() {
                                   )}
                               </div>
 
-                              {/* PIED DE PAGE & VALIDATION */}
                               <div style={{ padding: '30px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                       <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Unités</span>
                                       <span style={{ fontSize: '2rem', fontWeight: 900, color: '#fff' }}>{totalItems}</span>
                                   </div>
-                                  
                                   <button disabled={sending || itemsList.length === 0 || !entForm.company} onClick={() => send('sendEntreprise', entForm)} style={{ width: '100%', padding: '22px', borderRadius: '24px', border: 'none', background: (sending || itemsList.length === 0 || !entForm.company) ? '#222' : 'linear-gradient(90deg, #f59e0b, #ea580c)', color: (sending || itemsList.length === 0 || !entForm.company) ? '#555' : '#fff', fontSize: '1.1rem', fontWeight: 900, cursor: (sending || itemsList.length === 0 || !entForm.company) ? 'not-allowed' : 'pointer', boxShadow: (sending || itemsList.length === 0 || !entForm.company) ? 'none' : '0 10px 30px rgba(245,158,11,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.3s' }}>
                                       <span>{sending ? 'EXPÉDITION EN COURS...' : '📦 VALIDER LA COMMANDE'}</span>
                                       <span style={{ fontSize: '0.75rem', opacity: 0.8, fontWeight: 700 }}>Préparé par {safeUser.split(' ')[0]}</span>
                                   </button>
                               </div>
-
                           </div>
                       </div>
                   );
