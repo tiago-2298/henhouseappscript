@@ -1591,40 +1591,120 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              {/* PROFILE */}
-              {currentTab === 'profile' && myProfile && (
-                <div className="center-box">
-                  <div className="form-ui" style={{ maxWidth: 600, padding: 50, textAlign: 'center' }}> {/* Élargi un peu pour que les 3 blocs respirent */}
-                    <div style={{ width: 120, height: 120, borderRadius: '50%', border: '4px solid var(--p)', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 900, background: '#000', color: '#fff' }}>{user.charAt(0)}</div>
-                    <h1 style={{ fontSize: '2.2rem', fontWeight: 950, lineHeight: 1 }}>{user}</h1>
-                    <div style={{ color: 'var(--p)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 30 }}>{myProfile.role}</div>
+              {/* PROFILE (ULTRA PREMIUM DOSSIER) */}
+              {currentTab === 'profile' && myProfile && (() => {
+                  
+                // On réutilise la même logique de couleur que l'annuaire pour garder une identité visuelle cohérente
+                const getRoleStyle = (role) => {
+                    const r = (role || '').toLowerCase();
+                    if (r.includes('pdg')) return { color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.05)', border: '#fbbf24', shadow: 'rgba(251, 191, 36, 0.4)' };
+                    if (r.includes('cceo')) return { color: '#a855f7', bg: 'rgba(168, 85, 247, 0.05)', border: '#a855f7', shadow: 'rgba(168, 85, 247, 0.4)' };
+                    if (r.includes('general manager')) return { color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.05)', border: '#3b82f6', shadow: 'rgba(59, 130, 246, 0.4)' };
+                    if (r.includes('shift leader')) return { color: '#10b981', bg: 'rgba(16, 185, 129, 0.05)', border: '#10b981', shadow: 'rgba(16, 185, 129, 0.4)' };
+                    return { color: 'var(--p)', bg: 'rgba(255, 152, 0, 0.05)', border: 'var(--p)', shadow: 'rgba(255, 152, 0, 0.4)' }; 
+                };
 
-                    {/* GRILLE MODIFIÉE : Passage en 3 colonnes */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 15, marginBottom: 30 }}>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: 20, borderRadius: 20 }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Chiffre</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>${Math.round(myProfile.ca).toLocaleString()}</div>
-                      </div>
-                      <div style={{ background: 'rgba(255,255,255,0.05)', padding: 20, borderRadius: 20 }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Stock</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{myProfile.stock}</div>
-                      </div>
-                      
-                      {/* NOUVEAU BLOC : FACTURES */}
-                      <div style={{ background: 'rgba(255,152,0,0.05)', padding: 20, borderRadius: 20, border: '1px solid rgba(255,152,0,0.2)' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--p)', textTransform: 'uppercase' }}>Factures</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff' }}>{myProfile.invoiceCount || 0}</div>
-                      </div>
+                const rStyle = getRoleStyle(myProfile.role);
+
+                return (
+                    <div className="center-box fade-in" style={{ padding: '20px' }}>
+                        <div style={{ 
+                            width: '100%', maxWidth: '800px', background: 'rgba(15, 15, 15, 0.7)', 
+                            backdropFilter: 'blur(20px)', borderRadius: '40px', 
+                            border: `1px solid rgba(255,255,255,0.05)`, 
+                            boxShadow: `0 30px 80px rgba(0,0,0,0.8), 0 0 50px ${rStyle.shadow}`,
+                            position: 'relative', overflow: 'hidden'
+                        }}>
+                            {/* Liseré supérieur néon */}
+                            <div style={{ height: '6px', background: `linear-gradient(90deg, transparent, ${rStyle.color}, transparent)` }}></div>
+                            
+                            <div style={{ padding: '50px' }}>
+                                
+                                {/* HEADER: Avatar & Identité */}
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '40px', position: 'relative' }}>
+                                    
+                                    {/* Aura lumineuse derrière l'avatar */}
+                                    <div style={{ position: 'absolute', top: '10px', width: '150px', height: '150px', background: rStyle.color, filter: 'blur(60px)', opacity: 0.25, borderRadius: '50%' }}></div>
+                                    
+                                    <div style={{ 
+                                        width: 140, height: 140, borderRadius: '35%', 
+                                        background: 'linear-gradient(135deg, #222, #050505)', 
+                                        border: `2px solid ${rStyle.color}`, 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                        fontSize: '4rem', fontWeight: 900, color: '#fff',
+                                        boxShadow: `0 15px 35px ${rStyle.bg}, inset 0 0 20px rgba(255,255,255,0.05)`,
+                                        position: 'relative', zIndex: 2, marginBottom: '25px',
+                                        transform: 'rotate(4deg)' // Petit style asymétrique ultra moderne
+                                    }}>
+                                        <div style={{ transform: 'rotate(-4deg)' }}>{user.charAt(0)}</div>
+                                        
+                                        {/* Pastille "En Ligne" */}
+                                        <div style={{ position: 'absolute', bottom: -5, right: -5, width: 25, height: 25, background: '#10b981', border: '4px solid #111', borderRadius: '50%', boxShadow: '0 0 15px #10b981' }}></div>
+                                    </div>
+                                    
+                                    <h1 style={{ fontSize: '2.8rem', fontWeight: 950, letterSpacing: '-1px', margin: 0, textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: '#fff' }}>
+                                        {user}
+                                    </h1>
+                                    
+                                    <div style={{ 
+                                        marginTop: 15, background: rStyle.bg, border: `1px solid ${rStyle.border}50`, 
+                                        color: rStyle.color, padding: '8px 20px', borderRadius: '50px', 
+                                        fontSize: '0.9rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px',
+                                        boxShadow: `0 0 15px ${rStyle.shadow}`
+                                    }}>
+                                        {myProfile.role || 'Food Service'}
+                                    </div>
+                                </div>
+
+                                {/* GRILLE DES WIDGETS DE PERFORMANCE */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 40 }}>
+                                    
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '30px 20px', borderRadius: '28px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                                        <div style={{ fontSize: '2.5rem', marginBottom: 15, filter: 'drop-shadow(0 0 15px rgba(16,185,129,0.4))' }}>💰</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px' }}>Ventes</div>
+                                        <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#10b981', marginTop: 5 }}>${Math.round(myProfile.ca).toLocaleString()}</div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '30px 20px', borderRadius: '28px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                                        <div style={{ fontSize: '2.5rem', marginBottom: 15, filter: 'drop-shadow(0 0 15px rgba(255,255,255,0.2))' }}>📦</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px' }}>Stock Cuisiné</div>
+                                        <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>{myProfile.stock}</div>
+                                    </div>
+                                    
+                                    <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.2)', padding: '30px 20px', borderRadius: '28px', textAlign: 'center', boxShadow: 'inset 0 0 20px rgba(59,130,246,0.05), 0 10px 30px rgba(0,0,0,0.2)' }}>
+                                        <div style={{ fontSize: '2.5rem', marginBottom: 15, filter: 'drop-shadow(0 0 15px rgba(59,130,246,0.5))' }}>🧾</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#3b82f6', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px' }}>Factures</div>
+                                        <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginTop: 5 }}>{myProfile.invoiceCount || 0}</div>
+                                    </div>
+
+                                </div>
+
+                                {/* BLOC SALAIRE (BANKING NEON) */}
+                                <div style={{ 
+                                    background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', 
+                                    border: '1px solid rgba(16,185,129,0.3)', 
+                                    borderRadius: '30px', padding: '35px 45px', 
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20,
+                                    boxShadow: '0 15px 40px rgba(16,185,129,0.1), inset 0 0 20px rgba(16,185,129,0.05)'
+                                }}>
+                                    <div>
+                                        <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 12px #10b981' }}></span>
+                                            Salaire Brut Estimé
+                                        </div>
+                                        <div style={{ color: 'var(--muted)', fontSize: '0.9rem', marginTop: 8, fontWeight: 600 }}>Projection automatisée des performances</div>
+                                    </div>
+                                    
+                                    <div style={{ fontSize: '4rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 30px rgba(16,185,129,0.4)', lineHeight: 1 }}>
+                                        ${Math.round(myProfile.salary || 0).toLocaleString()}
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
                     </div>
-
-                    <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid var(--success)', borderRadius: 24, padding: 20 }}>
-                      <div style={{ color: 'var(--success)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase' }}>Salaire Estimé</div>
-                      <div style={{ fontSize: '2.5rem', fontWeight: 950 }}>${Math.round(myProfile.salary || 0).toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+                );
+              })()}
               {/* SUPPORT (SMART HELPDESK & SECURE PAGER) */}
               {currentTab === 'support' && (() => {
                   
