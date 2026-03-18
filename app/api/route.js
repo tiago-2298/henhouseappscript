@@ -196,7 +196,7 @@ export async function POST(request) {
         partnerLogs = resLogs.data.values || [];
       } catch (e) { console.warn("Logs partner empty"); }
 
-      // --- NOUVEAU : Récupération de l'historique des factures ---
+      // --- Récupération de l'historique des factures ---
       let invoicesHistory = [];
       try {
         const resInvoices = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "'Factures'!A2:E5000" });
@@ -210,17 +210,17 @@ export async function POST(request) {
             spreadsheetId: sheetId, 
             range: "'Garage'!A2:E500" 
         });
-        // On ne garde que les 3 derniers pour l'affichage rapide
         garageHistory = (resGarage.data.values || []).reverse().slice(0, 3);
       } catch (e) { console.warn("Garage history empty"); }
 
+      // TOUTES LES DONNÉES SONT BIEN RENVOYÉES ICI 👇
       return NextResponse.json({
         success: true, version: APP_VERSION, employees: employeesFull.map(e => e.name),
         employeesFull, products: Object.values(PRODUCTS_CAT).flat(), productsByCategory: PRODUCTS_CAT,
-        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory,
-        garageHistory, // <--- C'EST LUI QU'IL MANQUAIT ! 🚗
+        prices: PRICE_LIST, partners: PARTNERS, partnerLogs, invoicesHistory, garageHistory,
         vehicles: ['Grotti Brioso Fulmin - 819435','Taco Van - 642602','Taco Van - 570587','Rumpobox - 34217'],
       });
+    }
 
     let embed = { timestamp: new Date().toISOString(), footer: { text: `Hen House Management v${APP_VERSION}` }, color: 0xff9800 };
 
@@ -236,7 +236,7 @@ export async function POST(request) {
         await sendDiscordWebhook(WEBHOOKS.factures, { embeds: [embed] });
         await updateEmployeeStats(data.employee, totalFact, 'CA');
 
-        // --- NOUVEAU : Sauvegarde de la facture dans l'onglet "Factures" ---
+        // --- Sauvegarde de la facture dans l'onglet "Factures" ---
         try {
           const sheets = await getAuthSheets();
           const factDetail = data.items?.map(i => `${i.qty}x ${i.desc}`).join(', ');
@@ -262,7 +262,6 @@ export async function POST(request) {
         embed.fields = [{ name: '🏢 Client', value: `**${data.company}**`, inline: true }, { name: '📋 Détails', value: proDetail }];
         await sendDiscordWebhook(WEBHOOKS.entreprise, { embeds: [embed] });
         
-        // Sauvegarde Google Sheets Commandes_Pro
         try {
           const sheets = await getAuthSheets();
           await sheets.spreadsheets.values.append({
@@ -296,7 +295,6 @@ export async function POST(request) {
         break;
 
      case 'sendGarage':
-        // 1. Envoi Discord
         embed.title = `🚗 Mouvement Véhicule : ${data.vehicle}`;
         embed.color = data.action === 'Entrée' ? 0x10b981 : 0xff9800;
         embed.fields = [
@@ -306,7 +304,6 @@ export async function POST(request) {
         ];
         await sendDiscordWebhook(WEBHOOKS.garage, { embeds: [embed] });
 
-        // 2. Sauvegarde dans le Sheet "Garage"
         try {
           const sheets = await getAuthSheets();
           await sheets.spreadsheets.values.append({
@@ -323,14 +320,13 @@ export async function POST(request) {
         await sendDiscordWebhook(WEBHOOKS.support, { embeds: [embed] });
         break;
 
-      default: return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
+      default: 
+        return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
     }
+    
     return NextResponse.json({ success: true });
-  } catch (err) { return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); }
+    
+  } catch (err) { 
+    return NextResponse.json({ success: false, error: err?.message }, { status: 500 }); 
+  }
 }
-
-
-
-
-
-
