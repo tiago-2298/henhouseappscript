@@ -1031,25 +1031,142 @@ export default function Home() {
                 </div></div>
               )}
 
-              {/* ENTERPRISE */}
-              {currentTab === 'enterprise' && (
-                <div className="center-box"><div className="form-ui">
-                  <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Commande Pro</h2>
-                  <input className="inp" placeholder="Nom Société" value={forms.enterprise.name} onChange={e => setForms({ ...forms, enterprise: { ...forms.enterprise, name: e.target.value } })} />
-                  <div style={{ maxHeight: 300, overflowY: 'auto', paddingRight: 5, marginBottom: 15 }}>
-                    {forms.enterprise.items.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                        <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.product} onChange={e => { const n = [...forms.enterprise.items]; n[i].product = e.target.value; setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }}><option value="">Produit...</option>{data.products.map(p => <option key={p} value={p}>{p}</option>)}</select>
-                        <input type="number" className="inp" style={{ width: 90, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.enterprise.items]; n[i].qty = e.target.value; setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }} />
-                        {forms.enterprise.items.length > 1 && <button className="del-btn" onClick={() => { const n = [...forms.enterprise.items]; n.splice(i, 1); setForms({ ...forms, enterprise: { ...forms.enterprise, items: n } }); }}>×</button>}
-                      </div>
-                    ))}
-                  </div>
-                  <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer', padding: 10 }} onClick={() => setForms({ ...forms, enterprise: { ...forms.enterprise, items: [...forms.enterprise.items, { product: '', qty: 1 }] } })}>+ Ligne</button>
-                  <button className="btn-p" style={{ marginTop: 15 }} onClick={() => send('sendEntreprise', { company: forms.enterprise.name, items: forms.enterprise.items })}>Transmettre</button>
-                </div></div>
-              )}
+            {/* ========================================== */}
+              {/* ENTREPRISE (POS TACTILE - PRÉPARATION RAPIDE)*/}
+              {/* ========================================== */}
+              {currentTab === 'entreprise' && (() => {
+                  
+                  // On crée une mémoire locale pour retenir la catégorie active (Plats, Desserts...)
+                  const [activeCat, setActiveCat] = useState(Object.keys(data.productsByCategory || {})[0] || 'plats_principaux');
 
+                  // Fonction pour ajouter un produit au panier
+                  const handleAddProduct = (productName) => {
+                      const existing = forms.entreprise.items.find(i => i.product === productName);
+                      if (existing) {
+                          // S'il y est déjà, on ajoute +1 par défaut
+                          const newItems = forms.entreprise.items.map(i => i.product === productName ? { ...i, qty: Number(i.qty) + 1 } : i);
+                          setForms({ ...forms, entreprise: { ...forms.entreprise, items: newItems } });
+                      } else {
+                          // Sinon on le crée avec quantité 1
+                          setForms({ ...forms, entreprise: { ...forms.entreprise, items: [...forms.entreprise.items, { product: productName, qty: 1 }] } });
+                      }
+                      playSound('click');
+                  };
+
+                  // Fonction pour modifier la quantité au CLAVIER
+                  const handleUpdateQty = (productName, newQty) => {
+                      const val = Math.max(1, Number(newQty)); // Empêche de mettre 0 ou négatif
+                      const newItems = forms.entreprise.items.map(i => i.product === productName ? { ...i, qty: val } : i);
+                      setForms({ ...forms, entreprise: { ...forms.entreprise, items: newItems } });
+                  };
+
+                  // Fonction pour supprimer une ligne
+                  const handleRemoveProduct = (productName) => {
+                      const newItems = forms.entreprise.items.filter(i => i.product !== productName);
+                      setForms({ ...forms, entreprise: { ...forms.entreprise, items: newItems } });
+                  };
+
+                  const totalItems = forms.entreprise.items.reduce((acc, curr) => acc + Number(curr.qty), 0);
+                  const categories = Object.keys(data.productsByCategory || {});
+
+                  // Petite fonction pour mettre des icônes sympas
+                  const getIcon = (cat) => {
+                      if(cat.includes('plats')) return '🍔';
+                      if(cat.includes('desserts')) return '🍰';
+                      if(cat.includes('boissons')) return '🥤';
+                      if(cat.includes('menus')) return '🍱';
+                      if(cat.includes('alcools')) return '🍷';
+                      return '📦';
+                  };
+
+                  return (
+                      <div className="fade-in" style={{ display: 'flex', gap: '30px', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', maxWidth: '1400px', margin: '0 auto', overflow: 'hidden' }}>
+
+                          {/* ========================================== */}
+                          {/* PANNEAU GAUCHE : LE PAVÉ TACTILE (70%)     */}
+                          {/* ========================================== */}
+                          <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: '20px', overflow: 'hidden' }}>
+                              
+                              <div style={{ flexShrink: 0 }}>
+                                  <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>PRÉPARATION <span style={{ color: '#f59e0b' }}>PRO</span></h1>
+                                  <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Terminal logistique des commandes de gros</p>
+                              </div>
+
+                              {/* ONGLET DES CATÉGORIES */}
+                              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', flexShrink: 0 }} className="custom-scroll">
+                                  {categories.map(cat => (
+                                      <button key={cat} onClick={() => { setActiveCat(cat); playSound('click'); }} style={{ padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', background: activeCat === cat ? '#f59e0b' : 'rgba(255,255,255,0.05)', color: activeCat === cat ? '#000' : '#fff', border: 'none', boxShadow: activeCat === cat ? '0 10px 20px rgba(245,158,11,0.3)' : 'none' }}>
+                                          {cat.replace('_', ' ')}
+                                      </button>
+                                  ))}
+                              </div>
+
+                              {/* GRILLE DES PRODUITS */}
+                              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', alignContent: 'start', paddingRight: '10px', paddingBottom: '20px' }}>
+                                  {(data.productsByCategory[activeCat] || []).map(prod => (
+                                      <button key={prod} onClick={() => handleAddProduct(prod)} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '25px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', cursor: 'pointer', transition: 'all 0.1s', minHeight: '130px' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.1)'; e.currentTarget.style.borderColor = 'rgba(245,158,11,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                                          <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.5))' }}>{getIcon(activeCat)}</div>
+                                          <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: '1.2' }}>{prod}</div>
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+
+                          {/* ========================================== */}
+                          {/* PANNEAU DROIT : LE BON DE COMMANDE (30%)   */}
+                          {/* ========================================== */}
+                          <div style={{ flex: '0 0 450px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 30px 80px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                              
+                              {/* CHOIX DU CLIENT */}
+                              <div style={{ padding: '30px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                  <label style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10, display: 'block' }}>Entreprise Cliente</label>
+                                  <input type="text" className="inp" placeholder="Nom de l'entreprise (ex: Benny's)" value={forms.entreprise.company} onChange={e => setForms({ ...forms, entreprise: { ...forms.entreprise, company: e.target.value } })} style={{ width: '100%', height: '55px', fontSize: '1rem', fontWeight: 800, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '16px', padding: '0 20px', marginBottom: 0 }} />
+                              </div>
+
+                              {/* LISTE DES ARTICLES AVEC QUANTITÉ AU CLAVIER */}
+                              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                  {forms.entreprise.items.length === 0 ? (
+                                      <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <div style={{ fontSize: '3.5rem', marginBottom: 15 }}>🛒</div>
+                                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Le chariot est vide</div>
+                                          <div style={{ fontSize: '0.8rem', marginTop: 5, fontWeight: 600 }}>Touchez les produits pour les ajouter</div>
+                                      </div>
+                                  ) : (
+                                      forms.entreprise.items.map((item, idx) => (
+                                          <div key={idx} className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px 15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                              
+                                              {/* CHAMP DE QUANTITÉ (CLAVIER) */}
+                                              <div style={{ display: 'flex', alignItems: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0, width: '70px', height: '45px' }}>
+                                                  <input type="number" value={item.qty} onChange={e => handleUpdateQty(item.product, e.target.value)} style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: '#f59e0b', fontSize: '1.2rem', fontWeight: 900, textAlign: 'center', outline: 'none' }} min="1" />
+                                              </div>
+
+                                              {/* NOM DU PRODUIT */}
+                                              <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 800, color: '#fff', lineHeight: '1.2' }}>{item.product}</div>
+
+                                              {/* BOUTON SUPPRIMER */}
+                                              <button onClick={() => { playSound('error'); handleRemoveProduct(item.product); }} style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.1rem', transition: '0.2s', flexShrink: 0 }} onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>🗑️</button>
+                                          </div>
+                                      ))
+                                  )}
+                              </div>
+
+                              {/* PIED DE PAGE & VALIDATION */}
+                              <div style={{ padding: '30px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                      <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Unités Préparées</span>
+                                      <span style={{ fontSize: '2rem', fontWeight: 900, color: '#fff' }}>{totalItems}</span>
+                                  </div>
+                                  
+                                  <button disabled={sending || forms.entreprise.items.length === 0 || !forms.entreprise.company} onClick={() => send('sendEntreprise', forms.entreprise)} style={{ width: '100%', padding: '22px', borderRadius: '24px', border: 'none', background: (sending || forms.entreprise.items.length === 0 || !forms.entreprise.company) ? '#222' : 'linear-gradient(90deg, #f59e0b, #ea580c)', color: (sending || forms.entreprise.items.length === 0 || !forms.entreprise.company) ? '#555' : '#fff', fontSize: '1.1rem', fontWeight: 900, cursor: (sending || forms.entreprise.items.length === 0 || !forms.entreprise.company) ? 'not-allowed' : 'pointer', boxShadow: (sending || forms.entreprise.items.length === 0 || !forms.entreprise.company) ? 'none' : '0 10px 30px rgba(245,158,11,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.3s' }}>
+                                      <span>{sending ? 'EXPÉDITION EN COURS...' : '📦 VALIDER LA COMMANDE'}</span>
+                                      <span style={{ fontSize: '0.75rem', opacity: 0.8, fontWeight: 700 }}>Préparé et certifié par {user.split(' ')[0]}</span>
+                                  </button>
+                              </div>
+
+                          </div>
+                      </div>
+                  );
+              })()}
              {/* PARTNERS SECTION (ULTRA PREMIUM SPLIT-PANE + JAUGE NEON) */}
               {currentTab === 'partners' && (() => {
                 // --- LOGIQUE DE CALCUL DES QUOTAS ---
