@@ -822,8 +822,12 @@ export default function Home() {
                 </div>
               )}
 
-             {currentTab === 'expenses' && (() => {
+            {/* ========================================== */}
+              {/* EXPENSES (NOTE DE FRAIS & HISTORIQUE FIXÉ)   */}
+              {/* ========================================== */}
+              {currentTab === 'expenses' && (() => {
 
+                  // --- LOGIQUE DES FRAIS ---
                   const myExpenses = (data.expensesHistory || [])
                       .filter(row => row[1] === user)
                       .map(row => ({
@@ -854,21 +858,17 @@ export default function Home() {
                   });
 
                   return (
-                    {/* LE CONTENEUR PRINCIPAL VERROUILLÉ */}
-                    <div className="fade-in" style={{ 
-                        display: 'flex', gap: '30px', maxWidth: '1300px', margin: '0 auto', 
-                        height: 'calc(100vh - 110px)', /* Hauteur figée */
-                        overflow: 'hidden' /* Interdit le défilement de la page */
-                    }}>
+                    // CONTENEUR GLOBAL VERROUILLÉ EN HAUTEUR
+                    <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', overflow: 'hidden', alignItems: 'stretch' }}>
                       
                       {/* ========================================== */}
-                      {/* COLONNE GAUCHE : FORMULAIRE SCROLLABLE INTRA */}
+                      {/* COLONNE GAUCHE : FORMULAIRE & SCANNER      */}
                       {/* ========================================== */}
                       <div style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', paddingRight: '10px' }}>
                           
                           <div style={{ flexShrink: 0 }}>
                               <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>NOTES DE <span style={{ color: '#3b82f6' }}>FRAIS</span></h1>
-                              <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Portail de remboursement Hen House</p>
+                              <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Portail de remboursement interne</p>
                           </div>
 
                           <div style={{ background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '30px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '20px', flexShrink: 0 }}>
@@ -922,17 +922,18 @@ export default function Home() {
                                   )}
                               </div>
 
-                              <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)} style={{ padding: '20px', fontSize: '1rem', borderRadius: 16, background: (!forms.expense.amount || !forms.expense.file) ? '#222' : 'linear-gradient(90deg, #3b82f6, #2563eb)', color: (!forms.expense.amount || !forms.expense.file) ? '#555' : '#fff', boxShadow: (!forms.expense.amount || !forms.expense.file) ? 'none' : '0 10px 25px rgba(59,130,246,0.4)', border: 'none' }}>
+                              <button className="btn-p" disabled={sending || !forms.expense.amount || !forms.expense.file} onClick={() => send('sendExpense', forms.expense)} style={{ padding: '20px', fontSize: '1rem', borderRadius: 16, background: (!forms.expense.amount || !forms.expense.file) ? '#222' : 'linear-gradient(90deg, #3b82f6, #2563eb)', color: (!forms.expense.amount || !forms.expense.file) ? '#555' : '#fff', boxShadow: (!forms.expense.amount || !forms.expense.file) ? 'none' : '0 10px 25px rgba(59,130,246,0.4)', border: 'none', cursor: (!forms.expense.amount || !forms.expense.file) ? 'not-allowed' : 'pointer' }}>
                                   {sending ? 'TRANSMISSION...' : 'SOUMETTRE LA DEMANDE'}
                               </button>
                           </div>
                       </div>
 
                       {/* ========================================== */}
-                      {/* COLONNE DROITE : HISTORIQUE VERROUILLÉ     */}
+                      {/* COLONNE DROITE : HISTORIQUE BLINDÉ         */}
                       {/* ========================================== */}
-                      <div style={{ flex: '1.2 1 500px', height: '100%', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <div style={{ flex: '1 1 500px', height: '100%', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                           
+                          {/* EN-TÊTE FIXE */}
                           <div style={{ padding: '30px 30px 15px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
                               <h2 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
                                   <span>📊</span> SUIVI DES REMBOURSEMENTS
@@ -952,6 +953,7 @@ export default function Home() {
                               )}
                           </div>
 
+                          {/* RÉSUMÉ FINANCIER FIXE */}
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '20px 30px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
                               <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px', padding: '15px 10px', textAlign: 'center' }}>
                                   <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>✅ Validé</div>
@@ -967,8 +969,8 @@ export default function Home() {
                               </div>
                           </div>
 
-                          {/* LA SEULE ZONE QUI SCROLLE À DROITE */}
-                          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 30px 30px 30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {/* ZONE SCROLLABLE INTERNE (Ne bouge pas le reste de la page) */}
+                          <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px 30px 30px 30px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                               {displayedExpenses.length === 0 ? (
                                   <div style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                                       <div style={{ fontSize: '3rem', marginBottom: 15 }}>📝</div>
@@ -985,7 +987,7 @@ export default function Home() {
                                       if (exp.status.includes('Refusé') || exp.status.includes('❌')) { statusColor = '#ef4444'; statusBg = 'rgba(239,68,68,0.1)'; }
 
                                       return (
-                                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: '0.2s' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>
+                                          <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: '0.2s', flexShrink: 0 }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>
                                               <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
                                                   <div style={{ width: 45, height: 45, borderRadius: '12px', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', border: `1px solid ${statusBg}` }}>
                                                       {exp.type === 'Essence' ? '⛽' : exp.type === 'Réparation' ? '🔧' : '📄'}
