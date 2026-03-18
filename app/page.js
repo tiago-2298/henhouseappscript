@@ -1635,230 +1635,132 @@ export default function Home() {
                     : [profileWeek];
 
                 return (
-                    <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 80px)', alignItems: 'stretch' }}>
+                    <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '30px', maxWidth: '1300px', margin: '0 auto', height: 'calc(100vh - 120px)', alignItems: 'stretch' }}>
                         
-                        {/* ========================================== */}
-                        {/* COLONNE GAUCHE : L'IDENTITÉ & PERFORMANCES */}
-                        {/* ========================================== */}
+                        {/* COLONNE GAUCHE : IDENTITÉ */}
                         <div style={{ 
                             flex: '1 1 350px', maxWidth: '420px', background: 'rgba(15, 15, 15, 0.7)', 
-                            backdropFilter: 'blur(20px)', borderRadius: '40px', 
-                            border: `1px solid rgba(255,255,255,0.05)`, 
+                            backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, 
                             boxShadow: `0 30px 80px rgba(0,0,0,0.8), 0 0 50px ${rStyle.shadow}`,
                             position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column'
                         }}>
-                            {/* Liseré supérieur néon */}
                             <div style={{ height: '6px', background: `linear-gradient(90deg, transparent, ${rStyle.color}, transparent)`, flexShrink: 0 }}></div>
                             
                             <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '30px', flex: 1, overflowY: 'auto' }}>
-                                
-                                {/* Avatar & Nom */}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                                    <div style={{ position: 'absolute', top: 0, width: '120px', height: '120px', background: rStyle.color, filter: 'blur(50px)', opacity: 0.25, borderRadius: '50%' }}></div>
-                                    
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <div style={{ 
                                         width: 110, height: 110, borderRadius: '35%', 
                                         background: 'linear-gradient(135deg, #222, #050505)', border: `2px solid ${rStyle.color}`, 
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', 
                                         fontSize: '3rem', fontWeight: 900, color: '#fff',
                                         boxShadow: `0 10px 25px ${rStyle.bg}, inset 0 0 15px rgba(255,255,255,0.05)`,
-                                        position: 'relative', zIndex: 2, marginBottom: '20px', transform: 'rotate(4deg)'
+                                        position: 'relative', marginBottom: '20px', transform: 'rotate(4deg)'
                                     }}>
                                         <div style={{ transform: 'rotate(-4deg)' }}>{user.charAt(0)}</div>
                                         <div style={{ position: 'absolute', bottom: -2, right: -2, width: 22, height: 22, background: '#10b981', border: '4px solid #111', borderRadius: '50%', boxShadow: '0 0 10px #10b981' }}></div>
                                     </div>
-                                    
-                                    <h1 style={{ fontSize: '2.2rem', fontWeight: 950, letterSpacing: '-1px', margin: 0, textShadow: '0 5px 15px rgba(0,0,0,0.5)', color: '#fff', textAlign: 'center' }}>{user}</h1>
-                                    <div style={{ marginTop: 12, background: rStyle.bg, border: `1px solid ${rStyle.border}50`, color: rStyle.color, padding: '6px 16px', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', boxShadow: `0 0 15px ${rStyle.shadow}`, textAlign: 'center' }}>
-                                        {myProfile.role || 'Food Service Associate'}
+                                    <h1 style={{ fontSize: '2.2rem', fontWeight: 950, color: '#fff', textAlign: 'center', margin: 0 }}>{user}</h1>
+                                    <div style={{ marginTop: 12, background: rStyle.bg, border: `1px solid ${rStyle.border}50`, color: rStyle.color, padding: '6px 16px', borderRadius: '50px', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>
+                                        {myProfile.role || 'Employé'}
                                     </div>
                                 </div>
 
-                                {/* Grille des Mini-Widgets */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
-                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.8rem', marginBottom: 5, filter: 'drop-shadow(0 0 10px rgba(16,185,129,0.4))' }}>💰</div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Ventes</div>
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '20px', padding: '15px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Ventes</div>
                                         <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981' }}>${Math.round(myProfile.ca).toLocaleString()}</div>
                                     </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '15px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.8rem', marginBottom: 5, filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}>📦</div>
-                                        <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Cuisine</div>
-                                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff' }}>{myProfile.stock}</div>
-                                    </div>
-                                    <div style={{ gridColumn: '1 / -1', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '20px', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ fontSize: '1.8rem', filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' }}>🧾</div>
-                                            <div style={{ fontSize: '0.75rem', color: '#3b82f6', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px' }}>Factures Émises</div>
-                                        </div>
-                                        <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff' }}>{myProfile.invoiceCount || 0}</div>
+                                    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '20px', padding: '15px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <div style={{ fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800 }}>Factures</div>
+                                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff' }}>{myProfile.invoiceCount || 0}</div>
                                     </div>
                                 </div>
 
-                                {/* Bloc Salaire Néon */}
-                                <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '25px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginTop: 'auto' }}>
-                                    <div style={{ color: 'var(--success)', fontWeight: 900, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                                        <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span> Salaire Estimé
-                                    </div>
-                                    <div style={{ fontSize: '3.2rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 25px rgba(16,185,129,0.4)', lineHeight: 1 }}>
+                                <div style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02))', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '24px', padding: '25px', textAlign: 'center', marginTop: 'auto' }}>
+                                    <div style={{ color: '#10b981', fontWeight: 900, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 10 }}>Salaire Estimé</div>
+                                    <div style={{ fontSize: '3.2rem', fontWeight: 900, color: '#10b981', textShadow: '0 0 25px rgba(16,185,129,0.4)' }}>
                                         ${Math.round(myProfile.salary || 0).toLocaleString()}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                       {/* ========================================== */}
-                        {/* COLONNE DROITE : LE REGISTRE DES FACTURES  */}
-                        {/* ========================================== */}
+                        {/* COLONNE DROITE : REGISTRE SCROLLABLE */}
                         <div style={{ 
-                            flex: '2 1 500px', 
-                            height: '100%', 
-                            maxHeight: 'calc(100vh - 120px)', /* VERROUILLAGE DE LA HAUTEUR : La page ne s'allongera jamais */
-                            background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', 
-                            borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, 
-                            boxShadow: `0 30px 80px rgba(0,0,0,0.8)`, display: 'flex', flexDirection: 'column', overflow: 'hidden'
+                            flex: '2 1 500px', height: '100%', background: 'rgba(15, 15, 15, 0.7)', 
+                            backdropFilter: 'blur(20px)', borderRadius: '40px', border: `1px solid rgba(255,255,255,0.05)`, 
+                            display: 'flex', flexDirection: 'column', overflow: 'hidden'
                         }}>
-                            
-                            {/* En-tête fixe avec Filtres (Ne scrolle pas) */}
-                            <div style={{ padding: '30px 40px 15px 40px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', zIndex: 10, flexShrink: 0 }}>
-                                <h2 style={{ fontWeight: 900, fontSize: '1.5rem', letterSpacing: '1px', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 15 }}>
-                                    <span>🧾</span> RELEVÉ DES VENTES
-                                </h2>
-                                
-                                {availableWeeks.length > 0 && (
-                                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginTop: '15px', paddingBottom: '5px' }}>
-                                        <button 
-                                            style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === 'Toutes' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === 'Toutes' ? '#000' : '#fff' }}
-                                            onClick={() => setProfileWeek('Toutes')}
-                                        >
-                                            Toutes les semaines
-                                        </button>
-                                        {availableWeeks.map(w => (
-                                            <button 
-                                                key={w}
-                                                style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800, border: '1px solid var(--glass-b)', cursor: 'pointer', transition: '0.2s', background: profileWeek === w ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === w ? '#000' : '#fff' }}
-                                                onClick={() => setProfileWeek(w)}
-                                            >
-                                                Semaine {w.replace('S', '')}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                            <div style={{ padding: '30px 40px 15px 40px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}>
+                                <h2 style={{ fontWeight: 900, fontSize: '1.5rem', color: '#fff', margin: 0 }}>🧾 RELEVÉ DES VENTES</h2>
+                                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginTop: '15px', paddingBottom: '5px' }}>
+                                    <button style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', background: profileWeek === 'Toutes' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === 'Toutes' ? '#000' : '#fff', border: 'none' }} onClick={() => setProfileWeek('Toutes')}>Toutes</button>
+                                    {availableWeeks.map(w => (
+                                        <button key={w} style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', background: profileWeek === w ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: profileWeek === w ? '#000' : '#fff', border: 'none' }} onClick={() => setProfileWeek(w)}>Semaine {w.replace('S', '')}</button>
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* Liste Scrollable (Mode Relevé Bancaire Ultra Compact) */}
-                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 40px 40px 40px', display: 'flex', flexDirection: 'column' }}>
-                                {weeksToDisplay.length === 0 || !groupedInvoices[weeksToDisplay[0]] ? (
-                                    <div style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                        <div style={{ fontSize: '3.5rem', marginBottom: 15 }}>📭</div>
-                                        <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff' }}>Aucune transaction trouvée</div>
-                                    </div>
-                                ) : (
-                                    weeksToDisplay.map(week => {
-                                        const invoicesToShow = groupedInvoices[week].slice(0, 30);
-
-                                        return (
-                                            <div key={week} style={{ marginBottom: 20 }}>
-                                                {profileWeek === 'Toutes' && (
-                                                    <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--muted)', margin: '20px 0 10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 5 }}>
-                                                        SEMAINE {week.replace('S', '')}
-                                                    </div>
-                                                )}
-                                                
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                                    {invoicesToShow.map((inv, idx) => {
-                                                        const d = new Date(inv.date);
-                                                        const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                                        const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-                                                        
-                                                        return (
-                                                            <div key={idx} 
-                                                                style={{ 
-                                                                    background: 'transparent', 
-                                                                    borderRadius: '12px', padding: '12px 15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                                                    cursor: 'pointer', transition: 'all 0.2s', borderBottom: '1px solid rgba(255,255,255,0.03)'
-                                                                }} 
-                                                                onClick={() => { playSound('click'); setExpandedInv(inv); }} // <-- On stocke toute la facture dans la mémoire
-                                                                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'} 
-                                                                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-                                                            >
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                                                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></div>
-                                                                    <div style={{ width: 80, fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>{dateStr}</div>
-                                                                    <div style={{ width: 100, fontWeight: 900, color: '#fff', fontSize: '0.95rem', letterSpacing: '0.5px' }}>{inv.num}</div>
-                                                                </div>
-                                                                
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                                                                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10b981' }}>+${Number(inv.amount).toLocaleString()}</div>
-                                                                    <div style={{ fontSize: '0.8rem', color: 'var(--muted)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '8px', fontWeight: 800 }}>TICKET</div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 40px 40px 40px' }}>
+                                {weeksToDisplay.map(week => (
+                                    <div key={week} style={{ marginBottom: 20 }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--muted)', margin: '20px 0 10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 5 }}>SEMAINE {week.replace('S', '')}</div>
+                                        {groupedInvoices[week].map((inv, idx) => (
+                                            <div key={idx} 
+                                                style={{ padding: '12px 15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.03)', transition: '0.2s' }} 
+                                                onClick={() => { playSound('click'); setExpandedInv(inv); }}
+                                                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'} 
+                                                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }}></div>
+                                                    <div style={{ width: 80, fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>{new Date(inv.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</div>
+                                                    <div style={{ fontWeight: 900, color: '#fff' }}>{inv.num}</div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                                                    <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#10b981' }}>+${Number(inv.amount).toLocaleString()}</div>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>TICKET</div>
                                                 </div>
                                             </div>
-                                        );
-                                    })
-                                )}
+                                        ))}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* ========================================== */}
-                        {/* POP-UP TICKET DE CAISSE (MODAL SCROLLABLE) */}
-                        {/* ========================================== */}
+                        {/* MODAL TICKET (SCROLLABLE & FIXÉ) */}
                         {expandedInv && typeof expandedInv === 'object' && (
                             <div className="modal-overlay" onClick={() => setExpandedInv(null)} style={{ zIndex: 10000 }}>
                                 <div className="modal-box fade-in" style={{ 
-                                    background: '#111', border: 'none', borderRadius: '0', 
-                                    width: '320px', padding: '0', boxShadow: '0 50px 100px rgba(0,0,0,0.9)',
-                                    position: 'relative', 
-                                    display: 'flex', flexDirection: 'column', maxHeight: '85vh' /* VERROUILLAGE HAUTEUR MAX */
+                                    background: '#111', width: '320px', padding: '0', borderRadius: '0', 
+                                    display: 'flex', flexDirection: 'column', maxHeight: '85vh', position: 'relative'
                                 }} onClick={e => e.stopPropagation()}>
-                                    
-                                    {/* Effet papier ticket (Bordure crantée en haut) */}
                                     <div style={{ height: '10px', background: 'radial-gradient(circle, transparent 4px, #111 5px) repeat-x', backgroundSize: '12px 20px', position: 'absolute', top: '-10px', left: 0, width: '100%' }}></div>
-                                    
-                                    {/* En-tête du ticket (Fixe) */}
                                     <div style={{ padding: '30px 20px 20px', borderBottom: '2px dashed #333', textAlign: 'center', flexShrink: 0 }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: 10, filter: 'grayscale(100%)' }}>🐔</div>
-                                        <h2 style={{ margin: 0, fontFamily: '"Courier New", Courier, monospace', color: '#fff', fontSize: '1.5rem', fontWeight: 900 }}>HEN HOUSE</h2>
-                                        <div style={{ fontSize: '0.8rem', color: '#888', fontFamily: '"Courier New", Courier, monospace', marginTop: 5 }}>TICKET #{expandedInv.num}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#666', fontFamily: '"Courier New", Courier, monospace', marginTop: 2 }}>Opérateur : {user.split(' ')[0]}</div>
+                                        <h2 style={{ margin: 0, fontFamily: 'monospace', color: '#fff', fontSize: '1.5rem' }}>HEN HOUSE</h2>
+                                        <div style={{ fontSize: '0.75rem', color: '#666', fontFamily: 'monospace' }}>#{expandedInv.num} | {user}</div>
                                     </div>
-
-                                    {/* Détail de la commande (Zone Scrollable) */}
-                                    <div style={{ 
-                                        padding: '20px', fontFamily: '"Courier New", Courier, monospace', 
-                                        color: '#ddd', fontSize: '0.85rem', textAlign: 'left', 
-                                        flex: 1, overflowY: 'auto' /* DÉFILEMENT ACTIVÉ ICI */
-                                    }}>
+                                    <div style={{ padding: '20px', fontFamily: 'monospace', color: '#ddd', fontSize: '0.85rem', flex: 1, overflowY: 'auto' }}>
                                         {expandedInv.details ? expandedInv.details.split(',').map((item, i) => {
                                             const [qty, ...nameParts] = item.trim().split('x ');
-                                            const name = nameParts.join('x ');
                                             return (
                                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                    <span style={{ fontWeight: 'bold' }}>{qty}x {name.substring(0, 20)}{name.length > 20 ? '.' : ''}</span>
-                                                    <span>--</span>
+                                                    <span>{qty}x {nameParts.join('x ').substring(0, 18)}</span>
+                                                    <span>OK</span>
                                                 </div>
                                             )
-                                        }) : <div style={{ color: '#555', fontStyle: 'italic', textAlign: 'center' }}>Détails indisponibles</div>}
+                                        }) : "Détails non dispo."}
                                     </div>
-
-                                    {/* Pied du ticket (Fixe) */}
                                     <div style={{ padding: '20px', borderTop: '2px dashed #333', textAlign: 'center', background: '#0a0a0a', flexShrink: 0 }}>
-                                        <div style={{ fontSize: '0.8rem', color: '#888', fontFamily: '"Courier New", Courier, monospace', marginBottom: 5 }}>TOTAL ENCAISSÉ</div>
-                                        <div style={{ color: '#10b981', fontSize: '2rem', fontWeight: 900, fontFamily: '"Courier New", Courier, monospace' }}>
-                                            ${Number(expandedInv.amount).toLocaleString()}
-                                        </div>
+                                        <div style={{ color: '#10b981', fontSize: '2rem', fontWeight: 900, fontFamily: 'monospace' }}>${Number(expandedInv.amount).toLocaleString()}</div>
                                     </div>
-                                    
-                                    {/* Bouton fermer en bas (Fixe) */}
-                                    <button style={{ width: '100%', padding: '15px', background: 'var(--p)', border: 'none', color: '#000', fontWeight: 900, cursor: 'pointer', fontFamily: '"Plus Jakarta Sans", sans-serif', flexShrink: 0 }} onClick={() => setExpandedInv(null)}>
-                                        FERMER LE TICKET
-                                    </button>
+                                    <button style={{ width: '100%', padding: '15px', background: 'var(--p)', border: 'none', fontWeight: 900, cursor: 'pointer' }} onClick={() => setExpandedInv(null)}>FERMER LE TICKET</button>
                                 </div>
                             </div>
                         )}
+                    </div>
+                );
+              })()}
               {/* SUPPORT (SMART HELPDESK & SECURE PAGER) */}
               {currentTab === 'support' && (() => {
                   
