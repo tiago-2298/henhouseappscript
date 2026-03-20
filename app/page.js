@@ -770,26 +770,8 @@ export default function Home() {
                   </div>
                 </div>
               )}
-             {/* ========================================== */}
-              {/* CAISSE : GRILLE DES PRODUITS COMPACTE        */}
-              {/* ========================================== */}
-              {currentTab === 'invoices' && (
-                <div className="fade-in">
-                  <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <input className="inp" placeholder="Rechercher un plat..." style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(255,255,255,0.05)', height: '45px', borderRadius: '14px' }} onChange={e => setSearch(e.target.value)} />
-                      <span style={{ position: 'absolute', left: 15, top: 12, opacity: 0.5, fontSize: '1rem' }}>🔍</span>
-                    </div>
-                  </div>
-                  
-                  <div className="custom-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 15, marginBottom: 10 }}>
-                    <div className={`chip ${catFilter === 'Tous' ? 'active' : ''}`} style={{ padding: '6px 16px', fontSize: '0.75rem' }} onClick={() => setCatFilter('Tous')}>Tous</div>
-                    {Object.keys(data.productsByCategory).map(c => (
-                      <div key={c} className={`chip ${catFilter === c ? 'active' : ''}`} style={{ padding: '6px 16px', fontSize: '0.75rem' }} onClick={() => setCatFilter(c)}>{c.replace('_', ' ')}</div>
-                    ))}
-                  </div>
-
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
+             {/* GRILLE DES PRODUITS (STYLE BORNE TACTILE) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', paddingRight: '10px' }}>
                     {(() => {
                       const filteredProducts = data.products.filter(p => 
                         (catFilter === 'Tous' || data.productsByCategory[catFilter]?.includes(p)) && 
@@ -798,9 +780,10 @@ export default function Home() {
 
                       if (filteredProducts.length === 0) {
                         return (
-                          <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 16, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
-                            <div style={{ fontSize: '2.5rem', opacity: 0.5, marginBottom: 10 }}>🍽️</div>
-                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1rem' }}>Aucun produit trouvé</h3>
+                          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
+                            <div style={{ fontSize: '3.5rem', opacity: 0.5, marginBottom: 15 }}>🍽️</div>
+                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', marginBottom: 5 }}>Aucun produit trouvé</h3>
+                            <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Essayez un autre mot-clé ou changez de catégorie.</p>
                           </div>
                         );
                       }
@@ -813,26 +796,31 @@ export default function Home() {
                             if (cartItem) setCart(cart.map(x => x.name === p ? { ...x, qty: x.qty + 1 } : x));
                             else setCart([...cart, { name: p, qty: 1, pu: data.prices[p] || 0 }]);
                           }} style={{ 
-                              height: '130px', background: 'var(--panel)', border: '1px solid rgba(255,255,255,0.05)', 
-                              borderRadius: '16px', cursor: 'pointer', position: 'relative', overflow: 'hidden', 
-                              transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column'
-                          }} onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--p)'; e.currentTarget.style.transform = 'translateY(-3px)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'none'; }}>
+                              height: '200px', background: 'rgba(15, 15, 15, 0.8)', border: '1px solid rgba(255,255,255,0.05)', 
+                              borderRadius: '24px', cursor: 'pointer', position: 'relative', overflow: 'hidden', 
+                              display: 'flex', flexDirection: 'column', transition: 'all 0.2s ease',
+                              boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
+                          }} onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--p)'; e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 15px 30px rgba(255,152,0,0.15)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.3)'; }}>
                             
-                            {cartItem && <div style={{ position: 'absolute', top: 6, right: 6, background: 'var(--p)', color: '#000', width: 22, height: 22, borderRadius: '50%', fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>{cartItem.qty}</div>}
+                            {/* Pastille de quantité en haut à droite */}
+                            {cartItem && <div style={{ position: 'absolute', top: 10, right: 10, background: 'var(--p)', color: '#000', width: 28, height: 28, borderRadius: '50%', fontSize: '0.85rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, boxShadow: '0 5px 15px rgba(0,0,0,0.6)' }}>{cartItem.qty}</div>}
                             
-                            {IMAGES[p] ? <img src={IMAGES[p]} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0, zIndex: 1, opacity: 0.7 }} /> : <div style={{ background: '#222', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, zIndex: 1 }}></div>}
-                            
-                            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.4) 60%, transparent 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '10px', zIndex: 2 }}>
-                              <div style={{ fontWeight: 800, fontSize: '0.8rem', lineHeight: 1.1, marginBottom: 3, color: '#fff', textShadow: '0 2px 5px rgba(0,0,0,0.9)' }}>{p}</div>
-                              <div style={{ color: 'var(--p)', fontWeight: 900, fontSize: '0.95rem', textShadow: '0 0 10px var(--p)' }}>${data.prices[p]}</div>
+                            {/* Moitié supérieure : L'image isolée */}
+                            <div style={{ height: '120px', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '15px' }}>
+                              {IMAGES[p] ? <img src={IMAGES[p]} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.5))' }} /> : <div style={{ fontSize: '2.5rem' }}>🍔</div>}
                             </div>
+                            
+                            {/* Moitié inférieure : Le texte bien lisible */}
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 15px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.02)' }}>
+                              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px' }}>{p}</div>
+                              <div style={{ color: 'var(--p)', fontWeight: 900, fontSize: '1.1rem' }}>${data.prices[p]}</div>
+                            </div>
+
                           </div>
                         );
                       });
                     })()}
                   </div>
-                </div>
-              )}
 
             {/* ========================================== */}
               {/* EXPENSES (NOTE DE FRAIS & HISTORIQUE FIXÉ)   */}
