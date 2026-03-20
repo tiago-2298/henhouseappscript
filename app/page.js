@@ -770,8 +770,22 @@ export default function Home() {
                   </div>
                 </div>
               )}
-             {/* GRILLE DES PRODUITS (STYLE BORNE TACTILE) */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '20px', paddingRight: '10px' }}>
+              {/* INVOICES */}
+              {currentTab === 'invoices' && (
+                <div className="fade-in">
+                  <div style={{ display: 'flex', gap: 20, marginBottom: 30 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <input className="inp" placeholder="Rechercher un plat..." style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(255,255,255,0.05)' }} onChange={e => setSearch(e.target.value)} />
+                      <span style={{ position: 'absolute', left: 20, top: 16, opacity: 0.5, fontSize: '1.2rem' }}>🔍</span>
+                    </div>
+                  </div>
+                  <div className="chips-container">
+                    <div className={`chip ${catFilter === 'Tous' ? 'active' : ''}`} onClick={() => setCatFilter('Tous')}>Tous</div>
+                    {Object.keys(data.productsByCategory).map(c => (
+                      <div key={c} className={`chip ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>{c}</div>
+                    ))}
+                  </div>
+                 <div className="grid">
                     {(() => {
                       const filteredProducts = data.products.filter(p => 
                         (catFilter === 'Tous' || data.productsByCategory[catFilter]?.includes(p)) && 
@@ -791,36 +805,24 @@ export default function Home() {
                       return filteredProducts.map(p => {
                         const cartItem = cart.find(i => i.name === p);
                         return (
-                          <div key={p} onClick={() => {
+                          <div key={p} className="card" onClick={() => {
                             playSound('click');
                             if (cartItem) setCart(cart.map(x => x.name === p ? { ...x, qty: x.qty + 1 } : x));
                             else setCart([...cart, { name: p, qty: 1, pu: data.prices[p] || 0 }]);
-                          }} style={{ 
-                              height: '200px', background: 'rgba(15, 15, 15, 0.8)', border: '1px solid rgba(255,255,255,0.05)', 
-                              borderRadius: '24px', cursor: 'pointer', position: 'relative', overflow: 'hidden', 
-                              display: 'flex', flexDirection: 'column', transition: 'all 0.2s ease',
-                              boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
-                          }} onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--p)'; e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 15px 30px rgba(255,152,0,0.15)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.3)'; }}>
-                            
-                            {/* Pastille de quantité en haut à droite */}
-                            {cartItem && <div style={{ position: 'absolute', top: 10, right: 10, background: 'var(--p)', color: '#000', width: 28, height: 28, borderRadius: '50%', fontSize: '0.85rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, boxShadow: '0 5px 15px rgba(0,0,0,0.6)' }}>{cartItem.qty}</div>}
-                            
-                            {/* Moitié supérieure : L'image isolée */}
-                            <div style={{ height: '120px', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '15px' }}>
-                              {IMAGES[p] ? <img src={IMAGES[p]} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.5))' }} /> : <div style={{ fontSize: '2.5rem' }}>🍔</div>}
+                          }}>
+                            {cartItem && <div className="card-qty">{cartItem.qty}</div>}
+                            {IMAGES[p] ? <img src={IMAGES[p]} className="card-img-bg" /> : <div className="card-img-bg" style={{ background: '#222' }}></div>}
+                            <div className="card-overlay">
+                              <div className="card-title">{p}</div>
+                              <div className="card-price">${data.prices[p]}</div>
                             </div>
-                            
-                            {/* Moitié inférieure : Le texte bien lisible */}
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 15px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.02)' }}>
-                              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px' }}>{p}</div>
-                              <div style={{ color: 'var(--p)', fontWeight: 900, fontSize: '1.1rem' }}>${data.prices[p]}</div>
-                            </div>
-
                           </div>
                         );
                       });
                     })()}
                   </div>
+                </div>
+              )}
 
             {/* ========================================== */}
               {/* EXPENSES (NOTE DE FRAIS & HISTORIQUE FIXÉ)   */}
@@ -2369,68 +2371,80 @@ export default function Home() {
             </div>
           </main>
 
-{/* ========================================== */}
-          {/* PANIER (CAISSE COMPACTE ET ÉPURÉE)           */}
-          {/* ========================================== */}
+          {/* PANIER (CAISSE) */}
           {currentTab === 'invoices' && (
-            <aside style={{ width: '340px', background: '#0a0a0a', borderLeft: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', zIndex: 50, boxShadow: '-10px 0 50px rgba(0,0,0,0.8)' }}>
-              
-              {/* En-tête */}
-              <div style={{ padding: '25px 25px 15px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                  <h2 style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '1px', color: '#fff', margin: 0 }}>COMMANDE</h2>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--p)', fontWeight: 800, background: 'rgba(255,152,0,0.1)', padding: '4px 8px', borderRadius: 6 }}>{cart.reduce((a, b) => a + b.qty, 0)} articles</div>
-                </div>
-                <input className="inp" placeholder="N° Facture (Requis)" value={forms.invoiceNum} onChange={e => setForms({ ...forms, invoiceNum: e.target.value })} style={{ textAlign: 'center', background: '#111', borderColor: forms.invoiceNum ? 'var(--p)' : '#333', marginBottom: 0, height: '45px', fontSize: '0.9rem', borderRadius: '12px' }} />
+            <aside className="cart-panel">
+              <div className="cart-header">
+                <h2 className="cart-title">Ticket Client</h2>
+                <div style={{ fontSize: '0.8rem', color: '#555' }}>#{forms.invoiceNum || '----'}</div>
               </div>
 
-              {/* Liste des articles */}
-              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
-                {cart.length === 0 ? (
-                  <div style={{ textAlign: 'center', marginTop: 40, opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: 10 }}>🛒</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Sélectionnez des articles</div>
-                  </div>
-                ) : cart.map((i, idx) => (
-                    <div key={idx} className="fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', marginBottom: '8px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                      <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
-                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.name}</div>
-                        <div style={{ color: 'var(--p)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>${i.pu} / u.</div>
+              <div style={{ padding: '20px 20px 0 20px' }}>
+                <input className="inp" placeholder="N° FACTURE (Requis)" value={forms.invoiceNum} onChange={e => setForms({ ...forms, invoiceNum: e.target.value })} style={{ textAlign: 'center', background: '#000', borderColor: '#333', marginBottom: 0 }} />
+              </div>
+
+              <div className="cart-items">
+                {cart.length === 0 ?
+                  <div style={{ textAlign: 'center', marginTop: 50, opacity: 0.2, fontWeight: 700, fontStyle: 'italic' }}>Panier Vide</div>
+                  : cart.map((i, idx) => (
+                    <div key={idx} className="cart-item">
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#eee' }}>{i.name}</div>
+                        <div style={{ color: 'var(--p)', fontSize: '0.75rem', fontWeight: 700 }}>${i.pu} / u.</div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', background: '#000', borderRadius: '8px', padding: '2px', border: '1px solid #222' }}>
-                          <button style={{ width: 24, height: 24, background: 'transparent', border: 'none', color: 'var(--muted)', fontWeight: 900, cursor: 'pointer' }} onClick={() => { const n = [...cart]; if (n[idx].qty > 1) n[idx].qty--; else removeFromCart(idx); setCart(n); }}>-</button>
-                          <input type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} style={{ width: 30, background: 'transparent', border: 'none', color: '#fff', textAlign: 'center', fontWeight: 800, fontSize: '0.85rem', outline: 'none' }} />
-                          <button style={{ width: 24, height: 24, background: 'transparent', border: 'none', color: 'var(--muted)', fontWeight: 900, cursor: 'pointer' }} onClick={() => { const n = [...cart]; n[idx].qty++; setCart(n); }}>+</button>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div className="qty-control">
+                          <button className="qty-btn" onClick={() => { const n = [...cart]; if (n[idx].qty > 1) n[idx].qty--; else removeFromCart(idx); setCart(n); }}>-</button>
+                          <input className="qty-input" type="number" value={i.qty} onChange={(e) => updateCartQty(idx, e.target.value)} />
+                          <button className="qty-btn" onClick={() => { const n = [...cart]; n[idx].qty++; setCart(n); }}>+</button>
                         </div>
-                        <button style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', width: 28, height: 28, borderRadius: '6px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }} onClick={() => removeFromCart(idx)}>✖</button>
+                        <button className="del-btn" onClick={() => removeFromCart(idx)}>🗑️</button>
                       </div>
                     </div>
                   ))}
               </div>
 
-              {/* Totaux & Bouton */}
-              <div style={{ padding: '20px 25px', background: '#050505', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, alignItems: 'baseline' }}>
-                  <span style={{ fontWeight: 800, color: 'var(--muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Total</span>
-                  <span style={{ fontSize: '2rem', color: '#fff', fontWeight: 900, letterSpacing: '-1px' }}>${total.toLocaleString()}</span>
+              <div className="cart-footer">
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'baseline' }}>
+                  <span style={{ fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Total à payer</span>
+                  <span className="cart-total-display">${total.toLocaleString()}</span>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '8px 12px', borderRadius: '10px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <span style={{ fontWeight: 800, color: '#10b981', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Votre gain estimé</span>
-                  <span style={{ fontWeight: 900, color: '#10b981', fontSize: '1rem' }}>${gainEstime.toLocaleString()}</span>
+                {/* ✅ GAIN ESTIMÉ (45% du CA) */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  marginBottom: 14,
+                  padding: '10px 12px',
+                  borderRadius: 14,
+                  background: 'rgba(16,185,129,0.08)',
+                  border: '1px solid rgba(16,185,129,0.35)',
+                  opacity: cart.length === 0 ? 0.35 : 1
+                }}>
+                  <span style={{
+                    fontWeight: 800,
+                    color: 'rgba(16,185,129,0.95)',
+                    textTransform: 'uppercase',
+                    fontSize: '0.75rem',
+                    letterSpacing: '1px'
+                  }}>
+                    Gain estimé 
+                  </span>
+                  <span style={{ fontWeight: 950, color: '#10b981', fontSize: '1.2rem' }}>
+                    ${gainEstime.toLocaleString()}
+                  </span>
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button style={{ background: '#222', color: '#fff', border: 'none', borderRadius: '14px', padding: '0 15px', fontWeight: 800, cursor: 'pointer', transition: '0.2s' }} onClick={requestClearCart} onMouseOver={e=>e.currentTarget.style.background='#333'} onMouseOut={e=>e.currentTarget.style.background='#222'}>
-                     🗑️
-                  </button>
+                  <button className="btn-p" style={{ background: '#222', color: '#fff', flex: 1 }} onClick={requestClearCart}>Vider</button>
                   <button
-                    style={{ flex: 1, padding: '18px 0', background: (sending || !forms.invoiceNum || cart.length === 0) ? '#222' : 'var(--p)', color: (sending || !forms.invoiceNum || cart.length === 0) ? '#555' : '#000', border: 'none', borderRadius: '14px', fontWeight: 900, fontSize: '1rem', textTransform: 'uppercase', cursor: (sending || !forms.invoiceNum || cart.length === 0) ? 'not-allowed' : 'pointer', transition: '0.3s', boxShadow: (sending || !forms.invoiceNum || cart.length === 0) ? 'none' : '0 10px 25px var(--p-glow)' }}
+                    className="btn-p"
+                    style={{ flex: 3 }}
                     disabled={sending || !forms.invoiceNum || cart.length === 0}
                     onClick={() => send('sendFactures', { invoiceNumber: forms.invoiceNum, items: cart.map(x => ({ desc: x.name, qty: x.qty })) })}
                   >
-                    {sending ? 'ENVOI...' : 'VALIDER (💵)'}
+                    ENCAISSER 💵
                   </button>
                 </div>
               </div>
