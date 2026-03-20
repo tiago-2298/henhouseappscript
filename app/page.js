@@ -770,22 +770,32 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              {/* INVOICES */}
+              {/* ========================================== */}
+              {/* CAISSE : GRILLE DES PRODUITS COMPACTE        */}
+              {/* ========================================== */}
               {currentTab === 'invoices' && (
-                <div className="fade-in">
-                  <div style={{ display: 'flex', gap: 20, marginBottom: 30 }}>
+                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
+                  
+                  {/* BARRE DE RECHERCHE FIXE */}
+                  <div style={{ display: 'flex', gap: 20, marginBottom: 15, flexShrink: 0 }}>
                     <div style={{ position: 'relative', flex: 1 }}>
-                      <input className="inp" placeholder="Rechercher un plat..." style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(255,255,255,0.05)' }} onChange={e => setSearch(e.target.value)} />
-                      <span style={{ position: 'absolute', left: 20, top: 16, opacity: 0.5, fontSize: '1.2rem' }}>🔍</span>
+                      <input className="inp" placeholder="Rechercher un plat, une boisson..." style={{ paddingLeft: 50, marginBottom: 0, background: 'rgba(15,15,15,0.8)', height: '50px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }} value={search} onChange={e => setSearch(e.target.value)} />
+                      <span style={{ position: 'absolute', left: 20, top: 15, opacity: 0.5, fontSize: '1.2rem' }}>🔍</span>
                     </div>
                   </div>
-                  <div className="chips-container">
-                    <div className={`chip ${catFilter === 'Tous' ? 'active' : ''}`} onClick={() => setCatFilter('Tous')}>Tous</div>
+                  
+                  {/* CATÉGORIES FIXES (CHIPS) */}
+                  <div className="custom-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 15, marginBottom: 10, flexShrink: 0 }}>
+                    <button className={`chip ${catFilter === 'Tous' ? 'active' : ''}`} style={{ padding: '8px 20px', fontSize: '0.85rem', border: 'none', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', transition: '0.2s', background: catFilter === 'Tous' ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: catFilter === 'Tous' ? '#000' : 'var(--muted)' }} onClick={() => setCatFilter('Tous')}>Tout afficher</button>
                     {Object.keys(data.productsByCategory).map(c => (
-                      <div key={c} className={`chip ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>{c}</div>
+                      <button key={c} className={`chip ${catFilter === c ? 'active' : ''}`} style={{ padding: '8px 20px', fontSize: '0.85rem', border: 'none', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', transition: '0.2s', background: catFilter === c ? 'var(--p)' : 'rgba(255,255,255,0.05)', color: catFilter === c ? '#000' : 'var(--muted)' }} onClick={() => setCatFilter(c)}>
+                        {c.replace('_', ' ')}
+                      </button>
                     ))}
                   </div>
-                 <div className="grid">
+
+                 {/* GRILLE DÉFILANTE DES PETITS ARTICLES */}
+                 <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '15px', alignContent: 'start', paddingRight: '10px', paddingBottom: '30px' }}>
                     {(() => {
                       const filteredProducts = data.products.filter(p => 
                         (catFilter === 'Tous' || data.productsByCategory[catFilter]?.includes(p)) && 
@@ -795,9 +805,8 @@ export default function Home() {
                       if (filteredProducts.length === 0) {
                         return (
                           <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 24, border: '1px dashed var(--glass-b)', gridColumn: '1 / -1' }}>
-                            <div style={{ fontSize: '3.5rem', opacity: 0.5, marginBottom: 15 }}>🍽️</div>
-                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', marginBottom: 5 }}>Aucun produit trouvé</h3>
-                            <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Essayez un autre mot-clé ou changez de catégorie.</p>
+                            <div style={{ fontSize: '3rem', opacity: 0.5, marginBottom: 15 }}>🍽️</div>
+                            <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem', marginBottom: 5 }}>Aucun produit trouvé</h3>
                           </div>
                         );
                       }
@@ -805,16 +814,29 @@ export default function Home() {
                       return filteredProducts.map(p => {
                         const cartItem = cart.find(i => i.name === p);
                         return (
-                          <div key={p} className="card" onClick={() => {
+                          <div key={p} onClick={() => {
                             playSound('click');
                             if (cartItem) setCart(cart.map(x => x.name === p ? { ...x, qty: x.qty + 1 } : x));
                             else setCart([...cart, { name: p, qty: 1, pu: data.prices[p] || 0 }]);
-                          }}>
-                            {cartItem && <div className="card-qty">{cartItem.qty}</div>}
-                            {IMAGES[p] ? <img src={IMAGES[p]} className="card-img-bg" /> : <div className="card-img-bg" style={{ background: '#222' }}></div>}
-                            <div className="card-overlay">
-                              <div className="card-title">{p}</div>
-                              <div className="card-price">${data.prices[p]}</div>
+                          }} style={{ 
+                              height: '140px', background: 'rgba(20,20,20,0.6)', border: '1px solid rgba(255,255,255,0.05)', 
+                              borderRadius: '20px', cursor: 'pointer', position: 'relative', overflow: 'hidden', 
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px',
+                              transition: 'all 0.15s ease'
+                          }} onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--p)'; e.currentTarget.style.background = 'rgba(30,30,30,0.8)'; e.currentTarget.style.transform = 'translateY(-3px)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.background = 'rgba(20,20,20,0.6)'; e.currentTarget.style.transform = 'none'; }}>
+                            
+                            {/* Pastille Quantité */}
+                            {cartItem && <div style={{ position: 'absolute', top: 8, right: 8, background: 'var(--p)', color: '#000', width: 24, height: 24, borderRadius: '8px', fontSize: '0.8rem', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>{cartItem.qty}</div>}
+                            
+                            {/* Image du plat (Détourée) */}
+                            <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                              {IMAGES[p] ? <img src={IMAGES[p]} style={{ maxHeight: '60px', maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.4))' }} /> : <div style={{ fontSize: '2rem' }}>🍔</div>}
+                            </div>
+                            
+                            {/* Textes (Nom + Prix) */}
+                            <div style={{ width: '100%', textAlign: 'center' }}>
+                              <div style={{ fontWeight: 800, fontSize: '0.75rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px', textTransform: 'uppercase' }}>{p}</div>
+                              <div style={{ color: 'var(--p)', fontWeight: 900, fontSize: '1rem' }}>${data.prices[p]}</div>
                             </div>
                           </div>
                         );
