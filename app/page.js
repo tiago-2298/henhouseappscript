@@ -73,6 +73,7 @@ export default function Home() {
   const [expandedInv, setExpandedInv] = useState(null);
   const [expenseWeek, setExpenseWeek] = useState('Toutes');
   const [activeCat, setActiveCat] = useState('plats_principaux');
+  const [activeStockCat, setActiveStockCat] = useState('plats_principaux');
 
   const initialForms = {
     invoiceNum: '',
@@ -1014,23 +1015,135 @@ export default function Home() {
                     </div>
                   );
               })()}
-              {/* STOCK */}
-              {currentTab === 'stock' && (
-                <div className="center-box"><div className="form-ui">
-                  <h2 style={{ marginBottom: 30, textAlign: 'center', fontWeight: 900 }}>Stock Cuisine</h2>
-                  {forms.stock.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                      <select className="inp" style={{ flex: 1, marginBottom: 0 }} value={item.product} onChange={e => { const n = [...forms.stock]; n[i].product = e.target.value; setForms({ ...forms, stock: n }); }}><option value="">Sélectionner...</option>{data.products.map(p => <option key={p} value={p}>{p}</option>)}</select>
-                      <input type="number" className="inp" style={{ width: 90, marginBottom: 0, textAlign: 'center' }} value={item.qty} onChange={e => { const n = [...forms.stock]; n[i].qty = e.target.value; setForms({ ...forms, stock: n }); }} />
-                      {forms.stock.length > 1 && (
-                        <button className="del-btn" onClick={() => { const n = [...forms.stock]; n.splice(i, 1); setForms({ ...forms, stock: n }); }}>×</button>
-                      )}
-                    </div>
-                  ))}
-                  <button className="inp" style={{ background: 'transparent', border: '1px dashed var(--glass-b)', color: 'var(--muted)', cursor: 'pointer' }} onClick={() => setForms({ ...forms, stock: [...forms.stock, { product: '', qty: 1 }] })}>+ Ajouter Ligne</button>
-                  <button className="btn-p" style={{ marginTop: 10 }} onClick={() => send('sendProduction', { items: forms.stock })}>Valider Production</button>
-                </div></div>
-              )}
+              {/* ========================================== */}
+              {/* STOCK (TERMINAL CUISINE TACTILE)           */}
+              {/* ========================================== */}
+              {currentTab === 'stock' && (() => {
+                  
+                  // On filtre la ligne vide du démarrage
+                  const stockItems = (forms.stock || []).filter(i => i.product && i.product.trim() !== '');
+                  const safeUser = user || 'Employé';
+
+                  const setStockForm = (newItems) => setForms({ ...forms, stock: newItems });
+
+                  const handleAddStock = (productName) => {
+                      const existing = stockItems.find(i => i.product === productName);
+                      if (existing) {
+                          const newItems = stockItems.map(i => i.product === productName ? { ...i, qty: Number(i.qty) + 1 } : i);
+                          setStockForm(newItems);
+                      } else {
+                          setStockForm([...stockItems, { product: productName, qty: 1 }]);
+                      }
+                      playSound('click');
+                  };
+
+                  const handleUpdateStockQty = (productName, newQty) => {
+                      const val = Math.max(1, Number(newQty)); 
+                      const newItems = stockItems.map(i => i.product === productName ? { ...i, qty: val } : i);
+                      setStockForm(newItems);
+                  };
+
+                  const handleRemoveStock = (productName) => {
+                      const newItems = stockItems.filter(i => i.product !== productName);
+                      setStockForm(newItems);
+                  };
+
+                  const totalStock = stockItems.reduce((acc, curr) => acc + Number(curr.qty), 0);
+                  
+                  // Pour la cuisine, on garde les catégories utiles (pas les menus préfaits)
+                  const allowedCategories = ['plats_principaux', 'desserts', 'boissons', 'alcools']; 
+                  const categories = allowedCategories.filter(cat => data?.productsByCategory && data.productsByCategory[cat]);
+                  const categoryToDisplay = categories.includes(activeStockCat) ? activeStockCat : (categories[0] || 'plats_principaux');
+
+                  const getCatName = (cat) => {
+                      if (cat === 'plats_principaux') return 'PLATS';
+                      return (cat || '').toUpperCase();
+                  };
+
+                  const getIcon = (cat) => {
+                      if(!cat) return '🍳';
+                      if(cat.includes('plats')) return '🍔';
+                      if(cat.includes('desserts')) return '🍰';
+                      if(cat.includes('boissons')) return '🥤';
+                      if(cat.includes('alcools')) return '🍷';
+                      return '🍳';
+                  };
+
+                  return (
+                      <div className="fade-in" style={{ display: 'flex', gap: '30px', height: 'calc(100vh - 120px)', maxHeight: 'calc(100vh - 120px)', maxWidth: '1400px', margin: '0 auto', overflow: 'hidden' }}>
+
+                          {/* PANNEAU GAUCHE : LE PAVÉ TACTILE (70%) */}
+                          <div style={{ flex: '1 1 0', display: 'flex', flexDirection: 'column', gap: '20px', overflow: 'hidden' }}>
+                              <div style={{ flexShrink: 0 }}>
+                                  <h1 style={{ fontSize: '2.5rem', fontWeight: 950, color: '#fff', margin: 0, letterSpacing: '-1px' }}>TERMINAL <span style={{ color: '#10b981' }}>CUISINE</span></h1>
+                                  <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Déclaration de production & préparation</p>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', flexShrink: 0 }} className="custom-scroll">
+                                  {categories.map(cat => (
+                                      <button key={cat} onClick={() => { setActiveStockCat(cat); playSound('click'); }} style={{ padding: '12px 24px', borderRadius: '16px', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s', textTransform: 'uppercase', whiteSpace: 'nowrap', background: categoryToDisplay === cat ? '#10b981' : 'rgba(255,255,255,0.05)', color: categoryToDisplay === cat ? '#000' : '#fff', border: 'none', boxShadow: categoryToDisplay === cat ? '0 10px 20px rgba(16,185,129,0.3)' : 'none' }}>
+                                          {getCatName(cat)}
+                                      </button>
+                                  ))}
+                              </div>
+
+                              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px', alignContent: 'start', paddingRight: '10px', paddingBottom: '20px' }}>
+                                  {(data?.productsByCategory?.[categoryToDisplay] || []).map(prod => (
+                                      <button key={prod} onClick={() => handleAddStock(prod)} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '25px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', cursor: 'pointer', transition: 'all 0.1s', minHeight: '130px' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.95)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'} onMouseOver={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.1)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'; }} onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}>
+                                          <div style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 5px 10px rgba(0,0,0,0.5))' }}>{getIcon(categoryToDisplay)}</div>
+                                          <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', textAlign: 'center', lineHeight: '1.2' }}>{prod}</div>
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+
+                          {/* PANNEAU DROIT : LA FOURNÉE (30%) */}
+                          <div style={{ flex: '0 0 450px', background: 'rgba(15, 15, 15, 0.7)', backdropFilter: 'blur(20px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 30px 80px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                              
+                              <div style={{ padding: '30px', background: 'rgba(0,0,0,0.3)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 15 }}>
+                                  <div style={{ fontSize: '2.5rem' }}>🍳</div>
+                                  <div>
+                                      <h2 style={{ margin: 0, color: '#fff', fontWeight: 900, fontSize: '1.4rem' }}>LA FOURNÉE</h2>
+                                      <div style={{ color: '#10b981', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', marginTop: 4 }}>Prêt à être envoyé en stock</div>
+                                  </div>
+                              </div>
+
+                              <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                  {stockItems.length === 0 ? (
+                                      <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                          <div style={{ fontSize: '3.5rem', marginBottom: 15 }}>🍽️</div>
+                                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Aucun produit préparé</div>
+                                          <div style={{ fontSize: '0.8rem', marginTop: 5, fontWeight: 600 }}>Touchez les produits pour les déclarer</div>
+                                      </div>
+                                  ) : (
+                                      stockItems.map((item, idx) => (
+                                          <div key={idx} className="fade-in" style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px 15px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                              <div style={{ display: 'flex', alignItems: 'center', background: '#000', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0, width: '70px', height: '45px' }}>
+                                                  <input type="number" value={item.qty} onChange={e => handleUpdateStockQty(item.product, e.target.value)} style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: '#10b981', fontSize: '1.2rem', fontWeight: 900, textAlign: 'center', outline: 'none' }} min="1" />
+                                              </div>
+                                              <div style={{ flex: 1, fontSize: '0.9rem', fontWeight: 800, color: '#fff', lineHeight: '1.2' }}>{item.product}</div>
+                                              <button onClick={() => { playSound('error'); handleRemoveStock(item.product); }} style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.1rem', transition: '0.2s', flexShrink: 0 }} onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}>
+                                                  <div style={{ marginTop: '-2px' }}>✖</div>
+                                              </button>
+                                          </div>
+                                      ))
+                                  )}
+                              </div>
+
+                              <div style={{ padding: '30px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                      <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Unités Produites</span>
+                                      <span style={{ fontSize: '2rem', fontWeight: 900, color: '#fff' }}>{totalStock}</span>
+                                  </div>
+                                  <button disabled={sending || stockItems.length === 0} onClick={() => send('sendProduction', { items: stockItems })} style={{ width: '100%', padding: '22px', borderRadius: '24px', border: 'none', background: (sending || stockItems.length === 0) ? '#222' : 'linear-gradient(90deg, #10b981, #059669)', color: (sending || stockItems.length === 0) ? '#555' : '#fff', fontSize: '1.1rem', fontWeight: 900, cursor: (sending || stockItems.length === 0) ? 'not-allowed' : 'pointer', boxShadow: (sending || stockItems.length === 0) ? 'none' : '0 10px 30px rgba(16,185,129,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.3s' }}>
+                                      <span>{sending ? 'DÉCLARATION EN COURS...' : '🍳 VALIDER LA PRODUCTION'}</span>
+                                      <span style={{ fontSize: '0.75rem', opacity: 0.8, fontWeight: 700 }}>Cuisiné par {safeUser.split(' ')[0]}</span>
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
+                  );
+              })()}
 
            {/* ========================================== */}
               {/* ENTREPRISE (POS TACTILE - CORRIGÉ)           */}
