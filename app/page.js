@@ -2405,29 +2405,28 @@ export default function Home() {
                 <input className="inp" placeholder="N° FACTURE (Requis)" value={forms.invoiceNum} onChange={e => setForms({ ...forms, invoiceNum: e.target.value })} style={{ textAlign: 'center', background: '#000', borderColor: '#333', marginBottom: 0 }} />
               </div>
 
-              {/* 🚀 BOUTONS DE SERVICES (LIVRAISONS & PRIVATISATION) */}
-              <div style={{ padding: '15px 20px 5px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {['LIVRAISON SUD', 'LIVRAISON NORD', 'PRIVATISATION'].map(srv => (
-                      <button 
-                          key={srv}
-                          onClick={() => {
-                              playSound('click');
-                              const cartItem = cart.find(i => i.name === srv);
-                              if (cartItem) setCart(cart.map(x => x.name === srv ? { ...x, qty: x.qty + 1 } : x));
-                              // On récupère le prix directement depuis les données chargées
-                              else setCart([...cart, { name: srv, qty: 1, pu: data?.prices?.[srv] || 0 }]);
-                          }}
-                          style={{ 
-                              flex: 1, minWidth: '90px', padding: '8px 5px', fontSize: '0.75rem', fontWeight: 800, 
-                              background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', 
-                              borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'uppercase'
-                          }}
-                          onMouseOver={e => { e.currentTarget.style.background = 'var(--p)'; e.currentTarget.style.color = '#000'; e.currentTarget.style.borderColor = 'var(--p)'; }}
-                          onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-                      >
-                          {srv === 'PRIVATISATION' ? '🍾 Privat.' : (srv === 'LIVRAISON SUD' ? '🚚 Liv. Sud' : '✈️ Liv. Nord')}
-                      </button>
-                  ))}
+              {/* ✨ NOUVEAU : BOUTONS DE SERVICES RAPIDES ✨ */}
+              <div style={{ padding: '15px 20px 5px 20px', display: 'flex', gap: '8px' }}>
+                {['LIVRAISON SUD', 'LIVRAISON NORD', 'PRIVATISATION'].map(srv => (
+                  <button 
+                    key={srv}
+                    onClick={() => {
+                      playSound('click');
+                      const cartItem = cart.find(i => i.name === srv);
+                      if (cartItem) setCart(cart.map(x => x.name === srv ? { ...x, qty: x.qty + 1 } : x));
+                      else setCart([...cart, { name: srv, qty: 1, pu: data.prices[srv] || 0 }]);
+                    }}
+                    style={{ 
+                      flex: 1, padding: '8px 2px', fontSize: '0.65rem', fontWeight: 900, 
+                      background: 'rgba(255,255,255,0.03)', color: 'var(--muted)', border: '1px solid rgba(255,255,255,0.08)', 
+                      borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'uppercase'
+                    }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'var(--p)'; e.currentTarget.style.color = '#000'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'var(--muted)'; }}
+                  >
+                    {srv === 'PRIVATISATION' ? '🍾 Privat.' : (srv.includes('SUD') ? '🚚 Liv. Sud' : '✈️ Liv. Nord')}
+                  </button>
+                ))}
               </div>
 
               <div className="cart-items">
