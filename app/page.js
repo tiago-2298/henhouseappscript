@@ -2391,9 +2391,9 @@ export default function Home() {
                 );
               })()}
             </div>
-          </main>
+</main>
 
-        {/* PANIER (CAISSE) */}
+          {/* PANIER (CAISSE) */}
           {currentTab === 'invoices' && (
             <aside className="cart-panel">
               <div className="cart-header">
@@ -2496,6 +2496,11 @@ export default function Home() {
               </div>
             </aside>
           )}
+
+        {/* ⚠️ C'est ça qui avait sauté pendant le copier-coller : */}
+        </>
+      )}
+
       {/* TOASTS & MODALS */}
       {toast && (
         <div className="toast" style={{ borderColor: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)') }}>
