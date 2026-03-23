@@ -151,19 +151,54 @@ export default function Home() {
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       const now = ctx.currentTime;
+      
       if (type === 'click') {
-        osc.frequency.setValueAtTime(600, now); gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(); osc.stop(now + 0.1);
+        // Petit "bip" digital très sec
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now); 
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); 
+        osc.start(now); osc.stop(now + 0.05);
       } else if (type === 'success') {
-        osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now + 0.1);
-        osc.frequency.setValueAtTime(783, now + 0.2); gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4); osc.start(); osc.stop(now + 0.4);
+        // Son de validation (3 notes qui montent)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, now); 
+        osc.frequency.setValueAtTime(659, now + 0.1);
+        osc.frequency.setValueAtTime(783, now + 0.2); 
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4); 
+        osc.start(now); osc.stop(now + 0.4);
+      } else if (type === 'error') {
+        // Buzzer grave d'erreur
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.setValueAtTime(100, now + 0.15);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now); osc.stop(now + 0.3);
+      } else if (type === 'cash') {
+        // Bruit aigü type "Tiroir caisse / Pièce de monnaie"
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(2500, now + 0.1);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+        // Ajout d'une résonance pour faire "Ting !"
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(3000, now);
+        osc2.connect(gain);
+        osc2.start(now); osc2.stop(now + 0.3);
       }
-    } catch (e) { }
+    } catch (e) { console.warn("Audio bloqué", e); }
   };
 
+  // On en profite pour corriger les notifications pour qu'elles jouent le son d'erreur
   const notify = (t, m, s = 'info') => {
-    setToast({ t, m, s }); if (s === 'success') playSound('success');
+    setToast({ t, m, s }); 
+    if (s === 'success') playSound('success');
+    else if (s === 'error') playSound('error'); // Ajout du son d'erreur !
     setTimeout(() => setToast(null), 3500);
   };
 
@@ -226,7 +261,11 @@ export default function Home() {
       if (j.success) {
         const m = NOTIF_MESSAGES[action] || { title: "SUCCÈS", msg: "Action validée" };
         notify(m.title, m.msg, "success");
-        if (action === 'sendFactures') { setCart([]); setForms(prev => ({ ...prev, invoiceNum: '' })); }
+        if (action === 'sendFactures') { 
+            playSound('cash'); // 💸 BING !
+            setCart([]); 
+            setForms(prev => ({ ...prev, invoiceNum: '' })); 
+        }
         else if (action === 'sendProduction') { setForms(prev => ({ ...prev, stock: [{ product: '', qty: 1 }] })); }
         else if (action === 'sendEntreprise') { setForms(prev => ({ ...prev, enterprise: { name: '', items: [{ product: '', qty: 1 }] } })); }
         else if (action === 'sendPartnerOrder') { setForms(prev => ({ ...prev, partner: { ...prev.partner, num: '' } })); }
@@ -428,6 +467,38 @@ export default function Home() {
         .main { flex: 1; overflow-y: auto; padding: 40px; position: relative; scroll-behavior: smooth; }
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Nouvelles Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        
+        @keyframes pop-bounce {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-bounce { animation: pop-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        /* Amélioration du Toast (Notification) pour qu'il "rebondisse" en arrivant */
+        .toast { 
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%); 
+            padding: 15px 30px; border-radius: 50px; 
+            z-index: 9999; 
+            animation: slideDownBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
+            display: flex; align-items: center; gap: 15px;
+            font-weight: 700; border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+        }
+        @keyframes slideDownBounce { 
+            0% { transform: translate(-50%, -150%); opacity: 0; } 
+            70% { transform: translate(-50%, 10px); opacity: 1; }
+            100% { transform: translate(-50%, 0); opacity: 1; } 
+        }
 
         /* --- CARDS & GRID --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
