@@ -2497,7 +2497,6 @@ export default function Home() {
               </div>
             </aside>
           )}
-
       {/* TOASTS & MODALS */}
       {toast && (
         <div className="toast" style={{ borderColor: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)') }}>
