@@ -2393,7 +2393,7 @@ export default function Home() {
             </div>
           </main>
 
-         {/* PANIER (CAISSE) */}
+        {/* PANIER (CAISSE) */}
           {currentTab === 'invoices' && (
             <aside className="cart-panel">
               <div className="cart-header">
