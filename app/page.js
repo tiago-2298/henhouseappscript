@@ -590,12 +590,18 @@ export default function Home() {
       {view === 'login' ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100vw', height: '100vw', background: 'radial-gradient(circle, rgba(255,152,0,0.05) 0%, transparent 50%)', zIndex: -1, pointerEvents: 'none' }}></div>
-          
           <div className="form-ui fade-in" style={{ textAlign: 'center', maxWidth: 450, zIndex: 10, padding: '50px 40px', background: 'rgba(10, 10, 10, 0.85)', border: '1px solid rgba(255,152,0,0.2)', boxShadow: '0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,152,0,0.05)' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 90, height: 90, borderRadius: '24px', background: 'rgba(255,152,0,0.1)', border: '1px solid rgba(255,152,0,0.3)', marginBottom: 25, boxShadow: '0 0 20px rgba(255,152,0,0.2)' }}>
               <img src="https://i.goopics.net/dskmxi.png" height="55" style={{ filter: 'drop-shadow(0 0 10px rgba(255,152,0,0.5))' }} />
             </div>
-            <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: 40, letterSpacing: '1px', textTransform: 'uppercase', color: '#fff' }}>Hen House</h1>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: 5, letterSpacing: '1px', textTransform: 'uppercase', textShadow: '0 0 15px rgba(255,255,255,0.3)', color: '#fff' }}>Hen House</h1>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 35 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: user ? 'var(--success)' : 'var(--error)', boxShadow: `0 0 10px ${user ? 'var(--success)' : 'var(--error)'}`, transition: '0.3s' }}></div>
+              <p style={{ color: user ? 'var(--success)' : 'var(--error)', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '2px', textTransform: 'uppercase', margin: 0, transition: '0.3s' }}>
+                {user ? 'Identité confirmée' : 'Authentification requise'}
+              </p>
+            </div>
 
             <div style={{ position: 'relative', marginBottom: 20 }}>
               <label style={{ position: 'absolute', top: -10, left: 20, background: '#0c0c0c', padding: '0 8px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, borderRadius: 4 }}>1. Habilitation</label>
@@ -617,9 +623,11 @@ export default function Home() {
               </select>
             </div>
 
-            <button className="btn-p" onClick={() => { playSound('success'); localStorage.setItem('hh_user', user); setView('app'); }} disabled={!user} style={{ height: 60, fontSize: '1.1rem', letterSpacing: '2px' }}>
+            <button className="btn-p" onClick={() => { playSound('success'); localStorage.setItem('hh_user', user); setView('app'); }} disabled={!user} style={{ height: 60, fontSize: '1.1rem', letterSpacing: '2px', background: user ? 'linear-gradient(90deg, #ff9800, #f59e0b)' : '#222', color: user ? '#000' : '#555', border: 'none', borderRadius: '16px', cursor: user ? 'pointer' : 'not-allowed', boxShadow: user ? '0 10px 25px var(--p-glow)' : 'none' }}>
               {user ? '🔓 DÉVERROUILLER' : '🔒 ACCÈS RESTREINT'}
             </button>
+            
+            <div style={{ marginTop: 25, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800 }}>Terminal local • IP Sécurisée</div>
           </div>
         </div>
       ) : (
@@ -654,48 +662,6 @@ export default function Home() {
 
           <main className="main">
             <div className="fade-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
-              {currentTab === 'home' && (
-                <div className="fade-in">
-                  {/* ... Ton code du Dashboard ... */}
-                  <h1 style={{ color: '#fff' }}>Bienvenue au Hen House</h1>
-                </div>
-              )}
-              {/* Remets ici tes autres onglets (invoices, stock, etc.) si tu les as supprimés par erreur */}
-            </div>
-          </main>
-
-          {/* PANIER (CAISSE) */}
-          {currentTab === 'invoices' && (
-            <aside className="cart-panel">
-              {/* ... Ton code du panier compact ... */}
-            </aside>
-          )}
-        </>
-      )}
-
-      {/* TOASTS & MODALS */}
-      {toast && (
-        <div className="toast" style={{ borderColor: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)') }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: toast.s === 'error' ? 'var(--error)' : (toast.s === 'success' ? 'var(--success)' : 'var(--p)') }}></div>
-          <div>{toast.m}</div>
-        </div>
-      )}
-
-      {confirmModal && (
-        <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 10 }}>{confirmModal.title}</h3>
-            <p style={{ color: 'var(--muted)', marginBottom: 30 }}>{confirmModal.msg}</p>
-            <div style={{ display: 'flex', gap: 15 }}>
-              <button className="btn-p" style={{ background: 'var(--glass-b)', color: '#fff' }} onClick={() => setConfirmModal(null)}>Annuler</button>
-              <button className="btn-p" onClick={confirmModal.action}>Confirmer</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
       {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
