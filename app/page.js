@@ -587,63 +587,54 @@ export default function Home() {
       `}</style>
 
       {view === 'login' ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-          
-          {/* Effet de lueur en arrière-plan */}
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100vw', height: '100vw', background: 'radial-gradient(circle, rgba(255,152,0,0.05) 0%, transparent 50%)', zIndex: 1, pointerEvents: 'none' }}></div>
-          
-          <div className="form-ui fade-in" style={{ textAlign: 'center', maxWidth: 450, zIndex: 10, padding: '50px 40px', background: 'rgba(10, 10, 10, 0.85)', border: '1px solid rgba(255,152,0,0.2)', boxShadow: '0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,152,0,0.05)' }}>
-            
-            {/* Logo dans un cadre lumineux */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 90, height: 90, borderRadius: '24px', background: 'rgba(255,152,0,0.1)', border: '1px solid rgba(255,152,0,0.3)', marginBottom: 25, boxShadow: '0 0 20px rgba(255,152,0,0.2)' }}>
-              <img src="https://i.goopics.net/dskmxi.png" height="55" style={{ filter: 'drop-shadow(0 0 10px rgba(255,152,0,0.5))' }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', position: 'relative', zIndex: 10 }}>
+          <div className="form-ui" style={{ textAlign: 'center', maxWidth: 420 }}>
+            <div style={{ marginBottom: 30, filter: 'drop-shadow(0 0 20px rgba(255,152,0,0.5))' }}>
+              <img src="https://i.goopics.net/dskmxi.png" height="120" />
             </div>
-            
-            <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: 5, letterSpacing: '1px', textTransform: 'uppercase', textShadow: '0 0 15px rgba(255,255,255,0.3)', color: '#fff' }}>Hen House</h1>
-            
-            {/* Voyant de sécurité RP */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 40 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: user ? 'var(--success)' : 'var(--error)', boxShadow: `0 0 10px ${user ? 'var(--success)' : 'var(--error)'}`, transition: '0.3s' }}></div>
-              <p style={{ color: user ? 'var(--success)' : 'var(--error)', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '2px', textTransform: 'uppercase', margin: 0, transition: '0.3s' }}>
-                {user ? 'Identité confirmée' : 'Authentification requise'}
-              </p>
-            </div>
-
-            {/* Sélecteur de nom façon "Base de données" */}
-            <div style={{ position: 'relative', marginBottom: 30 }}>
-              <label style={{ position: 'absolute', top: -10, left: 20, background: '#0c0c0c', padding: '0 8px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, borderRadius: 4 }}>Base de données Staff</label>
-              <select className="inp" value={user} onChange={e => { playSound('click'); setUser(e.target.value); }} style={{ textAlign: 'center', height: 60, fontSize: '1.1rem', fontWeight: 800, background: 'rgba(0,0,0,0.5)', borderColor: user ? 'var(--p)' : 'rgba(255,255,255,0.1)', color: user ? '#fff' : 'var(--muted)', cursor: 'pointer', appearance: 'none' }}>
-                <option value="" disabled>--- SÉLECTIONNER UN BADGE ---</option>
-                {data?.employees.map(e => <option key={e} value={e}>{e}</option>)}
-              </select>
-              <span style={{ position: 'absolute', right: 20, top: 18, pointerEvents: 'none', color: 'var(--p)', fontSize: '1.2rem', fontWeight: 900 }}>▾</span>
-            </div>
-
-            {/* Bouton de connexion dynamique */}
-            <button 
-              className="btn-p" 
-              onClick={() => { playSound('success'); localStorage.setItem('hh_user', user); setView('app'); }} 
-              disabled={!user}
-              style={{ 
-                height: 60, fontSize: '1.1rem', letterSpacing: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                background: user ? 'linear-gradient(90deg, #ff9800, #f59e0b)' : '#222',
-                color: user ? '#000' : '#555',
-                boxShadow: user ? '0 10px 25px rgba(255,152,0,0.4)' : 'none',
-                cursor: user ? 'pointer' : 'not-allowed',
-                border: 'none'
-              }}
-            >
-              {user ? '🔓 DÉVERROUILLER' : '🔒 ACCÈS RESTREINT'}
-            </button>
-
-            {/* Petit texte immersif en bas */}
-            <div style={{ marginTop: 25, fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800 }}>
-              Terminal local • IP Sécurisée
-            </div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 5 }}>HEN HOUSE</h1>
+            <p style={{ color: 'var(--muted)', fontSize: '0.9rem', marginBottom: 40, letterSpacing: '2px', textTransform: 'uppercase' }}>Secure Employee Terminal</p>
+            <select className="inp" value={user} onChange={e => setUser(e.target.value)} style={{ textAlign: 'center' }}>
+              <option value="">SELECTIONNER IDENTITÉ</option>
+              {data?.employees.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+            <button className="btn-p" onClick={() => { playSound('success'); localStorage.setItem('hh_user', user); setView('app'); }} disabled={!user}>CONNEXION</button>
           </div>
         </div>
       ) : (
-        
+        <>
+          <div className="dock-container">
+            <aside className="dock">
+              <div className="logo-box"><img src="https://i.goopics.net/dskmxi.png" className="logo-img" /></div>
+
+              <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', overflowX: 'hidden' }}>
+                {MODULES.map(t => (
+                  <button key={t.id} className={`nav-btn ${currentTab === t.id ? 'active' : ''}`} onClick={() => { playSound('click'); setCurrentTab(t.id); setSearch(''); }}>
+                    <span className="nav-icon">{t.e}</span>
+                    <span className="nav-label">{t.l}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="dock-footer">
+                <div className="tool-row">
+                  <button className="tool-btn" title="Reload" onClick={() => window.location.reload()}>↻</button>
+                  <button className="tool-btn" title="Sync" onClick={() => loadData(true)}>☁️</button>
+                  <button className="tool-btn" title="Mute" onClick={() => { setIsMuted(!isMuted); playSound('click'); }}>{isMuted ? '🔇' : '🔊'}</button>
+                </div>
+                <div className="user-pill" onClick={requestLogout}>
+                  <div className="user-avatar">{user.charAt(0)}</div>
+                  <div className="user-info">
+                    <span className="u-name">{user.split(' ')[0]}</span>
+                    <span className="u-role">{myProfile?.role || 'Staff'}</span>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <main className="main">
+            <div className="fade-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
       {/* HOME */}
               {currentTab === 'home' && (
                 <div className="fade-in">
