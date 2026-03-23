@@ -597,7 +597,6 @@ export default function Home() {
             </div>
             <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: 40, letterSpacing: '1px', textTransform: 'uppercase', color: '#fff' }}>Hen House</h1>
 
-            {/* 1. SÉLECTEUR DE POSTE */}
             <div style={{ position: 'relative', marginBottom: 20 }}>
               <label style={{ position: 'absolute', top: -10, left: 20, background: '#0c0c0c', padding: '0 8px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, borderRadius: 4 }}>1. Habilitation</label>
               <select className="inp" value={loginRole} onChange={e => { playSound('click'); setLoginRole(e.target.value); setUser(''); }} style={{ textAlign: 'center', height: 60, fontSize: '0.95rem', fontWeight: 800, background: 'rgba(0,0,0,0.5)', borderColor: loginRole ? 'var(--p)' : 'rgba(255,255,255,0.1)', color: loginRole ? '#fff' : 'var(--muted)', cursor: 'pointer', appearance: 'none' }}>
@@ -608,7 +607,6 @@ export default function Home() {
               </select>
             </div>
 
-            {/* 2. SÉLECTEUR DE NOM */}
             <div style={{ position: 'relative', marginBottom: 30, opacity: loginRole ? 1 : 0.3, pointerEvents: loginRole ? 'auto' : 'none', transition: '0.3s' }}>
               <label style={{ position: 'absolute', top: -10, left: 20, background: '#0c0c0c', padding: '0 8px', fontSize: '0.7rem', fontWeight: 900, color: 'var(--p)', letterSpacing: '1px', textTransform: 'uppercase', zIndex: 2, borderRadius: 4 }}>2. Identité Staff</label>
               <select className="inp" value={user} onChange={e => { playSound('click'); setUser(e.target.value); }} style={{ textAlign: 'center', height: 60, fontSize: '1.05rem', fontWeight: 800, background: 'rgba(0,0,0,0.5)', borderColor: user ? 'var(--p)' : 'rgba(255,255,255,0.1)', color: user ? '#fff' : 'var(--muted)', cursor: 'pointer', appearance: 'none' }}>
@@ -653,8 +651,26 @@ export default function Home() {
               </div>
             </aside>
           </div>
+
           <main className="main">
-                  </>
+            <div className="fade-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
+              {currentTab === 'home' && (
+                <div className="fade-in">
+                  {/* ... Ton code du Dashboard ... */}
+                  <h1 style={{ color: '#fff' }}>Bienvenue au Hen House</h1>
+                </div>
+              )}
+              {/* Remets ici tes autres onglets (invoices, stock, etc.) si tu les as supprimés par erreur */}
+            </div>
+          </main>
+
+          {/* PANIER (CAISSE) */}
+          {currentTab === 'invoices' && (
+            <aside className="cart-panel">
+              {/* ... Ton code du panier compact ... */}
+            </aside>
+          )}
+        </>
       )}
 
       {/* TOASTS & MODALS */}
