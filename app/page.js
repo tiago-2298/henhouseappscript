@@ -1581,9 +1581,9 @@ export default function Home() {
 
                         {isVIP ? (
                           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: 10, filter: 'drop-shadow(0 0 15px rgba(255,215,0,0.5))' }}>👑</div>
-                            <div style={{ fontWeight: 900, color: 'gold', fontSize: '1.3rem', letterSpacing: '1px' }}>ACCÈS VIP ILLIMITÉ</div>
-                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>Service Corporate Premium</div>
+                            <div style={{ fontSize: '3rem', marginBottom: 10, filter: 'drop-shadow(0 0 15px rgba(255,215,0,0.5))' }}>⚖️</div>
+                            <div style={{ fontWeight: 900, color: 'gold', fontSize: '1.3rem', letterSpacing: '1px' }}>CONTRAT ÉTAT</div>
+                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>5 Menu par personne (1$ par menu)</div>
                           </div>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center' }}>
