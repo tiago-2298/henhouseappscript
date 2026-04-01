@@ -105,6 +105,15 @@ const PARTNERS = {
       ],
       webhook: 'https://discord.com/api/webhooks/1467273894800134495/plSAmYgMbUmc5wI_wvpEYOKHluejsvm6sLcvseqrMH5lF5O-L0CxG3eXkeNki2LNsUCO'
     },
+    'SAMC': {
+      limits: null, // Modifie ici si tu veux instaurer un quota (ex: { day: 2, week: 10 })
+      beneficiaries: [ 'Médecin SAMC' ], // Tu peux ajouter les noms des médecins si tu veux une liste précise
+      menus: [
+        { name: 'Lasagne aux légumes + Kombucha Citron', catalog: 65 },
+        { name: 'Wings épicés + Kombucha Citron', catalog: 75 }
+      ],
+      webhook: 'https://discord.com/api/webhooks/1488876798925340826/chHTeZqiCJZhXtDAVRqiSTh9cPP1gzf8RaTADBcKd53ar2DxX2O7FND9AzkJogArYqae' // Laisse vide pour utiliser le webhook des factures classique, ou mets un lien Discord spécifique au SAMC
+    },
   },
 };
 
