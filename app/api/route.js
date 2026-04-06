@@ -75,9 +75,9 @@ const PARTNERS = {
     'Biogood': {
       limits: { day: null, week: 35 }, 
       beneficiaries: [
-        'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - Cohman Tiago',
-        'RH - Jefferson Patt','RE - Gonzales Malya','C - Gilmore Jaden','RL - Delgado Madison',
-        'C - Léon Dawson ','RH - Aldana Jaïa','C - Pearce Asap Jr ','C - ',
+        'PDG - Hunt Aaron','CO-PDG - Hernández Andres','RH - WILSON Théa',
+        'RH - Jefferson Patt','RE - Gonzales Malya','C - Cole Madison','RL - Dove Madison',
+        'C - Léon Dawson ','RH - Aldana Jaïa','C - Sione Aiono ','C - Lawrence Michael ','C - Ignacio','C - Copperr Anderson ','C - Hapler Adonis ',
       ],
       menus: [
         { name: 'Burger Gourmet + Kombucha Citron', catalog: 75 },
