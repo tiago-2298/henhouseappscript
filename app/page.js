@@ -214,7 +214,6 @@ export default function Home() {
           ...f,
           expense: { ...f.expense, vehicle: j.vehicles[0] },
           garage: { ...f.garage, vehicle: j.vehicles[0] },
-          partner: { ...f.partner, company: firstComp, benef: j.partners.companies[firstComp].beneficiaries[0], items: [{ menu: j.partners.companies[firstComp].menus[0].name, qty: 1 }] }
         }));
         if (isSync) notify(NOTIF_MESSAGES.sync.title, NOTIF_MESSAGES.sync.msg, "success");
       }
