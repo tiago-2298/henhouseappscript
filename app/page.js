@@ -1388,294 +1388,168 @@ export default function Home() {
                       </div>
                   );
               })()}
-            {/* ========================================== */}
-              {/* PARTNERS SECTION (ULTRA PREMIUM + RECAP)     */}
-              {/* ========================================== */}
-              {currentTab === 'partners' && (() => {
-                // --- 1. LOGIQUE DE CALCUL DES QUOTAS ET LIMITES ---
-                const selectedCompany = forms.partner.company;
-                const selectedBenef = forms.partner.benef;
-                const limits = selectedCompany ? data.partners.companies[selectedCompany]?.limits : null;
-                const isVIP = selectedCompany && !limits;
+           'use client';
+import { useState, useEffect, useMemo } from 'react';
 
-                const logs = data.partnerLogs || [];
-                const now = new Date();
-                const parisTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Paris"}));
-                const todayStr = parisTime.toISOString().split('T')[0];
-                const currentDayIndex = parisTime.getDay() || 7; // Lundi = 1, Dimanche = 7
+// --- CONFIGURATION ---
+const MODULES = [
+  { id: 'home', l: 'Dashboard', e: '🏠' },
+  { id: 'invoices', l: 'Caisse', e: '💰' },
+  { id: 'stock', l: 'Stock', e: '📦' },
+  { id: 'enterprise', l: 'Entreprise', e: '🏢' },
+  { id: 'partners', l: 'Partenaires', e: '🤝' },
+  { id: 'expenses', l: 'Frais', e: '💳' },
+  { id: 'garage', l: 'Garage', e: '🚗' },
+  { id: 'directory', l: 'Annuaire', e: '👥' },
+  { id: 'performance', l: 'Perf', e: '🏆' },
+  { id: 'rules', l: 'Règlement', e: '📜' },
+  { id: 'profile', l: 'Profil', e: '👤' },
+  { id: 'support', l: 'Support', e: '🆘' }
+];
 
-                // Calcul du premier jour de la semaine (Lundi)
-                const d = new Date(parisTime);
-                d.setHours(-24 * (currentDayIndex - 1));
-                const startOfWeekStr = d.toISOString().split('T')[0];
+const IMAGES = {
+  "Lasagne aux légumes": "https://files.catbox.moe/u8u4be.png",
+  "Effiloché de Mouton": "https://files.catbox.moe/56m75j.png",
+  "Burger Gourmet au Foie Gras": "https://files.catbox.moe/7p4873.png",
+  "Nectar Exotique": "https://files.catbox.moe/8p59qf.png",
+  "Kombucha Citron": "https://files.catbox.moe/7m45v2.png",
+  "Saumon Grillé": "https://files.catbox.moe/05bofq.png",
+  "Crousti-Douce": "https://files.catbox.moe/23lr31.png",
+  "Paella Méditerranéenne": "https://files.catbox.moe/88udxk.png",
+  "Steak 'Potatoes": "https://files.catbox.moe/msdthe.png",
+  "Ribs": "https://files.catbox.moe/ej5jok.png",
+  "Filet Mignon": "https://files.catbox.moe/3dzjbx.png",
+  "Poulet Rôti": "https://files.catbox.moe/8fyin5.png",
+  "Wings Epicé": "https://files.catbox.moe/i17915.png",
+  "Café": "https://files.catbox.moe/txb2hd.png",
+  "Jus de raisin Rouge": "https://files.catbox.moe/dysrkb.png",
+  "Berry Fizz": "https://files.catbox.moe/e0ztl3.png",
+  "Jus d'orange": "https://files.catbox.moe/u29syk.png",
+  "Mousse au café": "https://files.catbox.moe/wzvbw6.png",
+  "Tiramisu Fraise": "https://files.catbox.moe/6s04pq.png",
+  "Carpaccio Fruit Exotique": "https://files.catbox.moe/cbmjou.png",
+  "Los Churros Caramel": "https://files.catbox.moe/pvjuhn.png",
+};
 
-                let takenDay = 0;
-                let takenWeek = 0;
+const NOTIF_MESSAGES = {
+  sendFactures: { title: "💰 FACTURE TRANSMISE", msg: "La vente a été enregistrée avec succès !" },
+  sendProduction: { title: "📦 STOCK ACTUALISÉ", msg: "La production cuisine a été déclarée." },
+  sendEntreprise: { title: "🏢 COMMANDE PRO ENVOYÉE", msg: "Le bon de commande entreprise est parti." },
+  sendPartnerOrder: { title: "🤝 PARTENAIRE VALIDÉ", msg: "La commande partenaire est enregistrée." },
+  sendGarage: { title: "🚗 VÉHICULE ACTUALISÉ", msg: "L'état du véhicule a été mis à jour." },
+  sendExpense: { title: "💳 NOTE DE FRAIS", msg: "Vos frais et la preuve ont été transmis." },
+  sendSupport: { title: "🆘 SUPPORT CONTACTÉ", msg: "Votre message a été envoyé au patron." },
+  sync: { title: "☁️ CLOUD SYNCHRONISÉ", msg: "Les données sont maintenant à jour." }
+};
 
-                // Historique STRICTEMENT limité à la semaine en cours (Lundi -> Dimanche)
-                const userLogsThisWeek = logs.filter(row => {
-                  if (row[1] !== selectedCompany || row[2] !== selectedBenef) return false;
-                  return row[0] >= startOfWeekStr; 
-                }).reverse();
+export default function Home() {
+  const [view, setView] = useState('login');
+  const [user, setUser] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTab, setCurrentTab] = useState('home');
+  const [toast, setToast] = useState(null);
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('Tous');
+  const [cart, setCart] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [profileWeek, setProfileWeek] = useState('Toutes');
+  const [expandedInv, setExpandedInv] = useState(null);
+  const [expenseWeek, setExpenseWeek] = useState('Toutes');
+  const [activeCat, setActiveCat] = useState('plats_principaux');
+  const [activeStockCat, setActiveStockCat] = useState('plats_principaux');
+  const [loginRole, setLoginRole] = useState('');
 
-                userLogsThisWeek.forEach(row => {
-                  const qty = parseInt(row[4]) || 0;
-                  if (row[0] === todayStr) takenDay += qty;
-                  takenWeek += qty;
-                });
+  const initialForms = {
+    invoiceNum: '',
+    stock: [{ product: '', qty: 1 }],
+    enterprise: { name: '', items: [{ product: '', qty: 1 }] },
+    partner: { num: '', company: '', benef: '', items: [{ menu: '', qty: 1 }] },
+    expense: { vehicle: '', kind: 'Essence', amount: '', file: null },
+    garage: { vehicle: '', action: 'Entrée', fuel: 50 },
+    support: { sub: 'Problème Stock', msg: '' }
+  };
 
-                let maxDay = null;
-                let maxWeek = null;
-                let availableQty = 9999; // Illimité par défaut (ex: SASP / VIP)
+  const [forms, setForms] = useState(initialForms);
 
-                if (selectedCompany && limits) {
-                  maxDay = limits.day;
-                  maxWeek = limits.week;
+  useEffect(() => {
+    const savedUser = localStorage.getItem('hh_user');
+    if (savedUser) { setUser(savedUser); setView('app'); }
+    const savedCart = localStorage.getItem('hh_cart');
+    if (savedCart) setCart(JSON.parse(savedCart));
+  }, []);
 
-                  if (limits.dynamicRule) {
-                    if (currentDayIndex === 1 || currentDayIndex === 2) {
-                      maxDay = 5; // Lundi/Mardi max 5
-                    } else {
-                      const takenDaysBeforeToday = takenWeek - takenDay;
-                      maxDay = maxWeek ? Math.max(0, maxWeek - takenDaysBeforeToday) : 9999;
-                    }
-                  }
+  useEffect(() => { localStorage.setItem('hh_cart', JSON.stringify(cart)); }, [cart]);
 
-                  const remainingDay = maxDay !== null ? Math.max(0, maxDay - takenDay) : 9999;
-                  const remainingWeek = maxWeek !== null ? Math.max(0, maxWeek - takenWeek) : 9999;
-                  
-                  // La quantité disponible est le plus petit chiffre entre le reste du jour et le reste de la semaine
-                  availableQty = Math.min(remainingDay, remainingWeek);
-                }
+  const compressImage = (base64) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const scale = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+    });
+  };
 
-                const currentQtyInForm = forms.partner.items.reduce((s, i) => s + Number(i.qty), 0);
-                const isOverLimit = selectedCompany && !isVIP && (currentQtyInForm > availableQty);
+  const handleFileChange = async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      notify("ERREUR", "Fichier non supporté", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const compressed = await compressImage(reader.result);
+      setForms(prev => ({ ...prev, expense: { ...prev.expense, file: compressed } }));
+      notify("📸 CAPTURE DÉTECTÉE", "Le reçu a été ajouté avec succès.", "success");
+    };
+    reader.readAsDataURL(file);
+  };
 
-                // --- COMPOSANT JAUGE CIRCULAIRE PREMIUM ---
-                const Gauge = ({ label, taken, max }) => {
-                    if (!max) return null;
-                    const pct = Math.min(100, (taken / max) * 100);
-                    
-                    let color = '#10b981'; let glow = 'rgba(16, 185, 129, 0.4)';
-                    if (pct >= 100) { color = '#ef4444'; glow = 'rgba(239, 68, 68, 0.6)'; } 
-                    else if (pct >= 75) { color = '#f59e0b'; glow = 'rgba(245, 158, 11, 0.5)'; }
+  useEffect(() => {
+    const handlePaste = (event) => {
+      if (currentTab !== 'expenses') return;
+      const items = event.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          handleFileChange(blob);
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [currentTab]);
 
-                    const remaining = Math.max(0, max - taken);
-
-                    return (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                            <div style={{ position: 'relative', width: 110, height: 110, marginBottom: 15, borderRadius: '50%', background: `conic-gradient(${color} ${pct}%, rgba(255,255,255,0.05) ${pct}%)`, boxShadow: `0 0 25px ${glow}, inset 0 0 20px rgba(0,0,0,0.8)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <div style={{ width: 86, height: 86, borderRadius: '50%', background: '#111', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 5px 15px rgba(0,0,0,0.8)' }}>
-                                    <span style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', lineHeight: 1, textShadow: `0 0 15px ${glow}` }}>{remaining}</span>
-                                    <span style={{ fontSize: '0.6rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', marginTop: 4 }}>Reste</span>
-                                </div>
-                            </div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>{label}</div>
-                            <div style={{ fontSize: '0.75rem', color: color, marginTop: 6, fontWeight: 800, background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 12, border: `1px solid ${glow}` }}>{taken} / {max}</div>
-                        </div>
-                    );
-                };
-
-                // --- 2. RENDU DE L'INTERFACE ---
-                return (
-                  <div className="fade-in" style={{ display: 'flex', flexWrap: 'wrap', gap: '25px', maxWidth: '1200px', margin: '0 auto', alignItems: 'stretch' }}>
-                    
-                    <style>{`
-                      .glass-card { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-                      .menu-row { transition: all 0.2s; border: 1px solid transparent; }
-                      .menu-row:hover { background: rgba(255, 152, 0, 0.05) !important; border-color: rgba(255, 152, 0, 0.2); transform: translateX(5px); }
-                      .qty-btn-custom { width: 30px; height: 30px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: #fff; font-weight: 900; cursor: pointer; transition: 0.2s; display:flex; align-items:center; justify-content:center; }
-                      .qty-btn-custom:hover:not(:disabled) { background: var(--p); color: #000; }
-                      .qty-btn-custom:disabled { opacity: 0.3; cursor: not-allowed; }
-                      .hazard-bg { background: repeating-linear-gradient( 45deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.05) 10px, rgba(0, 0, 0, 0.2) 10px, rgba(0, 0, 0, 0.2) 20px ); border: 1px solid rgba(239, 68, 68, 0.3); }
-                      .vip-bg { background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.15), transparent 60%), rgba(20,20,20,0.8); border: 1px solid rgba(255, 215, 0, 0.3); }
-                      @keyframes pulseError { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); } 70% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.3); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.8); } }
-                    `}</style>
-
-                    {/* --- COLONNE GAUCHE : IDENTIFICATION CLIENT & STATUT --- */}
-                    <div className="glass-card" style={{ flex: '1 1 350px', display: 'flex', flexDirection: 'column', padding: '35px', position: 'relative', overflow: 'hidden', animation: isOverLimit ? 'pulseError 2s infinite' : 'none', transition: 'all 0.3s' }}>
-                      
-                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: !selectedCompany ? 'var(--glass-b)' : (isVIP ? 'gold' : (isOverLimit ? 'var(--error)' : 'var(--p)')) }}></div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 30 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>🛂</div>
-                        <div>
-                            <h2 style={{ fontWeight: 900, margin: 0, fontSize: '1.2rem', letterSpacing: '1px', color: '#fff' }}>CONTRÔLE D'ACCÈS</h2>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800 }}>Base de données Partenaires</div>
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 30 }}>
-                        <div style={{ position: 'relative' }}>
-                          <label style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -8, left: 15, background: '#181818', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Société</label>
-                          <select className="inp" style={{ marginBottom: 0, paddingTop: 20, height: 60, fontSize: '1rem', fontWeight: 800, color: forms.partner.company ? '#fff' : 'var(--muted)' }} value={forms.partner.company} onChange={e => { const c = e.target.value; setForms({ ...forms, partner: { ...forms.partner, company: c, benef: '', items: [{ menu: data.partners.companies[c].menus[0].name, qty: 1 }] } }); }}>
-                            <option value="" disabled>--- Choisissez une entreprise ---</option>
-                            {Object.keys(data.partners.companies).map(c => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                        </div>
-                        <div style={{ position: 'relative', opacity: forms.partner.company ? 1 : 0.4, pointerEvents: forms.partner.company ? 'auto' : 'none', transition: '0.3s' }}>
-                          <label style={{ fontSize: '0.7rem', color: 'var(--p)', fontWeight: 900, textTransform: 'uppercase', position: 'absolute', top: -8, left: 15, background: '#181818', padding: '0 8px', zIndex: 2, borderRadius: 4 }}>Bénéficiaire</label>
-                          <select className="inp" style={{ marginBottom: 0, paddingTop: 20, height: 60, fontSize: '1rem', fontWeight: 800, color: forms.partner.benef ? '#fff' : 'var(--muted)' }} value={forms.partner.benef} onChange={e => setForms({ ...forms, partner: { ...forms.partner, benef: e.target.value } })}>
-                            <option value="" disabled>--- Choisir un bénéficiaire ---</option>
-                            {forms.partner.company && data.partners.companies[forms.partner.company]?.beneficiaries.map(b => <option key={b} value={b}>{b}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className={isVIP ? "vip-bg" : (isOverLimit ? "hazard-bg" : "")} style={{ flex: 1, borderRadius: 24, padding: '25px', display: 'flex', flexDirection: 'column', position: 'relative', background: (!isVIP && !isOverLimit) ? 'rgba(0,0,0,0.4)' : undefined, border: (!isVIP && !isOverLimit) ? '1px solid rgba(255,255,255,0.05)' : undefined }}>
-                        
-                        {(!selectedCompany || !selectedBenef) ? (
-                            <div style={{ textAlign: 'center', color: 'var(--muted)', margin: 'auto' }}>
-                                <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5 }}>⏳</div>
-                                <div style={{ fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>En attente d'identification</div>
-                            </div>
-                        ) : (
-                          <>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                              <span style={{ fontWeight: 900, color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Statut Autorisation</span>
-                              {isVIP ? (
-                                <span style={{ color: '#000', background: 'gold', padding: '4px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 900, boxShadow: '0 0 15px rgba(255,215,0,0.4)' }}>VIP</span>
-                              ) : (
-                                <span style={{ color: isOverLimit ? '#ef4444' : '#10b981', background: isOverLimit ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', padding: '4px 10px', borderRadius: 8, fontSize: '0.75rem', fontWeight: 900, border: `1px solid ${isOverLimit ? '#ef4444' : '#10b981'}` }}>
-                                    {isOverLimit ? 'BLOQUÉ' : 'ACTIF'}
-                                </span>
-                              )}
-                            </div>
-
-                            {isVIP ? (
-                              <div style={{ textAlign: 'center', padding: '20px 0', margin: 'auto' }}>
-                                <div style={{ fontSize: '3rem', marginBottom: 10, filter: 'drop-shadow(0 0 15px rgba(255,215,0,0.5))' }}>⚖️</div>
-                                <div style={{ fontWeight: 900, color: 'gold', fontSize: '1.3rem', letterSpacing: '1px' }}>CONTRAT ÉTAT</div>
-                                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>Consommation prioritaire</div>
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', margin: 'auto 0' }}>
-                                    <Gauge label={limits.dynamicRule && currentDayIndex > 2 ? "Semaine" : "Jour"} taken={takenDay} max={maxDay} />
-                                    {(!limits.dynamicRule || currentDayIndex <= 2) && maxWeek && <div style={{ width: 1, height: 80, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.15), transparent)' }}></div>}
-                                    {(!limits.dynamicRule || currentDayIndex <= 2) && <Gauge label="Semaine" taken={takenWeek} max={maxWeek} />}
-                                </div>
-
-                                {/* Historique de la semaine rapide */}
-                                <div style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10 }}>Historique Semaine</div>
-                                  <div className="custom-scroll" style={{ maxHeight: 90, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                    {userLogsThisWeek.length === 0 ? (
-                                      <div style={{ fontSize: '0.75rem', color: '#666', fontStyle: 'italic' }}>Aucun passage cette semaine.</div>
-                                    ) : userLogsThisWeek.map((log, i) => (
-                                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: 8 }}>
-                                        <span style={{ color: '#aaa' }}>{log[0]}</span>
-                                        <span style={{ color: 'var(--p)', fontWeight: 900 }}>{log[4]}x Menus</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* --- COLONNE DROITE : TERMINAL DE COMMANDE SÉCURISÉ --- */}
-                    <div className="glass-card" style={{ flex: '1 1 450px', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden', opacity: (!selectedCompany || !selectedBenef) ? 0.4 : 1, pointerEvents: (!selectedCompany || !selectedBenef) ? 'none' : 'auto', transition: '0.3s' }}>
-                      
-                      <div style={{ background: 'rgba(0,0,0,0.5)', padding: '25px 35px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                            <h2 style={{ fontWeight: 900, margin: 0, fontSize: '1.2rem', letterSpacing: '1px', color: '#fff' }}>TERMINAL COMMANDE</h2>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--p)', fontWeight: 800, marginTop: 4 }}>Total: {currentQtyInForm} Menu(s)</div>
-                        </div>
-                        <div style={{ width: 150 }}>
-                            <input className="inp" placeholder="N° FACTURE" value={forms.partner.num} onChange={e => setForms({ ...forms, partner: { ...forms.partner, num: e.target.value } })} style={{ marginBottom: 0, textAlign: 'center', padding: '10px', height: 45, borderRadius: 12, borderColor: forms.partner.num ? 'var(--p)' : 'var(--glass-b)', background: '#000', fontSize: '0.9rem', fontWeight: 900 }} />
-                        </div>
-                      </div>
-
-                      <div className="custom-scroll" style={{ flex: 1, overflowY: 'auto', padding: '25px 35px', display: 'flex', flexDirection: 'column', gap: 15 }}>
-                        {forms.partner.items.map((item, idx) => (
-                          <div key={idx} className="menu-row" style={{ display: 'flex', gap: 15, alignItems: 'center', background: 'rgba(0,0,0,0.3)', padding: '12px 15px', borderRadius: 20 }}>
-                            <div style={{ flex: 1 }}>
-                                <select className="inp" style={{ width: '100%', marginBottom: 0, background: 'transparent', border: 'none', padding: 0, fontSize: '0.95rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }} value={item.menu} onChange={e => { const n = [...forms.partner.items]; n[idx].menu = e.target.value; setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>
-                                    {selectedCompany && data.partners.companies[selectedCompany]?.menus.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
-                                </select>
-                            </div>
-
-                            {/* BOUTONS +/- AVEC BLOCAGE DU MAX */}
-                            <div style={{ display: 'flex', alignItems: 'center', background: '#0a0a0a', borderRadius: 12, border: '1px solid #333', padding: 4, gap: 5 }}>
-                                <button className="qty-btn-custom" onClick={() => { const n = [...forms.partner.items]; if (n[idx].qty > 1) { n[idx].qty--; setForms({ ...forms, partner: { ...forms.partner, items: n } }); } }}>-</button>
-                                <div style={{ width: 25, textAlign: 'center', fontWeight: 900, fontSize: '1rem', color: 'var(--p)' }}>{item.qty}</div>
-                                <button className="qty-btn-custom" disabled={!isVIP && currentQtyInForm >= availableQty} onClick={() => { if (isVIP || currentQtyInForm < availableQty) { const n = [...forms.partner.items]; n[idx].qty++; setForms({ ...forms, partner: { ...forms.partner, items: n } }); } }}>+</button>
-                            </div>
-
-                            {forms.partner.items.length > 1 && (
-                              <button style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.2rem', transition: '0.2s' }} onMouseOver={e => { e.target.style.background = '#ef4444'; e.target.style.color = '#fff'; }} onMouseOut={e => { e.target.style.background = 'rgba(239, 68, 68, 0.1)'; e.target.style.color = '#ef4444'; }} onClick={() => { const n = [...forms.partner.items]; n.splice(idx, 1); setForms({ ...forms, partner: { ...forms.partner, items: n } }); }}>×</button>
-                            )}
-                          </div>
-                        ))}
-                        
-                        <button style={{ background: 'transparent', border: '2px dashed rgba(255,255,255,0.1)', color: (!isVIP && currentQtyInForm >= availableQty) ? '#444' : 'var(--muted)', borderRadius: 20, padding: 15, fontSize:'0.9rem', fontWeight: 800, cursor: (!isVIP && currentQtyInForm >= availableQty) ? 'not-allowed' : 'pointer', transition: '0.3s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }} 
-                            disabled={!isVIP && currentQtyInForm >= availableQty}
-                            onMouseOver={(e) => { if (isVIP || currentQtyInForm < availableQty) { e.target.style.borderColor = 'var(--p)'; e.target.style.color = '#fff'; } }}
-                            onMouseOut={(e) => { if (isVIP || currentQtyInForm < availableQty) { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.color = 'var(--muted)'; } }}
-                            onClick={() => {
-                              if (isVIP || currentQtyInForm < availableQty) {
-                                const currentMenus = data.partners.companies[selectedCompany]?.menus;
-                                const defaultMenu = currentMenus && currentMenus.length > 0 ? currentMenus[0].name : '';
-                                setForms({ ...forms, partner: { ...forms.partner, items: [...forms.partner.items, { menu: defaultMenu, qty: 1 }] } });
-                              }
-                        }}>
-                            <span style={{ fontSize: '1.2rem' }}>+</span> AJOUTER UNE LIGNE
-                        </button>
-                      </div>
-
-                      {/* --- BOUTON DE VALIDATION (AVEC RÉCAPITULATIF MODAL) --- */}
-                      <div style={{ padding: '25px 35px', background: '#0a0a0a', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                          <button 
-                            className="btn-p" 
-                            style={{ 
-                                padding: '22px', fontSize: '1.1rem', letterSpacing: '2px', width: '100%', borderRadius: 20,
-                                background: isOverLimit ? '#222' : 'var(--p)', color: isOverLimit ? '#555' : '#000',
-                                boxShadow: isOverLimit ? 'none' : '0 15px 35px rgba(255, 152, 0, 0.3)',
-                                cursor: isOverLimit ? 'not-allowed' : 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                            }} 
-                            disabled={isOverLimit || !forms.partner.num || !selectedCompany || !selectedBenef || currentQtyInForm <= 0 || sending}
-                            onClick={() => {
-                                playSound('click');
-                                const total = forms.partner.items.reduce((acc, curr) => acc + Number(curr.qty), 0);
-                                
-                                setConfirmModal({
-                                    title: "VALIDATION PARTENAIRE",
-                                    msg: (
-                                        <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '16px', marginTop: '15px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <div style={{marginBottom: 10, fontSize: '0.9rem'}}><b style={{color:'var(--p)', display:'inline-block', width:'90px'}}>Société :</b> {forms.partner.company}</div>
-                                            <div style={{marginBottom: 10, fontSize: '0.9rem'}}><b style={{color:'var(--p)', display:'inline-block', width:'90px'}}>Client :</b> <span style={{color: '#fff', fontWeight: 900}}>{forms.partner.benef}</span></div>
-                                            <div style={{marginBottom: 10, fontSize: '0.9rem'}}><b style={{color:'var(--p)', display:'inline-block', width:'90px'}}>Facture :</b> #{forms.partner.num}</div>
-                                            <div style={{marginBottom: 10, fontSize: '0.9rem'}}><b style={{color:'var(--p)', display:'inline-block', width:'90px'}}>Montant :</b> <span style={{color: '#10b981', fontWeight: 900}}>{total}$</span></div>
-                                            <hr style={{ borderColor: 'rgba(255,255,255,0.05)', margin: '15px 0' }}/>
-                                            <div className="custom-scroll" style={{ fontSize: '0.85rem', color: '#ccc', display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 100, overflowY: 'auto' }}>
-                                                {forms.partner.items.map((i, idx) => (
-                                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                        <span>{i.qty}x {i.menu}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div style={{ marginTop: 25, textAlign: 'center', fontWeight: 900, color: '#fff', fontSize: '1rem' }}>Êtes-vous sûr de valider cette commande ?</div>
-                                        </div>
-                                    ),
-                                    action: () => {
-                                        setConfirmModal(null);
-                                        send('sendPartnerOrder', forms.partner);
-                                    }
-                                });
-                            }}
-                          >
-                            {isOverLimit ? '⛔ QUOTA DÉPASSÉ' : (!forms.partner.num ? 'SAISIR N° DE FACTURE' : 'VALIDER LA COMMANDE (1$)')}
-                          </button>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })()}
+  const playSound = (type) => {
+    if (isMuted) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      
+      if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now); 
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05); 
+        osc.start(now); osc.stop(now + 0.05);
+      } else if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523, now); 
+        osc.frequency.setValueAtTime(659, now + 0.1);
+        osc.frequency.setValueAtTime(783
              {/* GARAGE (DASHBOARD SPORT) */}
 {currentTab === 'garage' && (
     <div className="fade-in" style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px', height: '100%', maxHeight: '85vh' }}>
