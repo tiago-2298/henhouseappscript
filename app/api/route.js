@@ -16,17 +16,18 @@ const PRODUCTS_CAT = {
     'Effiloché de Mouton', 'Burger Gourmet au Foie Gras'
   ],
   desserts: [
-    'Mousse au café', 'Tiramisu Fraise', 'Carpaccio Fruit Exotique',
-    'Profiteroles au chocolat', 'Los Churros Caramel'
+    'Mousse au café', 'Tiramisu Fraise', 'Verrine Caramel-Exotique',
+    'Profiteroles au chocolat', 'Crumble de Fruit'
   ],
   boissons: [
     'Café', 'Jus de raisin Rouge', 'Berry Fizz',
     "Jus d'orange", 'Kombucha Citron', 'Nectar Exotique'
   ],
   menus: [
-    'LA SIGNATURE VÉGÉTALE', 'LE PRESTIGE DE LA MER', 'LE RED WINGS',
-    "LE SOLEIL D'OR", 'LE SIGNATURE "75"', "L'HÉRITAGE DU BERGER",
-    'LA CROISIÈRE GOURMANDE'
+    'LA SÉRÉNITÉ', 'LA VAGUE', "L'ÉVASION",
+    'LE FUMÉ', "L'EXCELLENCE", 'LE CARACTÈRE',
+    'LE DÉLICAT', 'LE RED WINGS', 'LE SIGNATURE "75"',
+    'LA BOX DU POULAILLER'
   ],
   alcools: [
     'Verre de Cidre en Pression', 'Verre de Champagne', 'Verre de rosé',
@@ -49,24 +50,31 @@ const WEBHOOKS = {
 };
 
 const PRICE_LIST = {
-  'Lasagne aux légumes': 50, "Saumon Grillé à l'Avocat": 40, 'Crousti-Douce': 60,
+  // Plats
+  'Lasagne aux légumes': 50, "Saumon Grillé à l'Avocat": 45, 'Crousti-Douce': 60,
   'Paella Méditerranéenne': 65, "Steak 'Potatoes": 45, 'Ribs': 50,
-  'Filet Mignon': 60, 'Poulet Rôti': 60, 'Wings Epicé': 70,
-  'Effiloché de Mouton': 65, 'Burger Gourmet au Foie Gras': 75,
-  'Mousse au café': 30, 'Tiramisu Fraise': 35, 'Carpaccio Fruit Exotique': 35,
-  'Profiteroles au chocolat': 35, 'Los Churros Caramel': 35,
-  'Café': 20, 'Jus de raisin Rouge': 30, 'Berry Fizz': 30,
-  "Jus d'orange": 35, 'Kombucha Citron': 40, 'Nectar Exotique': 50,
-  'LA SIGNATURE VÉGÉTALE': 90, 'LE PRESTIGE DE LA MER': 90, 'LE RED WINGS': 110,
-  "LE SOLEIL D'OR": 100, 'LE SIGNATURE "75"': 100, "L'HÉRITAGE DU BERGER": 120,
-  'LA CROISIÈRE GOURMANDE': 130,
-  'Verre de Cidre en Pression': 10, 'Verre de Champagne': 15, 'Verre de rosé': 20,
-  'Verre de Champomax': 25, 'Verre de Bellini': 25, 'Verre Vin Rouge': 25,
-  'Verre Vin Blanc': 30, 'Verre de Cognac': 30, 'Verre de Brandy': 40,
-  'Verre de Whisky': 40, 'Shot de Tequila': 40, 'Cocktail Citron-Myrtille': 40,
-  'Verre de Vodka': 45, 'Verre de Rhum': 45, 'Verre de Tequila Citron': 50,
-  'Verre de Gin': 65, 'Verre de Gin Fizz Citron': 70, 'Bouteille de Cidre': 50,
-  'Bouteille de Champagne': 125,
+  'Filet Mignon': 60, 'Poulet Rôti': 65, 'Wings Epicé': 70,
+  'Effiloché de Mouton': 70, 'Burger Gourmet au Foie Gras': 80,
+  // Desserts
+  'Mousse au café': 30, 'Tiramisu Fraise': 35, 'Verrine Caramel-Exotique': 35,
+  'Profiteroles au chocolat': 35, 'Crumble de Fruit': 40,
+  // Boissons
+  'Café': 20, 'Jus de raisin Rouge': 35, 'Berry Fizz': 35,
+  "Jus d'orange": 45, 'Kombucha Citron': 35, 'Nectar Exotique': 60,
+  // Menus
+  'LA SÉRÉNITÉ': 90, 'LA VAGUE': 120, "L'ÉVASION": 140,
+  'LE FUMÉ': 100, "L'EXCELLENCE": 110, 'LE CARACTÈRE': 120,
+  'LE DÉLICAT': 90, 'LE RED WINGS': 100, 'LE SIGNATURE "75"': 110,
+  'LA BOX DU POULAILLER': 230,
+  // Alcools
+  'Verre de Cidre en Pression': 15, 'Verre de Champagne': 30, 'Verre de rosé': 20,
+  'Verre de Champomax': 15, 'Verre de Bellini': 60, 'Verre Vin Rouge': 35,
+  'Verre Vin Blanc': 40, 'Verre de Cognac': 30, 'Verre de Brandy': 45,
+  'Verre de Whisky': 45, 'Shot de Tequila': 25, 'Cocktail Citron-Myrtille': 50,
+  'Verre de Vodka': 60, 'Verre de Rhum': 60, 'Verre de Tequila Citron': 45,
+  'Verre de Gin': 50, 'Verre de Gin Fizz Citron': 60, 'Bouteille de Cidre': 50,
+  'Bouteille de Champagne': 250,
+  // Service
   'LIVRAISON NORD': 100, 'LIVRAISON SUD': 200, 'PRIVATISATION': 4500
 };
 
