@@ -106,7 +106,7 @@ const PARTNERS = {
     },
     'Esthétique Paleto': {
       limits: { day: 2, week: 14 },
-      beneficiaries: [ 'Charlie Senna Mendoza','Luis Blanchette','Rose Brown','Bocceli Hennessy','Isalia Wiston','Will Frost','Liam Bellini','Kled Antonio','Noa Park','William Senna','Amael Bouné','Lucas Binottie','Lyam Foster','Selyan Sahali',],
+      beneficiaries: [ 'Charlie Senna Mendoza','Luis Blanchette','Rose Brown','Bocceli Hennessy','Isalia Wiston','Will Frost','Liam Bellini','Kled Antonio','Noa Park','William Senna','Lyam Foster','Selyan Sahali',],
       menus: [
         { name: 'Menu L’Héritage du Berger', catalog: 80 },
         { name: 'Paella ou Crousti-Douce + Jus de raisin rouge', catalog: 75 }
