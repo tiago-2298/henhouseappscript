@@ -24,7 +24,7 @@ const PRODUCTS_CAT = {
     "Jus d'orange", 'Kombucha Citron', 'Nectar Exotique'
   ],
   menus: [
-    'LA SÉRÉNITÉ', 'LA VAGUE', "L'ÉVASION",
+    'Menu Secours','LA SÉRÉNITÉ', 'LA VAGUE', "L'ÉVASION",
     'LE FUMÉ', "L'EXCELLENCE", 'LE CARACTÈRE',
     'LE DÉLICAT', 'LE RED WINGS', 'LE SIGNATURE "75"',
     'LA BOX DU POULAILLER'
@@ -62,7 +62,7 @@ const PRICE_LIST = {
   'Café': 20, 'Jus de raisin Rouge': 35, 'Berry Fizz': 35,
   "Jus d'orange": 45, 'Kombucha Citron': 35, 'Nectar Exotique': 60,
   // Menus
-  'LA SÉRÉNITÉ': 90, 'LA VAGUE': 120, "L'ÉVASION": 140,
+  'Menu Secours': 90,'LA SÉRÉNITÉ': 90, 'LA VAGUE': 120, "L'ÉVASION": 140,
   'LE FUMÉ': 100, "L'EXCELLENCE": 110, 'LE CARACTÈRE': 120,
   'LE DÉLICAT': 90, 'LE RED WINGS': 100, 'LE SIGNATURE "75"': 110,
   'LA BOX DU POULAILLER': 230,
